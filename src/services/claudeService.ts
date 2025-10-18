@@ -3,8 +3,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 
 class ClaudeService {
   private readonly CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
-  private readonly API_KEY = process.env.EXPO_PUBLIC_CLAUDE_API_KEY || 
-    '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'.split('').reverse().join('');
+  private readonly API_KEY = process.env.EXPO_PUBLIC_CLAUDE_API_KEY;
 
   async analyzeFoodImage(imageUri: string): Promise<FoodAnalysis> {
     try {
