@@ -1,30 +1,80 @@
 {
   "expo": {
-    "name": "fit-mvp",
-    "slug": "fit-mvp",
-    "version": "1.0.0",
+    "name": "Fitso",
+    "slug": "fitso",
+    "version": "2.0.8",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/appicon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/appicon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.fitsomobileapp.app",
+      "buildNumber": "4",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Esta app necesita acceso a la cámara para escanear códigos de barras y tomar fotos de comida para análisis nutricional.",
+        "NSPhotoLibraryUsageDescription": "Esta app necesita acceso a la galería para seleccionar fotos de comida para análisis nutricional.",
+        "NSHealthShareUsageDescription": "Esta app necesita acceso a tus datos de salud para sincronizar pasos y calorías quemadas.",
+        "NSHealthUpdateUsageDescription": "Esta app necesita escribir datos de salud para actualizar tu información de actividad.",
+        "ITSAppUsesNonExemptEncryption": false,
+        "GADApplicationIdentifier": "ca-app-pub-2507387956943605~5314157036"
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/appicon.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACTIVITY_RECOGNITION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE"
+      ],
+      "package": "com.fitsomobileapp.app",
+      "config": {
+        "googleMobileAdsAppId": "ca-app-pub-2507387956943605~5314157036"
+      }
     },
     "web": {
-      "favicon": "./assets/favicon.png"
-    }
+      "favicon": "./assets/icon.png"
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Permitir acceso a la cámara para escanear códigos de barras y tomar fotos de comida."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Permitir acceso a la galería para seleccionar fotos de comida."
+        }
+      ],
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-2507387956943605~5314157036",
+          "iosAppId": "ca-app-pub-2507387956943605~5314157036"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "70f50a30-2261-4e3d-8484-c579483cf94c"
+      }
+    },
+    "owner": "angeldefreitasr"
   }
 }

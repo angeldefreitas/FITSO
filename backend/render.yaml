@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: fitso-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: FRONTEND_URL
+        value: https://tu-frontend-url.com
+    healthCheckPath: /api/health
+    autoDeploy: true
+    branch: main
+
+databases:
+  - name: fitso-postgres
+    databaseName: fitso_db
+    user: fitso_user
+    plan: free
