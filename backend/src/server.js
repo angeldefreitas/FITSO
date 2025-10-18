@@ -4,7 +4,9 @@ const helmet = require('helmet');
 // const rateLimit = require('express-rate-limit'); // DESHABILITADO PARA TESTING
 require('dotenv').config();
 
-const { testConnection } = require('./config/database');
+const { testConnection, query } = require('./config/database');
+const fs = require('fs');
+const path = require('path');
 const authRoutes = require('./routes/auth');
 const profileRoutes = require('./routes/profile');
 const progressRoutes = require('./routes/progress');
@@ -120,6 +122,39 @@ app.use('*', (req, res) => {
   });
 });
 
+// Función para verificar e inicializar la base de datos
+const checkAndInitializeDatabase = async () => {
+  try {
+    // Verificar si la tabla users existe
+    const checkTableQuery = `
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'users'
+      );
+    `;
+    
+    const result = await query(checkTableQuery);
+    const tableExists = result.rows[0].exists;
+    
+    if (!tableExists) {
+      console.log('🏗️ Tabla users no existe, inicializando base de datos...');
+      
+      // Leer y ejecutar el esquema
+      const schemaPath = path.join(__dirname, 'config/schema.sql');
+      const schema = fs.readFileSync(schemaPath, 'utf8');
+      
+      await query(schema);
+      console.log('✅ Base de datos inicializada correctamente');
+    } else {
+      console.log('✅ Base de datos ya inicializada');
+    }
+  } catch (error) {
+    console.error('❌ Error verificando/inicializando base de datos:', error.message);
+    throw error;
+  }
+};
+
 // Iniciar servidor
 const startServer = async () => {
   try {
@@ -131,6 +166,9 @@ const startServer = async () => {
       console.error('❌ No se pudo conectar a la base de datos');
       process.exit(1);
     }
+
+    // Verificar e inicializar base de datos si es necesario
+    await checkAndInitializeDatabase();
 
     // Iniciar servidor
     app.listen(PORT, () => {

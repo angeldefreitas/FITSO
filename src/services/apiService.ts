@@ -5,7 +5,7 @@ import userAuthService from './userAuthService';
 // Cambiar esta URL por la de tu backend en Render una vez desplegado
 const BASE_URL = __DEV__ 
   ? 'http://localhost:3000/api'  // Desarrollo local
-  : 'https://fitso-backend.onrender.com/api'; // Producción en Render
+  : 'https://fitso.onrender.com/api'; // Producción en Render
 
 export interface ApiResponse<T = any> {
   success: boolean;
