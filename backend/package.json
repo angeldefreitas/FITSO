@@ -10,7 +10,6 @@
     "init-db": "node scripts/init-db.js",
     "test-api": "node scripts/test-api.js",
     "setup-postgres": "./scripts/setup-postgres.sh",
-    "postinstall": "npm run init-db"
   },
   "keywords": [
     "fitness",
