@@ -27,7 +27,7 @@ interface Notification {
   read: boolean;
 }
 
-export default function BottomNavigation({ activeTab, onTabChange, onAddPress, onProgressPress, nutritionGoals, consumed }: BottomNavigationProps) {
+export default function BottomNavigation({ activeTab, onTabChange, onAddPress, onProgressPress, onPremiumPress, nutritionGoals, consumed }: BottomNavigationProps) {
   const [showNotifications, setShowNotifications] = useState(false);
 
   // Generar recomendaciones nutricionales

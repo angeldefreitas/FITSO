@@ -428,11 +428,11 @@ class SubscriptionService {
       
       const response = await apiService.get(`/subscriptions/status/${userId}`);
       
-      if (!response.success || !response.subscription) {
+      if (!response.success || !response.data) {
         return null;
       }
 
-      const backendStatus = response.subscription;
+      const backendStatus = response.data as any;
       
       // Convertir formato del backend al formato local
       return {
