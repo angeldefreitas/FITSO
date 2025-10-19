@@ -81,6 +81,7 @@ export const foodSearchScreenStyles = {
     paddingVertical: 16,
     paddingHorizontal: 8,
     minHeight: 80,
+    position: 'relative' as const,
   },
 
   scanButtonMainAnimation: {
@@ -94,6 +95,104 @@ export const foodSearchScreenStyles = {
     fontWeight: '500' as const,
     color: '#6c757d',
     textAlign: 'center' as const,
+  },
+
+  scanButtonDescription: {
+    fontSize: 10,
+    fontWeight: '400' as const,
+    color: '#28a745',
+    textAlign: 'center' as const,
+    marginTop: 2,
+  },
+
+  scanButtonContent: {
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    position: 'relative' as const,
+  },
+
+  usageCounterRight: {
+    position: 'absolute' as const,
+    top: -8,
+    right: -8,
+    backgroundColor: '#DC143C',
+    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    minWidth: 20,
+    height: 20,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+
+  usageCounterText: {
+    fontSize: 12,
+    fontWeight: 'bold' as const,
+    color: '#ffffff',
+    textAlign: 'center' as const,
+  },
+
+  premiumIconContainerLeft: {
+    position: 'absolute' as const,
+    top: -18, // -8 - 10 = -18
+    left: -23, // -18 - 5 = -23
+    width: 42, // 24 * 1.75 = 42
+    height: 42, // 24 * 1.75 = 42
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+
+  premiumIconLeft: {
+    width: 42, // 24 * 1.75 = 42
+    height: 42, // 24 * 1.75 = 42
+  },
+
+  // Overlay premium que tapa el botón completamente
+  premiumOverlay: {
+    position: 'absolute' as const,
+    top: -17, // Posición específica solicitada
+    left: -41, // Posición específica solicitada
+    right: -41, // Posición específica solicitada
+    bottom: -17, // Posición específica solicitada
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    borderRadius: 12, // Mismo radio que el botón
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    zIndex: 1000,
+    // Quitar width y height para que left/right funcionen correctamente
+  },
+
+  premiumOverlayContent: {
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    paddingHorizontal: 20,
+    flex: 1, // Ocupar todo el espacio disponible
+  },
+
+  premiumOverlayIcon: {
+    width: 50,
+    height: 50,
+    marginBottom: -4, // 6 - 10 = -4 (disminuido 10px más)
+  },
+
+  premiumOverlayTitle: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold' as const,
+    textAlign: 'center' as const,
+    marginBottom: 8,
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+
+  premiumOverlayText: {
+    color: '#FFD700',
+    fontSize: 14,
+    fontWeight: '600' as const,
+    textAlign: 'center' as const,
+    lineHeight: 18,
+    paddingHorizontal: 10,
   },
 
   searchInputContainer: {

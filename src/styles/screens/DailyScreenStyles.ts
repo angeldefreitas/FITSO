@@ -36,6 +36,13 @@ export const dailyScreenStyles = {
     letterSpacing: 2,
     textAlign: 'center' as const,
   },
+
+  premiumBadge: {
+    width: 90,
+    height: 90,
+    marginTop: -20,
+    marginBottom: -35,
+  },
   
   // Sección de calorías
   caloriesSection: {

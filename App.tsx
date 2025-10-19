@@ -23,6 +23,7 @@ import { Colors } from './src/constants/colors';
 import { CommonStyles } from './src/constants/styles';
 import { ProfileProvider } from './src/contexts/ProfileContext';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
+import { PremiumProvider } from './src/contexts/PremiumContext';
 
 // Componente interno para manejar la lógica de la app
 const AppContent = () => {
@@ -242,7 +243,9 @@ const styles = StyleSheet.create({
 export default function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <PremiumProvider>
+        <AppContent />
+      </PremiumProvider>
     </AuthProvider>
   );
 }

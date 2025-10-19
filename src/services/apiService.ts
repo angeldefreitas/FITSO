@@ -44,11 +44,16 @@ class ApiService {
     }
   }
 
+  // Método público para forzar la carga del token
+  async forceLoadToken() {
+    await this.ensureTokenLoaded();
+  }
+
   // Cargar token del almacenamiento local
   private async loadToken() {
     try {
-      // Usar el token del usuario actual
-      const currentUserId = userAuthService.getCurrentUserId();
+      // Primero intentar cargar el usuario actual desde el almacenamiento
+      const currentUserId = await userAuthService.loadCurrentUser();
       const token = userAuthService.getCurrentToken();
       
       console.log('🔍 Intentando cargar token:', {

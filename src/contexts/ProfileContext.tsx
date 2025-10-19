@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { getUserProfile, UserProfile } from '../lib/userProfile';
+import offlineSyncService from '../services/offlineSyncService';
 
 interface ProfileContextType {
   profile: UserProfile | null;
@@ -31,38 +32,77 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children, user
       setIsLoading(true);
       console.log('🔄 Cargando perfil para usuario:', userId);
       
-      // Primero intentar cargar desde el backend
+      // Verificar conectividad
+      const isOnline = offlineSyncService.isOnline;
+      
+      if (isOnline) {
+        // Primero intentar cargar desde el backend
+        try {
+          const { default: profileService } = await import('../services/profileService');
+          const profileData = await profileService.getProfile();
+          
+          if (profileData && profileData.biometricData) {
+            console.log('✅ Perfil encontrado en backend');
+            const userProfile = {
+              id: userId,
+              name: 'Usuario', // El nombre viene del usuario autenticado
+              age: profileData.biometricData.age || 25,
+              height: profileData.biometricData.heightCm || 175,
+              weight: profileData.biometricData.weightKg || 70,
+              gender: profileData.biometricData.gender === 'male' ? 'masculino' as const : 'femenino' as const,
+              activityLevel: profileData.biometricData.activityLevel === 'sedentary' ? 'sedentario' as const :
+                            profileData.biometricData.activityLevel === 'light' ? 'ligero' as const :
+                            profileData.biometricData.activityLevel === 'moderate' ? 'moderado' as const :
+                            profileData.biometricData.activityLevel === 'active' ? 'intenso' as const : 'intenso' as const,
+              goal: profileData.goalsData?.goal || 'lose_weight',
+              weightGoalAmount: profileData.goalsData?.weightGoalAmount || 0.5,
+              createdAt: new Date().toISOString(),
+              lastUpdated: new Date().toISOString(),
+            };
+            setProfile(userProfile);
+            // Guardar perfil en caché offline
+            await offlineSyncService.saveOfflineData({ 
+              profile: profileData,
+              user: { id: userId, name: 'Usuario' }
+            });
+            console.log('📊 Perfil cargado desde backend:', userProfile.weight, 'kg');
+            return;
+          }
+        } catch (backendError) {
+          console.log('⚠️ Error cargando desde backend:', backendError.message);
+        }
+      }
+      
+      // Si no se encuentra en backend o no hay conexión, intentar desde caché offline
       try {
-        const { default: profileService } = await import('../services/profileService');
-        const profileData = await profileService.getProfile();
-        
-        if (profileData && profileData.biometricData) {
-          console.log('✅ Perfil encontrado en backend');
+        const offlineData = await offlineSyncService.getOfflineData();
+        if (offlineData?.profile && offlineData.profile.biometricData) {
+          console.log('✅ Perfil encontrado en caché offline');
           const userProfile = {
             id: userId,
-            name: 'Usuario', // El nombre viene del usuario autenticado
-            age: profileData.biometricData.age || 25,
-            height: profileData.biometricData.heightCm || 175,
-            weight: profileData.biometricData.weightKg || 70,
-            gender: profileData.biometricData.gender === 'male' ? 'masculino' as const : 'femenino' as const,
-            activityLevel: profileData.biometricData.activityLevel === 'sedentary' ? 'sedentario' as const :
-                          profileData.biometricData.activityLevel === 'light' ? 'ligero' as const :
-                          profileData.biometricData.activityLevel === 'moderate' ? 'moderado' as const :
-                          profileData.biometricData.activityLevel === 'active' ? 'intenso' as const : 'intenso' as const,
-            goal: profileData.goalsData?.goal || 'lose_weight',
-            weightGoalAmount: profileData.goalsData?.weightGoalAmount || 0.5,
+            name: 'Usuario',
+            age: offlineData.profile.biometricData.age || 25,
+            height: offlineData.profile.biometricData.heightCm || 175,
+            weight: offlineData.profile.biometricData.weightKg || 70,
+            gender: offlineData.profile.biometricData.gender === 'male' ? 'masculino' as const : 'femenino' as const,
+            activityLevel: offlineData.profile.biometricData.activityLevel === 'sedentary' ? 'sedentario' as const :
+                          offlineData.profile.biometricData.activityLevel === 'light' ? 'ligero' as const :
+                          offlineData.profile.biometricData.activityLevel === 'moderate' ? 'moderado' as const :
+                          offlineData.profile.biometricData.activityLevel === 'active' ? 'intenso' as const : 'intenso' as const,
+            goal: offlineData.profile.goalsData?.goal || 'lose_weight',
+            weightGoalAmount: offlineData.profile.goalsData?.weightGoalAmount || 0.5,
             createdAt: new Date().toISOString(),
             lastUpdated: new Date().toISOString(),
           };
           setProfile(userProfile);
-          console.log('📊 Perfil cargado desde backend:', userProfile.weight, 'kg');
+          console.log('📊 Perfil cargado desde caché offline:', userProfile.weight, 'kg');
           return;
         }
-      } catch (backendError) {
-        console.log('⚠️ Error cargando desde backend:', backendError.message);
+      } catch (offlineError) {
+        console.log('⚠️ Error cargando desde caché offline:', offlineError.message);
       }
       
-      // Si no se encuentra en backend, intentar desde AsyncStorage
+      // Como último recurso, intentar desde AsyncStorage
       const userProfile = await getUserProfile(userId);
       setProfile(userProfile);
       console.log('📊 Perfil cargado desde AsyncStorage:', userProfile?.weight, 'kg');
@@ -84,23 +124,6 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children, user
     try {
       console.log('🔄 Actualizando peso del perfil a:', weight);
       
-      // Si no hay perfil cargado, intentar cargarlo primero
-      if (!profile) {
-        console.log('⚠️ No hay perfil cargado, intentando cargar...');
-        if (userId) {
-          await loadProfileForUser(userId);
-        } else {
-          console.error('❌ No hay userId disponible para cargar perfil');
-          return;
-        }
-      }
-      
-      // Verificar nuevamente después de intentar cargar
-      if (!profile) {
-        console.error('❌ No se pudo cargar el perfil');
-        return;
-      }
-      
       // Actualizar el estado local inmediatamente
       if (profile) {
         const updatedProfile = {
@@ -112,21 +135,9 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children, user
         console.log('✅ Peso del perfil actualizado en tiempo real:', weight, 'kg');
       }
       
-      // Actualizar en AsyncStorage y crear registro de progreso
-      const { updateUserProfile } = await import('../lib/userProfile');
-      const result = await updateUserProfile({ weight }, profile.id);
-      
-      if (!result.success) {
-        console.error('❌ Error actualizando perfil:', result.error);
-        // Revertir el cambio local si falló
-        if (profile) {
-          setProfile(profile);
-        }
-      } else {
-        console.log('✅ Peso actualizado en perfil y progreso');
-        // Recargar el perfil desde AsyncStorage para asegurar sincronización
-        await loadProfileForUser(profile.id);
-      }
+      // La sincronización con el backend ya se maneja automáticamente
+      // en el ProgressService cuando se actualiza una entrada de peso
+      console.log('✅ Peso del perfil actualizado localmente');
       
     } catch (error) {
       console.error('Error updating profile weight:', error);

@@ -148,6 +148,10 @@ class ProgressService {
     const response = await apiService.post<WeightEntry>('/progress/weight', weightData);
     
     if (response.success && response.data) {
+      // Si se agregó peso para el día de hoy, sincronizar con el perfil
+      if (this.isToday(weightData.entry_date)) {
+        await this.syncWeightWithProfile(weightData.weight);
+      }
       return response.data;
     }
     
@@ -170,6 +174,10 @@ class ProgressService {
     const response = await apiService.put<WeightEntry>(`/progress/weight/${id}`, updateData);
     
     if (response.success && response.data) {
+      // Si se actualizó el peso y es para el día de hoy, sincronizar con el perfil
+      if (updateData.weight && this.isToday(updateData.entry_date || new Date().toISOString().split('T')[0])) {
+        await this.syncWeightWithProfile(updateData.weight);
+      }
       return response.data;
     }
     
@@ -511,6 +519,48 @@ class ProgressService {
           isIncrease: false
         }
       };
+    }
+  }
+
+  // Sincronizar peso con el perfil biométrico
+  private async syncWeightWithProfile(weight: number): Promise<void> {
+    try {
+      console.log('🔄 Sincronizando peso con perfil:', weight, 'kg');
+      
+      // Importar dinámicamente para evitar dependencias circulares
+      const { default: profileService } = await import('./profileService');
+      
+      // Obtener datos actuales del perfil
+      const currentProfile = await profileService.getProfile();
+      
+      if (currentProfile && currentProfile.biometricData) {
+        // Actualizar solo el peso manteniendo los demás datos
+        const updatedBiometricData = {
+          ...currentProfile.biometricData,
+          weightKg: weight
+        };
+        
+        await profileService.updateBiometricData(updatedBiometricData);
+        console.log('✅ Peso sincronizado con perfil exitosamente');
+        
+        // Notificar a otros componentes usando un sistema de eventos compatible con React Native
+        try {
+          // Usar EventEmitter para React Native
+          const { DeviceEventEmitter } = require('react-native');
+          DeviceEventEmitter.emit('profileWeightUpdated', {
+            weight,
+            timestamp: new Date().toISOString()
+          });
+        } catch (eventError) {
+          console.log('⚠️ No se pudo emitir evento de actualización de peso:', eventError);
+        }
+      } else {
+        console.log('⚠️ No se pudo obtener el perfil actual para sincronizar el peso');
+      }
+      
+    } catch (error) {
+      console.error('❌ Error sincronizando peso con perfil:', error);
+      // No lanzar error para no interrumpir el flujo principal
     }
   }
 }

@@ -32,6 +32,7 @@
     "react-dom": "19.1.0",
     "react-native": "0.81.4",
     "react-native-google-mobile-ads": "^15.8.1",
+    "react-native-iap": "^14.4.23",
     "react-native-keychain": "^10.0.0",
     "react-native-safe-area-context": "^5.6.1",
     "react-native-screens": "^4.17.1",

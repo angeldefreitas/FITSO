@@ -36,6 +36,28 @@ class UserAuthService {
     return this.currentUserId;
   }
 
+  // Cargar usuario actual desde el almacenamiento
+  async loadCurrentUser(): Promise<string | null> {
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+      const authKeys = keys.filter(key => key.startsWith('auth_token_'));
+      
+      if (authKeys.length > 0) {
+        // Obtener el primer usuario con token
+        const userId = authKeys[0].replace('auth_token_', '');
+        this.currentUserId = userId;
+        await this.loadTokenForUser(userId);
+        console.log(`🔑 Usuario actual cargado: ${userId}`);
+        return userId;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error cargando usuario actual:', error);
+      return null;
+    }
+  }
+
   // Guardar token para un usuario específico
   async saveTokenForUser(userId: string, token: string) {
     try {

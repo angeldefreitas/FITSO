@@ -21,9 +21,23 @@ interface FoodScannerProps {
   onFoodDetected: (food: FoodAnalysis) => void;
   onGalleryPress?: () => void;
   lastGalleryImage?: string | null;
+  onPremiumPress?: () => void;
+  canUseAIScan?: () => Promise<boolean>;
+  recordAIScan?: () => Promise<void>;
+  isPremium?: boolean;
 }
 
-export default function FoodScanner({ visible, onClose, onFoodDetected, onGalleryPress, lastGalleryImage }: FoodScannerProps) {
+export default function FoodScanner({ 
+  visible, 
+  onClose, 
+  onFoodDetected, 
+  onGalleryPress, 
+  lastGalleryImage,
+  onPremiumPress,
+  canUseAIScan,
+  recordAIScan,
+  isPremium
+}: FoodScannerProps) {
   const [permission, requestPermission] = useCameraPermissions();
   const [isCapturing, setIsCapturing] = useState(false);
   const { scanPicture, scanLoading } = useScan();
@@ -44,10 +58,33 @@ export default function FoodScanner({ visible, onClose, onFoodDetected, onGaller
       
       console.log('📸 Foto capturada:', photo.uri);
       
+      // Validar límites antes de procesar la imagen
+      if (!isPremium && canUseAIScan) {
+        const canUse = await canUseAIScan();
+        if (!canUse) {
+          // Usos agotados, mostrar mensaje de premium
+          Alert.alert(
+            'Límite de Escaneos Alcanzado',
+            'Has alcanzado el límite de 1 escaneo con IA por día. Suscríbete a Premium para escaneos ilimitados.',
+            [
+              { text: 'Cancelar', style: 'cancel' },
+              { text: 'Ver Premium', onPress: onPremiumPress }
+            ]
+          );
+          setIsCapturing(false);
+          return;
+        }
+      }
+      
       // Procesar la imagen con Claude
       const foodAnalysis = await scanPicture(photo.uri);
       
       if (foodAnalysis) {
+        // Registrar uso de escaneo si no es premium
+        if (!isPremium && recordAIScan) {
+          await recordAIScan();
+        }
+        
         onFoodDetected(foodAnalysis);
         onClose();
       }

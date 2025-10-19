@@ -16,6 +16,7 @@ import { Colors } from '../constants/colors';
 import { CommonStyles } from '../constants/styles';
 import BannerAd from '../components/BannerAd';
 import { useAuth } from '../contexts/AuthContext';
+import { usePremium } from '../contexts/PremiumContext';
 import { FoodItem, FoodCategory, FoodSubcategory } from '../types/food';
 import { 
   carnes, 
@@ -55,6 +56,7 @@ interface FoodSearchScreenProps {
   }>;
   onBarcodeScan?: () => void;
   onAIScan?: () => void;
+  onPremiumPress?: () => void;
 }
 
 export default function FoodSearchScreen({ 
@@ -65,10 +67,20 @@ export default function FoodSearchScreen({
   currentMeals = [],
   onBarcodeScan,
   onAIScan,
+  onPremiumPress,
 }: FoodSearchScreenProps) {
   const { user } = useAuth();
+  const { isPremium, dailyScansUsed, canUseAIScan } = usePremium();
   const [searchQuery, setSearchQuery] = useState('');
+
   const [filteredFoods, setFilteredFoods] = useState<FoodItem[]>([]);
+  
+  // Forzar re-render cuando cambie el estado premium
+  const [refreshKey, setRefreshKey] = useState(0);
+  
+  useEffect(() => {
+    setRefreshKey(prev => prev + 1);
+  }, [isPremium, dailyScansUsed]);
   const [selectedCategory, setSelectedCategory] = useState<FoodCategory | '' | 'Creado' | 'Todos'>('');
   const [selectedSubcategory, setSelectedSubcategory] = useState<FoodSubcategory | ''>('');
   const [availableSubcategories, setAvailableSubcategories] = useState<FoodSubcategory[]>([]);
@@ -277,6 +289,11 @@ export default function FoodSearchScreen({
     }
   };
 
+  const handleAIScanPress = () => {
+    // Siempre abrir el escáner, la validación se hace al tomar la foto
+    onAIScan?.();
+  };
+
   // Categorías reales de los datos
   const categories = ['Todos', 'Creado', 'frutas', 'verduras', 'carnes', 'pescados', 'lacteos', 'cereales', 'legumbres', 'frutos-secos', 'aceites', 'bebidas', 'snacks', 'condimentos', 'mariscos'];
 
@@ -434,22 +451,41 @@ export default function FoodSearchScreen({
               <Text style={foodSearchScreenStyles.scanButtonSubtext}>Escanear Código</Text>
             </TouchableOpacity>
             
+            {/* Botón de IA siempre igual */}
             <TouchableOpacity 
               style={foodSearchScreenStyles.scanButtonVertical}
-              onPress={onAIScan}
+              onPress={handleAIScanPress}
             >
-              <LottieView
-                source={require('../../assets/Food-Carousel.json')}
-                autoPlay
-                loop
-                style={foodSearchScreenStyles.scanButtonMainAnimation}
-              />
-              <Text style={foodSearchScreenStyles.scanButtonSubtext}>Escanear con IA</Text>
+              <View style={foodSearchScreenStyles.scanButtonContent}>
+                <LottieView
+                  source={require('../../assets/Food-Carousel.json')}
+                  autoPlay
+                  loop
+                  style={foodSearchScreenStyles.scanButtonMainAnimation}
+                />
+                <Text style={foodSearchScreenStyles.scanButtonSubtext}>Escanear con IA</Text>
+                
+                {/* Icono premium en esquina izquierda para usuarios no premium */}
+                {!isPremium && (
+                  <TouchableOpacity 
+                    style={foodSearchScreenStyles.premiumIconContainerLeft}
+                    onPress={onPremiumPress}
+                  >
+                    <LottieView
+                      source={require('../../assets/premiumbadge.json')}
+                      autoPlay
+                      loop
+                      style={foodSearchScreenStyles.premiumIconLeft}
+                    />
+                  </TouchableOpacity>
+                )}
+              </View>
             </TouchableOpacity>
           </View>
 
           {/* Banner Ad */}
           <BannerAd style={foodSearchScreenStyles.bannerAd} />
+          
         </View>
 
         <View style={foodSearchScreenStyles.categoriesContainer}>

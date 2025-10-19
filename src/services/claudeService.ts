@@ -9,8 +9,8 @@ class ClaudeService {
     try {
       console.log('🔍 Analizando imagen con Claude...');
       
-      // Convertir imagen a base64
-      const base64Image = await this.convertImageToBase64(imageUri);
+      // Convertir imagen a base64 y obtener tipo MIME
+      const { base64, mimeType } = await this.convertImageToBase64(imageUri);
       
       console.log('🌐 Enviando petición a Claude API...');
       console.log('🌐 URL:', this.CLAUDE_API_URL);
@@ -62,8 +62,8 @@ class ClaudeService {
                   type: 'image',
                   source: {
                     type: 'base64',
-                    media_type: 'image/jpeg',
-                    data: base64Image
+                    media_type: mimeType,
+                    data: base64
                   }
                 }
               ]
@@ -124,7 +124,7 @@ class ClaudeService {
     }
   }
 
-  private async convertImageToBase64(imageUri: string): Promise<string> {
+  private async convertImageToBase64(imageUri: string): Promise<{ base64: string; mimeType: string }> {
     try {
       console.log('📸 Convirtiendo imagen a base64...');
       console.log('📸 URI:', imageUri);
@@ -134,8 +134,18 @@ class ClaudeService {
         encoding: 'base64',
       });
       
-      console.log('✅ Imagen convertida a base64 (tamaño:', base64.length, 'caracteres)');
-      return base64;
+      // Determinar el tipo MIME basado en la extensión del archivo
+      let mimeType = 'image/jpeg'; // Por defecto
+      if (imageUri.toLowerCase().includes('.png')) {
+        mimeType = 'image/png';
+      } else if (imageUri.toLowerCase().includes('.gif')) {
+        mimeType = 'image/gif';
+      } else if (imageUri.toLowerCase().includes('.webp')) {
+        mimeType = 'image/webp';
+      }
+      
+      console.log('✅ Imagen convertida a base64 (tamaño:', base64.length, 'caracteres, tipo:', mimeType, ')');
+      return { base64, mimeType };
     } catch (error) {
       console.error('❌ Error convirtiendo imagen a base64:', error);
       throw new Error('Error procesando la imagen');

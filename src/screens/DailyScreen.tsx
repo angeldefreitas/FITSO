@@ -13,6 +13,7 @@ import { getUserProfile } from '../lib/userProfile';
 import { calculateNutritionGoals, calculateNutritionProgress, NutritionGoals } from '../lib/nutritionCalculator';
 import { useAuth } from '../contexts/AuthContext';
 import { useProfile } from '../contexts/ProfileContext';
+import { usePremium } from '../contexts/PremiumContext';
 import CircularProgress from '../components/CircularProgress';
 import CircularProgressBar from '../components/CircularProgressBar';
 import MacroProgressBars from '../components/MacroProgressBars';
@@ -41,6 +42,7 @@ import MealHistory from '../components/ui/MealHistory';
 import ProgressTrackingScreen from './ProgressTrackingScreen';
 import MealTypeSelector from '../components/modals/MealTypeSelector';
 import WaterGoalPicker from '../components/modals/WaterGoalPicker';
+import PremiumScreen from './PremiumScreen';
 
 // Nuevos hooks extraídos
 import { useMeals, Meal } from '../hooks/custom/useMeals';
@@ -78,6 +80,7 @@ interface DailyScreenProps {
 export default function DailyScreen({ onTabChange, shouldOpenAddModal, onModalOpened, showProgressTracking, onProgressTrackingClose, onProgressPress }: DailyScreenProps) {
   const { user, profileData, getProfileData } = useAuth();
   const { profile } = useProfile();
+  const { isPremium, canUseAIScan, recordAIScan, dailyScansUsed } = usePremium();
   
   // Estados locales
   const [name, setName] = useState('');
@@ -98,6 +101,7 @@ export default function DailyScreen({ onTabChange, shouldOpenAddModal, onModalOp
   const [scannedFood, setScannedFood] = useState<FoodAnalysis | null>(null);
   const [showFoodAnalysis, setShowFoodAnalysis] = useState(false);
   const [isLoadingBarcode, setIsLoadingBarcode] = useState(false);
+  const [lastGalleryImage, setLastGalleryImage] = useState<string | null>(null);
   
   // Estados para edición de meals
   const [editingMeal, setEditingMeal] = useState<Meal | null>(null);
@@ -113,6 +117,7 @@ export default function DailyScreen({ onTabChange, shouldOpenAddModal, onModalOp
   // Estados para modales
   const [showWaterGoalPicker, setShowWaterGoalPicker] = useState(false);
   const [showMealTypeSelector, setShowMealTypeSelector] = useState(false);
+  const [showPremiumScreen, setShowPremiumScreen] = useState(false);
   const [caloriesBurned, setCaloriesBurned] = useState(0);
 
   const [expandedSections, setExpandedSections] = useState<{[key: string]: boolean}>({
@@ -375,6 +380,12 @@ export default function DailyScreen({ onTabChange, shouldOpenAddModal, onModalOp
     setCaloriesBurned(calories);
   };
 
+  const handlePremiumPress = () => {
+    if (!isPremium) {
+      setShowPremiumScreen(true);
+    }
+  };
+
   const closeFoodSearch = () => {
     setShowFoodSearch(false);
     // NO resetear selectedMealType aquí para mantener el contexto si se vuelve a intentar
@@ -428,12 +439,7 @@ export default function DailyScreen({ onTabChange, shouldOpenAddModal, onModalOp
     try {
       console.log('📸 Abriendo selector de galería...');
       
-      // Cerrar modal
-      
-      // Pequeño delay para que el modal se cierre correctamente
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Abrir galería
+      // Abrir galería directamente, la validación se hace después
       const images = await accessGallery(false, false, 'photo');
       
       if (images && images.length > 0) {
@@ -447,6 +453,23 @@ export default function DailyScreen({ onTabChange, shouldOpenAddModal, onModalOp
         
         console.log('📸 Imagen seleccionada:', imageUri);
         
+        // Validar límites antes de procesar la imagen
+        const canUse = await canUseAIScan();
+        if (!canUse) {
+          Alert.alert(
+            'Límite de Escaneos Alcanzado',
+            'Has alcanzado el límite de 1 escaneo con IA por día. Suscríbete a Premium para escaneos ilimitados.',
+            [
+              { text: 'Cancelar', style: 'cancel' },
+              { text: 'Ver Premium', onPress: () => setShowPremiumScreen(true) }
+            ]
+          );
+          return;
+        }
+        
+        // Guardar imagen para mostrar en el botón de galería
+        setLastGalleryImage(imageUri);
+        
         // Mostrar loading
         setIsLoadingBarcode(true);
         
@@ -454,8 +477,12 @@ export default function DailyScreen({ onTabChange, shouldOpenAddModal, onModalOp
         const foodAnalysis = await scanPicture(imageUri);
         
         if (foodAnalysis) {
+          // Registrar uso de escaneo con IA
+          await recordAIScan();
+          
           setScannedFood(foodAnalysis);
-          setShowBarcodeResult(true);
+          setShowFoodAnalysis(true);
+          setShowFoodScanner(false); // Cerrar el escáner
         }
         
         setIsLoadingBarcode(false);
@@ -584,6 +611,9 @@ export default function DailyScreen({ onTabChange, shouldOpenAddModal, onModalOp
   const handleFoodDetected = async (foodAnalysis: FoodAnalysis) => {
     try {
       console.log('🍽️ Comida detectada, mostrando modal de análisis...');
+      
+      // Registrar uso de escaneo con IA
+      await recordAIScan();
       
       // Guardar el análisis y cerrar el escáner
       setScannedFood(foodAnalysis);
@@ -920,9 +950,21 @@ export default function DailyScreen({ onTabChange, shouldOpenAddModal, onModalOp
     >
       <ScrollView style={dailyScreenStyles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Header con título */}
-        <View style={dailyScreenStyles.appHeader}>
+        <TouchableOpacity 
+          style={dailyScreenStyles.appHeader}
+          onPress={handlePremiumPress}
+          activeOpacity={0.7}
+        >
           <Text style={dailyScreenStyles.appTitle}>FITSO</Text>
-        </View>
+          {!isPremium && (
+            <LottieView
+              source={require('../../assets/premiumicon.json')}
+              autoPlay
+              loop
+              style={dailyScreenStyles.premiumBadge}
+            />
+          )}
+        </TouchableOpacity>
 
         {/* Navegación de fechas */}
         <DateNavigation
@@ -984,10 +1026,12 @@ export default function DailyScreen({ onTabChange, shouldOpenAddModal, onModalOp
           />
         </TouchableOpacity>
 
-        {/* Banner Ad debajo de la sección de Macros */}
-        <BannerAdComponent 
-          style={{ marginHorizontal: 16, marginTop: 8 }}
-        />
+        {/* Banner Ad debajo de la sección de Macros - Solo para usuarios no premium */}
+        {!isPremium && (
+          <BannerAdComponent 
+            style={{ marginHorizontal: 16, marginTop: 8 }}
+          />
+        )}
 
         {/* Sección de Comidas y Agua lado a lado */}
         <View style={dailyScreenStyles.splitSectionContainer}>
@@ -1072,6 +1116,7 @@ export default function DailyScreen({ onTabChange, shouldOpenAddModal, onModalOp
           }))}
           onBarcodeScan={openBarcodeScanner}
           onAIScan={openFoodScanner}
+          onPremiumPress={() => setShowPremiumScreen(true)}
         />
       )}
 
@@ -1090,6 +1135,12 @@ export default function DailyScreen({ onTabChange, shouldOpenAddModal, onModalOp
           visible={showFoodScanner}
           onClose={closeFoodScanner}
           onFoodDetected={handleFoodDetected}
+          onGalleryPress={openImagePicker}
+          lastGalleryImage={lastGalleryImage}
+          onPremiumPress={() => setShowPremiumScreen(true)}
+          canUseAIScan={canUseAIScan}
+          recordAIScan={recordAIScan}
+          isPremium={isPremium}
         />
       )}
 
@@ -1134,8 +1185,8 @@ export default function DailyScreen({ onTabChange, shouldOpenAddModal, onModalOp
       />
 
       {/* Bottom Navigation */}
-      {/* Banner Ad */}
-      <BannerAd style={dailyScreenStyles.bannerAd} />
+      {/* Banner Ad - Solo para usuarios no premium */}
+      {!isPremium && <BannerAd style={dailyScreenStyles.bannerAd} />}
 
       <BottomNavigation 
         activeTab="diario" 
@@ -1154,6 +1205,13 @@ export default function DailyScreen({ onTabChange, shouldOpenAddModal, onModalOp
           fat: totalFat,
         }}
       />
+
+      {/* Modal de pantalla premium */}
+      {showPremiumScreen && (
+        <PremiumScreen
+          onClose={() => setShowPremiumScreen(false)}
+        />
+      )}
 
       {/* La pantalla de ProgressTracking ahora se maneja globalmente en App.tsx */}
     </LinearGradient>

@@ -173,6 +173,25 @@ CREATE TABLE IF NOT EXISTS user_daily_calories (
     UNIQUE(user_id, entry_date)
 );
 
+-- Tabla de suscripciones premium
+CREATE TABLE IF NOT EXISTS subscriptions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    product_id VARCHAR(50) NOT NULL, -- fitso_premium_monthly o fitso_premium_yearly
+    transaction_id VARCHAR(255) UNIQUE NOT NULL,
+    original_transaction_id VARCHAR(255) NOT NULL,
+    purchase_date TIMESTAMP NOT NULL,
+    expires_date TIMESTAMP NOT NULL,
+    is_active BOOLEAN DEFAULT true,
+    is_trial_period BOOLEAN DEFAULT false,
+    is_in_intro_offer_period BOOLEAN DEFAULT false,
+    auto_renew_status BOOLEAN DEFAULT true,
+    environment VARCHAR(20) DEFAULT 'production', -- production, sandbox
+    receipt_data TEXT NOT NULL, -- Recibo completo de Apple
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Índices para mejorar rendimiento
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_weight_entries_user_date ON weight_entries(user_id, entry_date);
@@ -181,6 +200,11 @@ CREATE INDEX IF NOT EXISTS idx_user_daily_meals_user_date ON user_daily_meals(us
 CREATE INDEX IF NOT EXISTS idx_user_meal_history_user_last_used ON user_meal_history(user_id, last_used);
 CREATE INDEX IF NOT EXISTS idx_user_custom_foods_user ON user_custom_foods(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_daily_calories_user_date ON user_daily_calories(user_id, entry_date);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_transaction_id ON subscriptions(transaction_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_original_transaction_id ON subscriptions(original_transaction_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_expires_date ON subscriptions(expires_date);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_is_active ON subscriptions(is_active);
 
 -- Índices para tablas de alimentos y comidas
 CREATE INDEX IF NOT EXISTS idx_foods_name ON foods(name);
@@ -216,4 +240,7 @@ CREATE TRIGGER update_food_entries_updated_at BEFORE UPDATE ON food_entries
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_meal_history_updated_at BEFORE UPDATE ON meal_history
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_subscriptions_updated_at BEFORE UPDATE ON subscriptions
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

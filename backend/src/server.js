@@ -12,6 +12,7 @@ const profileRoutes = require('./routes/profile');
 const progressRoutes = require('./routes/progress');
 const foodRoutes = require('./routes/foods');
 const mealRoutes = require('./routes/meals');
+const subscriptionRoutes = require('./routes/subscriptions');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -62,6 +63,7 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/progress', progressRoutes);
 app.use('/api/foods', foodRoutes);
 app.use('/api/meals', mealRoutes);
+app.use('/api/subscriptions', subscriptionRoutes);
 
 // Ruta de salud
 app.get('/api/health', async (req, res) => {
@@ -95,7 +97,8 @@ app.get('/', (req, res) => {
         profile: '/api/profile',
         progress: '/api/progress',
         foods: '/api/foods',
-        meals: '/api/meals'
+        meals: '/api/meals',
+        subscriptions: '/api/subscriptions'
       },
       progressEndpoints: {
         weight: '/api/progress/weight',
