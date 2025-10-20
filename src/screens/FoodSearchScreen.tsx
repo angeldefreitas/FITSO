@@ -19,21 +19,7 @@ import BannerAd from '../components/BannerAd';
 import { useAuth } from '../contexts/AuthContext';
 import { usePremium } from '../contexts/PremiumContext';
 import { FoodItem, FoodCategory, FoodSubcategory } from '../types/food';
-import { 
-  carnes, 
-  lacteos, 
-  frutosSecos, 
-  frutas, 
-  verduras, 
-  cereales, 
-  legumbres, 
-  pescados, 
-  mariscos, 
-  bebidas, 
-  snacks, 
-  condimentos, 
-  aceites 
-} from '../data/foods';
+import foodService from '../services/foodService';
 import QuantityModal from '../components/QuantityModal';
 import ColoredMacros from '../components/ColoredMacros';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -74,8 +60,9 @@ export default function FoodSearchScreen({
   const { user } = useAuth();
   const { isPremium, dailyScansUsed, canUseAIScan } = usePremium();
   const [searchQuery, setSearchQuery] = useState('');
-
   const [filteredFoods, setFilteredFoods] = useState<FoodItem[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [serverFoods, setServerFoods] = useState<FoodItem[]>([]);
   
   // Forzar re-render cuando cambie el estado premium
   const [refreshKey, setRefreshKey] = useState(0);
@@ -138,93 +125,97 @@ export default function FoodSearchScreen({
     }
   };
 
+  // Buscar en el servidor cuando cambie la query
+  useEffect(() => {
+    const searchServerFoods = async () => {
+      if (searchQuery.trim().length >= 2) {
+        setIsSearching(true);
+        try {
+          const response = await foodService.searchFoods(searchQuery.trim(), 20);
+          const serverResults = response.foods.map(food => ({
+            id: food.id,
+            name: food.name,
+            description: food.description || '',
+            calories: food.calories_per_100g,
+            protein: food.protein_per_100g,
+            carbs: food.carbs_per_100g,
+            fat: food.fat_per_100g,
+            fiber: food.fiber_per_100g || 0,
+            sugar: food.sugar_per_100g || 0,
+            sodium: food.sodium_per_100g || 0,
+            category: (food.category || 'otros') as FoodCategory,
+            subcategory: (food.subcategory || 'otros') as FoodSubcategory,
+            tags: food.tags || [],
+            brand: food.brand || '',
+            servingSize: '100g',
+            barcode: !!food.barcode,
+            dataSource: 'local' as const,
+            isCustom: false
+          }));
+          setServerFoods(serverResults);
+        } catch (error) {
+          console.error('Error buscando alimentos en servidor:', error);
+          setServerFoods([]);
+        } finally {
+          setIsSearching(false);
+        }
+      } else {
+        setServerFoods([]);
+      }
+    };
+
+    searchServerFoods();
+  }, [searchQuery]);
+
   useEffect(() => {
     filterFoods();
-  }, [searchQuery, selectedCategory, selectedSubcategory, customFoods]);
+  }, [searchQuery, selectedCategory, selectedSubcategory, customFoods, serverFoods]);
 
   useEffect(() => {
     if (selectedCategory && selectedCategory !== 'Creado' && selectedCategory !== 'Todos') {
-      // Obtener subcategorías únicas de la categoría seleccionada
-      const allFoods = [
-        ...carnes, ...lacteos, ...frutosSecos, ...frutas, ...verduras,
-        ...cereales, ...legumbres, ...pescados, ...mariscos, ...bebidas,
-        ...snacks, ...condimentos, ...aceites
-      ];
+      // Obtener subcategorías únicas de la categoría seleccionada desde serverFoods
+      const subcategories = [...new Set(
+        serverFoods
+          .filter(food => food.category === selectedCategory)
+          .map(food => food.subcategory)
+          .filter(sub => sub && sub.trim() !== '')
+      )] as FoodSubcategory[];
       
-      const categoryFoods = allFoods.filter(food => food.category === selectedCategory);
-      const uniqueSubcategories = [...new Set(categoryFoods.map(food => food.subcategory))];
-      setAvailableSubcategories(uniqueSubcategories as FoodSubcategory[]);
-      setSelectedSubcategory(''); // Reset subcategory when category changes
+      setAvailableSubcategories(subcategories);
+      if (subcategories.length > 0 && selectedSubcategory && !subcategories.includes(selectedSubcategory)) {
+        setSelectedSubcategory('');
+      }
     } else {
       setAvailableSubcategories([]);
       setSelectedSubcategory('');
     }
-  }, [selectedCategory]);
+  }, [selectedCategory, serverFoods]);
 
   const filterFoods = () => {
     try {
-      // Combinar todos los datos de comidas estáticos
-      const allStaticFoods = [
-        ...carnes,
-        ...lacteos,
-        ...frutosSecos,
-        ...frutas,
-        ...verduras,
-        ...cereales,
-        ...legumbres,
-        ...pescados,
-        ...mariscos,
-        ...bebidas,
-        ...snacks,
-        ...condimentos,
-        ...aceites
-      ];
-
       let results: FoodItem[] = [];
 
-      // Si se selecciona "Creado", mostrar solo comidas personalizadas
-      if (selectedCategory === 'Creado') {
-        results = customFoods.map(food => ({
-          ...food,
-          category: 'otros' as FoodCategory,
-          subcategory: 'otros' as FoodSubcategory,
-          isCustom: true
-        }));
-      } else {
-        // Usar comidas estáticas
-        results = [...allStaticFoods];
+      // Si hay una búsqueda activa, usar resultados del servidor
+      if (searchQuery.trim().length >= 2) {
+        results = [...serverFoods];
         
-        // Filtrar por categoría
+        // Filtrar por categoría si está seleccionada
         if (selectedCategory && selectedCategory !== 'Todos') {
           results = results.filter(food => food.category === selectedCategory);
         }
-      }
-
-      // Filtrar por subcategoría
-      if (selectedSubcategory) {
-        results = results.filter(food => food.subcategory === selectedSubcategory);
-      }
-
-      // Filtrar por búsqueda
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        results = results.filter(food => 
-          food.name.toLowerCase().includes(query) ||
-          (food.description && food.description.toLowerCase().includes(query)) ||
-          (food.tags && food.tags.some(tag => tag.toLowerCase().includes(query)))
-        );
-      }
-
-      // Ordenar por relevancia (búsqueda exacta primero)
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        results.sort((a, b) => {
-          const aExact = a.name.toLowerCase() === query;
-          const bExact = b.name.toLowerCase() === query;
-          if (aExact && !bExact) return -1;
-          if (!aExact && bExact) return 1;
-          return a.name.localeCompare(b.name);
-        });
+        
+        // Filtrar por subcategoría si está seleccionada
+        if (selectedSubcategory) {
+          results = results.filter(food => food.subcategory === selectedSubcategory);
+        }
+      } else {
+        // Sin búsqueda activa, mostrar comidas personalizadas o todas
+        if (selectedCategory === 'Creado') {
+          results = [...customFoods];
+        } else {
+          // Mostrar mensaje de "Escribe para buscar" o comidas personalizadas
+          results = [...customFoods];
+        }
       }
 
       setFilteredFoods(results);
@@ -516,7 +507,7 @@ export default function FoodSearchScreen({
 
         <View style={foodSearchScreenStyles.resultsContainer}>
           <Text style={foodSearchScreenStyles.resultsTitle}>
-{filteredFoods.length} {t('food.search')}
+            {isSearching ? t('food.searching') : `${filteredFoods.length} ${t('food.search')}`}
           </Text>
           <FlatList
             data={filteredFoods}

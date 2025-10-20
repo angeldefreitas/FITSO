@@ -3,6 +3,7 @@ import apiService, { ApiResponse } from './apiService';
 export interface Food {
   id: string;
   name: string;
+  description?: string;
   brand?: string;
   barcode?: string;
   calories_per_100g: number;
@@ -12,6 +13,9 @@ export interface Food {
   fiber_per_100g: number;
   sugar_per_100g: number;
   sodium_per_100g: number;
+  category?: string;
+  subcategory?: string;
+  tags?: string[];
   created_at: string;
   updated_at: string;
 }
