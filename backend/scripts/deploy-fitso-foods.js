@@ -130,10 +130,12 @@ async function deployFitsoFoods() {
       const seedFoodTranslations = require('./seed-food-translations');
       const seedAdditionalEnglishFoods = require('./seed-additional-english-foods');
       const seedComprehensiveFoods = require('./seed-comprehensive-foods');
+      const seedMassiveFoods = require('./seed-massive-foods');
       
       await seedFoodTranslations();
       await seedAdditionalEnglishFoods();
       await seedComprehensiveFoods();
+      await seedMassiveFoods();
       
       console.log('✅ Datos iniciales sembrados exitosamente');
     } else {
