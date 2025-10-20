@@ -141,11 +141,13 @@ async function deployFitsoFoods() {
     } else {
       console.log(`ℹ️ Ya existen ${foodCount} alimentos en la base de datos`);
       
-      // Añadir alimentos adicionales si hay menos de 50
-      if (foodCount < 50) {
-        console.log('🌱 Añadiendo alimentos adicionales...');
+      // Añadir alimentos adicionales si hay menos de 500
+      if (foodCount < 500) {
+        console.log('🌱 Añadiendo alimentos adicionales masivos...');
         const addAdditionalFoods = require('./add-additional-foods');
+        const seedMassiveDatabase = require('./seed-massive-database');
         await addAdditionalFoods();
+        await seedMassiveDatabase();
       }
     }
     
