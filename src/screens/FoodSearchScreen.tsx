@@ -129,9 +129,12 @@ export default function FoodSearchScreen({
   useEffect(() => {
     const searchServerFoods = async () => {
       if (searchQuery.trim().length >= 2) {
+        console.log('🔍 Buscando en servidor:', searchQuery.trim());
+        console.log('👤 Usuario autenticado:', !!user);
         setIsSearching(true);
         try {
           const response = await foodService.searchFoods(searchQuery.trim(), 20);
+          console.log('📡 Respuesta del servidor:', response);
           const serverResults = response.foods.map(food => ({
             id: food.id,
             name: food.name,
@@ -154,7 +157,8 @@ export default function FoodSearchScreen({
           }));
           setServerFoods(serverResults);
         } catch (error) {
-          console.error('Error buscando alimentos en servidor:', error);
+          console.error('❌ Error buscando alimentos en servidor:', error);
+          console.error('❌ Detalles del error:', error.message);
           setServerFoods([]);
         } finally {
           setIsSearching(false);

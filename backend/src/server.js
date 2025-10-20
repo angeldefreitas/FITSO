@@ -180,8 +180,10 @@ const startServer = async () => {
     if (process.env.NODE_ENV === 'production') {
       try {
         console.log('🚀 Ejecutando despliegue de sistema FITSO Foods...');
+        console.log('📅 Timestamp:', new Date().toISOString());
         const deployFitsoFoods = require('../scripts/deploy-fitso-foods');
         await deployFitsoFoods();
+        console.log('✅ Sistema FITSO Foods desplegado exitosamente');
       } catch (error) {
         console.error('❌ Error desplegando sistema FITSO Foods:', error);
         // No salir del proceso, continuar con el servidor
