@@ -4,6 +4,7 @@ import i18n from '../config/i18n';
 import userAuthService from './userAuthService';
 
 // Cambiar esta URL por la de tu backend en Render una vez desplegado
+// Cambiar esta URL por la de tu backend en Render una vez desplegado
 const BASE_URL = __DEV__ 
   ? 'http://localhost:3000/api'  // Desarrollo local
   : 'https://fitso.onrender.com/api'; // Producción en Render
