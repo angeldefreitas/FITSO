@@ -11,6 +11,7 @@ const authRoutes = require('./routes/auth');
 const profileRoutes = require('./routes/profile');
 const progressRoutes = require('./routes/progress');
 const foodRoutes = require('./routes/foods');
+const fitsoFoodRoutes = require('./routes/fitsoFoods');
 const mealRoutes = require('./routes/meals');
 const subscriptionRoutes = require('./routes/subscriptions');
 
@@ -62,6 +63,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/progress', progressRoutes);
 app.use('/api/foods', foodRoutes);
+app.use('/api/fitso-foods', fitsoFoodRoutes);
 app.use('/api/meals', mealRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 
@@ -97,6 +99,7 @@ app.get('/', (req, res) => {
         profile: '/api/profile',
         progress: '/api/progress',
         foods: '/api/foods',
+        fitsoFoods: '/api/fitso-foods',
         meals: '/api/meals',
         subscriptions: '/api/subscriptions'
       },

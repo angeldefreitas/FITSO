@@ -56,6 +56,31 @@ CREATE TABLE IF NOT EXISTS foods (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Traducciones de alimentos por idioma
+CREATE TABLE IF NOT EXISTS food_translations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    food_id UUID REFERENCES foods(id) ON DELETE CASCADE,
+    locale VARCHAR(10) NOT NULL, -- 'es', 'en', 'pt', ...
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    unit_short VARCHAR(20),
+    unit_long VARCHAR(50),
+    is_machine_translated BOOLEAN DEFAULT FALSE,
+    is_reviewed BOOLEAN DEFAULT FALSE,
+    source_lang VARCHAR(10),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(food_id, locale)
+);
+
+-- Sinónimos para mejorar búsqueda por idioma
+CREATE TABLE IF NOT EXISTS food_synonyms (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    food_id UUID REFERENCES foods(id) ON DELETE CASCADE,
+    locale VARCHAR(10) NOT NULL,
+    synonym VARCHAR(255) NOT NULL
+);
+
 -- Tabla de entradas de comidas (comidas del usuario)
 CREATE TABLE IF NOT EXISTS food_entries (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

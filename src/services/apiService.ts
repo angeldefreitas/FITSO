@@ -1,5 +1,6 @@
 // Servicio base para llamadas al API
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import i18n from '../config/i18n';
 import userAuthService from './userAuthService';
 
 // Cambiar esta URL por la de tu backend en Render una vez desplegado
@@ -109,6 +110,7 @@ class ApiService {
   private getHeaders(): HeadersInit {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
+      'Accept-Language': (i18n as any)?.language?.slice(0,2) || 'en',
     };
 
     if (this.token) {

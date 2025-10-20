@@ -2,16 +2,29 @@ const db = require('../config/database');
 
 class Food {
   // Buscar alimentos
-  static async search({ query, category, limit = 20, offset = 0, userId }) {
+  static async search({ query, category, limit = 20, offset = 0, userId, lang = 'es' }) {
     try {
       let sql = `
-        SELECT 
-          f.*,
-          false as is_owner
-        FROM foods f
-        WHERE 1=1
+        WITH requested AS (
+          SELECT 
+            f.*,
+            ft.name as t_name,
+            ft.description as t_description
+          FROM foods f
+          LEFT JOIN food_translations ft 
+            ON ft.food_id = f.id AND ft.locale = $1
+        ), with_fallback AS (
+          SELECT 
+            r.*,
+            COALESCE(r.t_name, ften.name, f.name) AS name_loc,
+            COALESCE(r.t_description, ften.description) AS description_loc
+          FROM requested r
+          LEFT JOIN food_translations ften 
+            ON ften.food_id = r.id AND ften.locale = 'en'
+        )
+        SELECT * FROM with_fallback WHERE 1=1
       `;
-      const params = [];
+      const params = [lang];
       let paramCount = 0;
 
       // Filtro por categoría
@@ -25,11 +38,14 @@ class Food {
       if (query) {
         paramCount++;
         sql += ` AND (
-          f.name ILIKE $${paramCount} OR 
-          f.brand ILIKE $${paramCount} OR
+          name_loc ILIKE $${paramCount} OR 
+          brand ILIKE $${paramCount} OR
           EXISTS (
-            SELECT 1 FROM unnest(f.tags) AS tag 
+            SELECT 1 FROM unnest(tags) AS tag 
             WHERE tag ILIKE $${paramCount}
+          ) OR EXISTS (
+            SELECT 1 FROM food_synonyms fs
+            WHERE fs.food_id = id AND fs.locale = $1 AND fs.synonym ILIKE $${paramCount}
           )
         )`;
         params.push(`%${query}%`);
@@ -37,14 +53,18 @@ class Food {
 
       // Ordenar por relevancia y nombre
       sql += ` ORDER BY 
-        CASE WHEN f.created_by = $1 THEN 0 ELSE 1 END,
-        f.name ASC
-        LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}`;
+        CASE WHEN created_by = $2 THEN 0 ELSE 1 END,
+        name_loc ASC
+        LIMIT $${paramCount + 2} OFFSET $${paramCount + 3}`;
       
-      params.push(limit, offset);
+      params.push(userId, limit, offset);
 
       const result = await db.query(sql, params);
-      return result.rows;
+      return result.rows.map(row => ({
+        ...row,
+        name: row.name_loc || row.name,
+        description: row.description_loc || row.description,
+      }));
     } catch (error) {
       console.error('Error searching foods:', error);
       throw error;

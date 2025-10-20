@@ -4,7 +4,7 @@ const FoodEntry = require('../models/FoodEntry');
 // Buscar alimentos por nombre o categoría
 const searchFoods = async (req, res) => {
   try {
-    const { query, category, limit = 20, offset = 0 } = req.query;
+    const { query, category, limit = 20, offset = 0, lang } = req.query;
     const userId = req.user.id;
 
     const foods = await Food.search({
@@ -12,7 +12,8 @@ const searchFoods = async (req, res) => {
       category,
       limit: parseInt(limit),
       offset: parseInt(offset),
-      userId
+      userId,
+      lang: lang || req.headers['accept-language']?.split(',')[0]?.slice(0,2) || 'es'
     });
 
     res.json({

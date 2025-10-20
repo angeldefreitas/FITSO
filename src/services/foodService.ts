@@ -71,9 +71,9 @@ class FoodService {
     throw new Error(response.message || 'Error obteniendo alimento');
   }
 
-  // Buscar alimentos por nombre
+  // Buscar alimentos por nombre (usando FITSO con traducciones)
   async searchFoods(query: string, limit: number = 20): Promise<FoodSearchResponse> {
-    const response = await apiService.get<FoodSearchResponse>(`/foods/search?q=${encodeURIComponent(query)}&limit=${limit}`);
+    const response = await apiService.get<FoodSearchResponse>(`/fitso-foods/search?query=${encodeURIComponent(query)}&limit=${limit}`);
     
     if (response.success && response.data) {
       return response.data;
