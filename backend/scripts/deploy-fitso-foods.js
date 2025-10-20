@@ -124,29 +124,20 @@ async function deployFitsoFoods() {
     const foodCount = parseInt(checkData.rows[0].count);
     
     if (foodCount === 0) {
-      console.log('🌱 Sembrando datos iniciales...');
+      console.log('🌱 Sembrando base de datos masiva inicial...');
       
-      // Ejecutar scripts de seed
-      const seedFoodTranslations = require('./seed-food-translations');
-      const seedAdditionalEnglishFoods = require('./seed-additional-english-foods');
-      const seedComprehensiveFoods = require('./seed-comprehensive-foods');
-      const seedMassiveFoods = require('./seed-massive-foods');
+      // Ejecutar script de seed masivo
+      const seedMassiveDatabase = require('./seed-massive-database');
+      await seedMassiveDatabase();
       
-      await seedFoodTranslations();
-      await seedAdditionalEnglishFoods();
-      await seedComprehensiveFoods();
-      await seedMassiveFoods();
-      
-      console.log('✅ Datos iniciales sembrados exitosamente');
+      console.log('✅ Base de datos masiva sembrada exitosamente');
     } else {
       console.log(`ℹ️ Ya existen ${foodCount} alimentos en la base de datos`);
       
       // Añadir alimentos adicionales si hay menos de 500
       if (foodCount < 500) {
-        console.log('🌱 Añadiendo alimentos adicionales masivos...');
-        const addAdditionalFoods = require('./add-additional-foods');
+        console.log('🌱 Añadiendo alimentos adicionales...');
         const seedMassiveDatabase = require('./seed-massive-database');
-        await addAdditionalFoods();
         await seedMassiveDatabase();
       }
     }
