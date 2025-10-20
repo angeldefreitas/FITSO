@@ -140,6 +140,13 @@ async function deployFitsoFoods() {
       console.log('✅ Datos iniciales sembrados exitosamente');
     } else {
       console.log(`ℹ️ Ya existen ${foodCount} alimentos en la base de datos`);
+      
+      // Añadir alimentos adicionales si hay menos de 50
+      if (foodCount < 50) {
+        console.log('🌱 Añadiendo alimentos adicionales...');
+        const addAdditionalFoods = require('./add-additional-foods');
+        await addAdditionalFoods();
+      }
     }
     
     console.log('🎉 Despliegue de sistema FITSO Foods completado exitosamente!');
