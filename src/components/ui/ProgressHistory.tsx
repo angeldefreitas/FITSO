@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Colors } from '../../constants/colors';
 import { ProgressEntry, WeightEntry, MeasurementEntry } from '../../types/progress';
 
@@ -16,6 +17,8 @@ const ProgressHistory: React.FC<ProgressHistoryProps> = ({
   onEditEntry,
   onDeleteEntry
 }) => {
+  const { t } = useTranslation();
+  
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     const today = new Date();
@@ -24,12 +27,12 @@ const ProgressHistory: React.FC<ProgressHistoryProps> = ({
 
     // Verificar si es hoy
     if (date.toDateString() === today.toDateString()) {
-      return 'Hoy';
+      return t('daily.today');
     }
 
     // Verificar si es ayer
     if (date.toDateString() === yesterday.toDateString()) {
-      return 'Ayer';
+      return t('daily.yesterday');
     }
 
     // Formato normal
@@ -98,11 +101,11 @@ const ProgressHistory: React.FC<ProgressHistoryProps> = ({
   if (entries.length === 0) {
     return (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyTitle}>No hay registros</Text>
+        <Text style={styles.emptyTitle}>{t('progress.noRecords')}</Text>
         <Text style={styles.emptySubtitle}>
           {type === 'peso' 
-            ? 'Agrega tu primer peso para comenzar a ver tu progreso'
-            : 'Agrega tu primera medida para comenzar a ver tu progreso'
+            ? t('progress.addFirstWeightToStart')
+            : t('progress.addFirstMeasurementToStart')
           }
         </Text>
       </View>

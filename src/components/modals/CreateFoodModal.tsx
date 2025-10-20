@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Alert, Text, TextInput, View, TouchableOpacity, Modal, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { FoodItem, FoodCategory, FoodSubcategory } from '../../types/food';
 
 interface CreateFoodModalProps {
@@ -9,6 +10,7 @@ interface CreateFoodModalProps {
 }
 
 const CreateFoodModal: React.FC<CreateFoodModalProps> = ({ visible, onClose, onSave }) => {
+  const { t } = useTranslation();
   const [name, setName] = useState('');
   const [calories, setCalories] = useState('');
   const [protein, setProtein] = useState('');
@@ -20,7 +22,7 @@ const CreateFoodModal: React.FC<CreateFoodModalProps> = ({ visible, onClose, onS
 
   const handleSave = () => {
     if (!name.trim() || !calories.trim()) {
-      Alert.alert('Error', 'Por favor ingresa al menos el nombre y las calorías');
+      Alert.alert(t('alerts.validationError'), t('auth.allFieldsRequired'));
       return;
     }
 
@@ -67,7 +69,7 @@ const CreateFoodModal: React.FC<CreateFoodModalProps> = ({ visible, onClose, onS
       <View style={styles.overlay}>
         <View style={styles.container}>
           <View style={styles.header}>
-            <Text style={styles.title}>Crear Comida Personalizada</Text>
+            <Text style={styles.title}>{t('food.addCustom')}</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Text style={styles.closeButtonText}>✕</Text>
             </TouchableOpacity>
@@ -77,7 +79,7 @@ const CreateFoodModal: React.FC<CreateFoodModalProps> = ({ visible, onClose, onS
             <TextInput
               value={name}
               onChangeText={setName}
-              placeholder="Nombre del alimento"
+              placeholder={t('food.name')}
               placeholderTextColor="#6c757d"
               style={styles.input}
             />
@@ -98,7 +100,7 @@ const CreateFoodModal: React.FC<CreateFoodModalProps> = ({ visible, onClose, onS
               <TextInput
                 value={calories}
                 onChangeText={(text) => handleNumericInput(text, setCalories)}
-                placeholder="Calorías"
+                placeholder={t('food.calories')}
                 placeholderTextColor="#6c757d"
                 keyboardType="numeric"
                 style={[styles.input, styles.halfInput]}
@@ -106,7 +108,7 @@ const CreateFoodModal: React.FC<CreateFoodModalProps> = ({ visible, onClose, onS
               <TextInput
                 value={protein}
                 onChangeText={(text) => handleNumericInput(text, setProtein)}
-                placeholder="Proteína (g)"
+                placeholder={t('food.protein')}
                 placeholderTextColor="#6c757d"
                 keyboardType="numeric"
                 style={[styles.input, styles.halfInput]}
@@ -137,13 +139,13 @@ const CreateFoodModal: React.FC<CreateFoodModalProps> = ({ visible, onClose, onS
                 style={[styles.button, styles.cancelButton]}
                 onPress={onClose}
               >
-                <Text style={styles.cancelButtonText}>Cancelar</Text>
+                <Text style={styles.cancelButtonText}>{t('modals.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.button, styles.saveButton]}
                 onPress={handleSave}
               >
-                <Text style={styles.saveButtonText}>Guardar</Text>
+                <Text style={styles.saveButtonText}>{t('modals.save')}</Text>
               </TouchableOpacity>
             </View>
           </View>

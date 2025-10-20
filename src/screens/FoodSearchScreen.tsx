@@ -10,6 +10,7 @@ import {
   StyleSheet,
   Dimensions 
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 import LottieView from 'lottie-react-native';
 import { Colors } from '../constants/colors';
@@ -69,6 +70,7 @@ export default function FoodSearchScreen({
   onAIScan,
   onPremiumPress,
 }: FoodSearchScreenProps) {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { isPremium, dailyScansUsed, canUseAIScan } = usePremium();
   const [searchQuery, setSearchQuery] = useState('');
@@ -311,12 +313,12 @@ export default function FoodSearchScreen({
               onPress={(e) => {
                 e.stopPropagation();
                 Alert.alert(
-                  'Eliminar Comida Personalizada',
-                  `¿Estás seguro de que quieres eliminar "${item.name}"?`,
+                  t('alerts.deleteMeal'),
+                  t('alerts.deleteMealMessage'),
                   [
-                    { text: 'Cancelar', style: 'cancel' },
+                    { text: t('modals.cancel'), style: 'cancel' },
                     { 
-                      text: 'Eliminar', 
+                      text: t('modals.delete'), 
                       style: 'destructive',
                       onPress: () => deleteCustomFood(item.id)
                     }
@@ -328,11 +330,11 @@ export default function FoodSearchScreen({
             </TouchableOpacity>
           )}
         </View>
-        <Text style={foodSearchScreenStyles.foodCategory}>
+            <Text style={foodSearchScreenStyles.foodCategory}>
           {item.category.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())} • {item.subcategory.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-          {item.isCustom && (
-            <Text style={foodSearchScreenStyles.customLabel}> • Creado por ti</Text>
-          )}
+              {item.isCustom && (
+                <Text style={foodSearchScreenStyles.customLabel}> • {t('food.customCreatedByYou')}</Text>
+              )}
         </Text>
         {item.description && (
           <Text style={foodSearchScreenStyles.foodDescription}>{item.description}</Text>
@@ -380,7 +382,7 @@ export default function FoodSearchScreen({
         foodSearchScreenStyles.categoryButtonText,
         selectedCategory === category && foodSearchScreenStyles.categoryButtonTextSelected
       ]}>
-        {category === 'Todos' ? 'Todos' : category === 'Creado' ? 'Creado' : category.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+        {category === 'Todos' ? t('food.all') : category === 'Creado' ? t('food.addCustom') : category.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
       </Text>
     </TouchableOpacity>
   );
@@ -419,14 +421,14 @@ export default function FoodSearchScreen({
           <TouchableOpacity onPress={onClose} style={foodSearchScreenStyles.closeButton}>
             <Text style={foodSearchScreenStyles.closeButtonText}>✕</Text>
           </TouchableOpacity>
-          <Text style={foodSearchScreenStyles.title}>Buscar Comida</Text>
+          <Text style={foodSearchScreenStyles.title}>{t('food.search')}</Text>
         </View>
 
         <View style={foodSearchScreenStyles.searchContainer}>
           <View style={foodSearchScreenStyles.searchInputContainer}>
             <TextInput
               style={foodSearchScreenStyles.searchInput}
-              placeholder="Buscar alimento o crear uno nuevo"
+              placeholder={t('food.searchPlaceholder')}
               placeholderTextColor="#6c757d"
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -448,7 +450,7 @@ export default function FoodSearchScreen({
                 loop
                 style={foodSearchScreenStyles.scanButtonMainAnimation}
               />
-              <Text style={foodSearchScreenStyles.scanButtonSubtext}>Escanear Código</Text>
+              <Text style={foodSearchScreenStyles.scanButtonSubtext}>{t('food.scanBarcode')}</Text>
             </TouchableOpacity>
             
             {/* Botón de IA siempre igual */}
@@ -463,7 +465,7 @@ export default function FoodSearchScreen({
                   loop
                   style={foodSearchScreenStyles.scanButtonMainAnimation}
                 />
-                <Text style={foodSearchScreenStyles.scanButtonSubtext}>Escanear con IA</Text>
+                <Text style={foodSearchScreenStyles.scanButtonSubtext}>{t('food.scanPhoto')}</Text>
                 
                 {/* Icono premium en esquina izquierda para usuarios no premium */}
                 {!isPremium && (
@@ -514,7 +516,7 @@ export default function FoodSearchScreen({
 
         <View style={foodSearchScreenStyles.resultsContainer}>
           <Text style={foodSearchScreenStyles.resultsTitle}>
-            {filteredFoods.length} alimentos encontrados
+{filteredFoods.length} {t('food.search')}
           </Text>
           <FlatList
             data={filteredFoods}

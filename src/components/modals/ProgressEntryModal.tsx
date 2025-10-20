@@ -10,6 +10,8 @@ import {
   Alert,
   Platform
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../config/i18n';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Colors } from '../../constants/colors';
 import progressService from '../../services/progressService';
@@ -33,6 +35,17 @@ const ProgressEntryModal: React.FC<ProgressEntryModalProps> = ({
   measurementType = 'waist',
   editingEntry
 }) => {
+  const { t } = useTranslation();
+  
+  // Función para obtener el locale correcto
+  const getLocale = () => {
+    switch (i18n.language) {
+      case 'es': return 'es-ES';
+      case 'en': return 'en-GB';
+      case 'pt': return 'pt-PT';
+      default: return 'es-ES';
+    }
+  };
   const [value, setValue] = useState(70);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -177,10 +190,10 @@ const ProgressEntryModal: React.FC<ProgressEntryModalProps> = ({
                         existingWeightEntry ? 'actualizado' : 'registrado';
       
       Alert.alert(
-        'Éxito',
+        t('alerts.success'),
         isToday 
-          ? `¡${type === 'peso' ? 'Peso' : 'Medida'} ${actionText} y perfil actualizado!`
-          : `¡${type === 'peso' ? 'Peso' : 'Medida'} ${actionText} para ${dateString}!`
+          ? t('progress.entryAddedAndProfileUpdated')
+          : t('progress.entryAddedForDate')
       );
 
       onSuccess();
@@ -208,8 +221,8 @@ const ProgressEntryModal: React.FC<ProgressEntryModalProps> = ({
             {/* Header */}
             <View style={styles.header}>
               <Text style={styles.title}>
-                {editingEntry ? 'Editar' : 
-                 existingWeightEntry ? 'Actualizar' : 'Agregar'} {type === 'peso' ? 'Peso' : getMeasurementTypeLabel(measurementType!)}
+                {editingEntry ? t('modals.edit') : 
+                 existingWeightEntry ? t('modals.update') : t('modals.add')} {type === 'peso' ? t('progress.weight') : getMeasurementTypeLabel(measurementType!)}
               </Text>
               <TouchableOpacity onPress={onClose} style={styles.closeButton}>
                 <Text style={styles.closeButtonText}>✕</Text>
@@ -253,7 +266,7 @@ const ProgressEntryModal: React.FC<ProgressEntryModalProps> = ({
 
             {/* Fecha */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Fecha:</Text>
+              <Text style={styles.label}>{t('progress.date')}:</Text>
               <TouchableOpacity
                 style={styles.dateButton}
                 onPress={() => {
@@ -262,7 +275,7 @@ const ProgressEntryModal: React.FC<ProgressEntryModalProps> = ({
                 }}
               >
                 <Text style={styles.dateButtonText}>
-                  {selectedDate.toLocaleDateString('es-ES', {
+                  {selectedDate.toLocaleDateString(getLocale(), {
                     weekday: 'long',
                     year: 'numeric',
                     month: 'long',
@@ -273,7 +286,7 @@ const ProgressEntryModal: React.FC<ProgressEntryModalProps> = ({
               
               {isToday && (
                 <Text style={styles.todayIndicator}>
-                  📅 Este es el peso de hoy - se actualizará tu perfil
+                  📅 {t('progress.todayWeightIndicator')}
                 </Text>
               )}
             </View>
@@ -299,7 +312,7 @@ const ProgressEntryModal: React.FC<ProgressEntryModalProps> = ({
                 onPress={onClose}
                 disabled={isLoading}
               >
-                <Text style={styles.cancelButtonText}>Cancelar</Text>
+                <Text style={styles.cancelButtonText}>{t('modals.cancel')}</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
@@ -308,9 +321,9 @@ const ProgressEntryModal: React.FC<ProgressEntryModalProps> = ({
                 disabled={isLoading}
               >
                 <Text style={styles.submitButtonText}>
-                  {isLoading ? 'Guardando...' : 
-                   editingEntry ? 'Actualizar' : 
-                   existingWeightEntry ? 'Actualizar' : 'Agregar'}
+                  {isLoading ? t('modals.loading') : 
+                   editingEntry ? t('modals.update') : 
+                   existingWeightEntry ? t('modals.update') : t('modals.add')}
                 </Text>
               </TouchableOpacity>
             </View>

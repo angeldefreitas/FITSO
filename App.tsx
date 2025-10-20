@@ -3,6 +3,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { StyleSheet, View, TouchableOpacity, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
+
+// Importar configuración de i18next
+import './src/config/i18n';
 // Import condicional de Google Mobile Ads
 let mobileAds: any = null;
 try {
@@ -24,6 +27,7 @@ import { CommonStyles } from './src/constants/styles';
 import { ProfileProvider } from './src/contexts/ProfileContext';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { PremiumProvider } from './src/contexts/PremiumContext';
+import { LanguageProvider } from './src/contexts/LanguageContext';
 
 // Componente interno para manejar la lógica de la app
 const AppContent = () => {
@@ -242,10 +246,12 @@ const styles = StyleSheet.create({
 // Componente principal de la app con AuthProvider
 export default function App() {
   return (
-    <AuthProvider>
-      <PremiumProvider>
-        <AppContent />
-      </PremiumProvider>
-    </AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
+        <PremiumProvider>
+          <AppContent />
+        </PremiumProvider>
+      </AuthProvider>
+    </LanguageProvider>
   );
 }

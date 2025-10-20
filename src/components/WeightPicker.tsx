@@ -1,5 +1,6 @@
 import React from 'react';
 import NumberPicker from './NumberPicker';
+import { useTranslation } from 'react-i18next';
 
 interface WeightPickerProps {
   value: number;
@@ -7,6 +8,7 @@ interface WeightPickerProps {
 }
 
 export default function WeightPicker({ value, onValueChange }: WeightPickerProps) {
+  const { t } = useTranslation();
   return (
     <NumberPicker
       value={value}
@@ -15,10 +17,8 @@ export default function WeightPicker({ value, onValueChange }: WeightPickerProps
       max={300}
       step={0.1}
       unit=" kg"
-      placeholder="Seleccionar peso"
-      label="Peso"
-      allowDirectInput={true}
-      keyboardType="decimal-pad"
+      placeholder={t('auth.weight')}
+      label={t('auth.weight')}
     />
   );
 }

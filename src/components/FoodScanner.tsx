@@ -12,6 +12,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Colors } from '../constants/colors';
+import { useTranslation } from 'react-i18next';
 import { useScan } from '../hooks/useScan';
 import { FoodAnalysis } from '../types/food';
 
@@ -38,6 +39,7 @@ export default function FoodScanner({
   recordAIScan,
   isPremium
 }: FoodScannerProps) {
+  const { t } = useTranslation();
   const [permission, requestPermission] = useCameraPermissions();
   const [isCapturing, setIsCapturing] = useState(false);
   const { scanPicture, scanLoading } = useScan();
@@ -64,11 +66,11 @@ export default function FoodScanner({
         if (!canUse) {
           // Usos agotados, mostrar mensaje de premium
           Alert.alert(
-            'Límite de Escaneos Alcanzado',
-            'Has alcanzado el límite de 1 escaneo con IA por día. Suscríbete a Premium para escaneos ilimitados.',
+            t('premium.scanLimitTitle'),
+            t('premium.scanLimitMessage'),
             [
-              { text: 'Cancelar', style: 'cancel' },
-              { text: 'Ver Premium', onPress: onPremiumPress }
+              { text: t('modals.cancel'), style: 'cancel' },
+              { text: t('premium.viewPremium'), onPress: onPremiumPress }
             ]
           );
           setIsCapturing(false);
@@ -178,7 +180,7 @@ export default function FoodScanner({
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <Text style={styles.closeButtonText}>✕</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>Escanear Comida</Text>
+          <Text style={styles.title}>{t('food.scanPhoto')}</Text>
           <View style={styles.placeholder} />
         </View>
 
@@ -214,15 +216,15 @@ export default function FoodScanner({
 
         {/* Instructions */}
         <View style={styles.instructionsContainer}>
-          <Text style={styles.instructionsTitle}>Instrucciones</Text>
+          <Text style={styles.instructionsTitle}>{t('modals.instructions') || 'Instructions'}</Text>
           <Text style={styles.instructionsText}>
-            • Apunta la cámara a tu comida
+            • {t('food.scanInstruction1') || 'Point the camera at your food'}
           </Text>
           <Text style={styles.instructionsText}>
-            • Mantén la comida dentro del marco
+            • {t('food.scanInstruction2') || 'Keep the food inside the frame'}
           </Text>
           <Text style={styles.instructionsText}>
-            • Toca el botón para capturar
+            • {t('food.scanInstruction3') || 'Tap the button to capture'}
           </Text>
         </View>
 

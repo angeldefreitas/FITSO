@@ -11,6 +11,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Colors } from '../constants/colors';
+import { useTranslation } from 'react-i18next';
 
 interface BarcodeScannerProps {
   visible: boolean;
@@ -23,6 +24,7 @@ export default function BarcodeScanner({
   onClose, 
   onBarcodeScanned 
 }: BarcodeScannerProps) {
+  const { t } = useTranslation();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -121,7 +123,7 @@ export default function BarcodeScanner({
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <Text style={styles.closeButtonText}>✕</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>Escanear Código de Barras</Text>
+          <Text style={styles.title}>{t('food.scanBarcode')}</Text>
           <View style={styles.placeholder} />
         </View>
 
@@ -164,15 +166,15 @@ export default function BarcodeScanner({
 
         {/* Instructions */}
         <View style={styles.instructionsContainer}>
-          <Text style={styles.instructionsTitle}>Instrucciones</Text>
+          <Text style={styles.instructionsTitle}>{t('modals.instructions') || 'Instructions'}</Text>
           <Text style={styles.instructionsText}>
-            • Apunta la cámara al código de barras del producto
+            • {t('food.barcodeInstruction1') || 'Point the camera at the product barcode'}
           </Text>
           <Text style={styles.instructionsText}>
-            • Mantén el código dentro del marco de escaneo
+            • {t('food.barcodeInstruction2') || 'Keep the code inside the scan frame'}
           </Text>
           <Text style={styles.instructionsText}>
-            • El escaneo se realizará automáticamente
+            • {t('food.barcodeInstruction3') || 'Scanning will happen automatically'}
           </Text>
         </View>
 

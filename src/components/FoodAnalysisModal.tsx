@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   Keyboard,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../constants/colors';
 import BannerAd from './BannerAd';
@@ -54,6 +55,7 @@ export default function FoodAnalysisModal({
   foodAnalysis,
   onConfirm,
 }: FoodAnalysisModalProps) {
+  const { t } = useTranslation();
   const [foodName, setFoodName] = useState(foodAnalysis.name);
   const [ingredients, setIngredients] = useState<Ingredient[]>(
     foodAnalysis.ingredients || []
@@ -116,9 +118,9 @@ export default function FoodAnalysisModal({
       'Eliminar ingrediente',
       '¿Estás seguro de eliminar este ingrediente?',
       [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: t('modals.cancel'), style: 'cancel' },
         {
-          text: 'Eliminar',
+          text: t('modals.delete'),
           style: 'destructive',
           onPress: () => {
             const newIngredients = ingredients.filter((_, i) => i !== index);
@@ -285,7 +287,7 @@ export default function FoodAnalysisModal({
           </TouchableOpacity>
           <View style={styles.titleContainer}>
             <Text style={styles.appTitle}>FITSO</Text>
-            <Text style={styles.subtitle}>Comida Escaneada</Text>
+            <Text style={styles.subtitle}>{t('food.scannedFood')}</Text>
           </View>
           <View style={styles.placeholder} />
         </View>
@@ -304,21 +306,21 @@ export default function FoodAnalysisModal({
 
           {/* Nombre editable */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Nombre del plato</Text>
+            <Text style={styles.sectionTitle}>{t('food.dishName')}</Text>
             <TextInput
               style={styles.nameInput}
               value={foodName}
               onChangeText={setFoodName}
               returnKeyType="done"
               onSubmitEditing={dismissKeyboard}
-              placeholder="Nombre de la comida"
+              placeholder={t('food.dishNamePlaceholder')}
               placeholderTextColor="rgba(255, 255, 255, 0.4)"
             />
           </View>
 
           {/* Totales */}
           <View style={styles.totalsCard}>
-            <Text style={styles.totalsTitle}>Valores Nutricionales Totales</Text>
+            <Text style={styles.totalsTitle}>{t('food.totalNutritionalValues')}</Text>
             
             {/* Círculo de calorías centrado */}
             <View style={styles.caloriesContainer}>
@@ -345,7 +347,7 @@ export default function FoodAnalysisModal({
                   backgroundColor="rgba(255, 107, 53, 0.2)"
                   currentValue={totals.proteins.toString()}
                   targetValue="g"
-                  label="Proteína"
+                  label={t('food.protein')}
                   textColor="#2c3e50"
                 />
               </View>
@@ -359,7 +361,7 @@ export default function FoodAnalysisModal({
                   backgroundColor="rgba(33, 150, 243, 0.2)"
                   currentValue={totals.carbs.toString()}
                   targetValue="g"
-                  label="Carbos"
+                  label={t('food.carbs')}
                   textColor="#2c3e50"
                 />
               </View>
@@ -373,7 +375,7 @@ export default function FoodAnalysisModal({
                   backgroundColor="rgba(76, 175, 80, 0.2)"
                   currentValue={totals.fats.toString()}
                   targetValue="g"
-                  label="Grasas"
+                  label={t('food.fat')}
                   textColor="#2c3e50"
                 />
               </View>
@@ -386,12 +388,12 @@ export default function FoodAnalysisModal({
           {/* Ingredientes */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Ingredientes</Text>
+              <Text style={styles.sectionTitle}>{t('food.ingredients')}</Text>
               <TouchableOpacity
                 style={styles.addButton}
                 onPress={() => setShowFoodSearch(true)}
               >
-                <Text style={styles.addButtonText}>+ Agregar</Text>
+                <Text style={styles.addButtonText}>+ {t('modals.add')}</Text>
               </TouchableOpacity>
             </View>
 
@@ -406,7 +408,7 @@ export default function FoodAnalysisModal({
 
                 <View style={styles.ingredientContent}>
                   <View style={styles.quantitySection}>
-                    <Text style={styles.quantityLabel}>Cantidad</Text>
+                  <Text style={styles.quantityLabel}>{t('food.servingSize')}</Text>
                     <View style={styles.quantityInputContainer}>
                       <TextInput
                         style={styles.ingredientInput}
@@ -426,7 +428,7 @@ export default function FoodAnalysisModal({
                   </View>
 
                   <View style={styles.nutritionSection}>
-                    <Text style={styles.nutritionLabel}>Valores nutricionales</Text>
+                    <Text style={styles.nutritionLabel}>{t('food.nutritionalValues')}</Text>
                     <View style={styles.nutritionGrid}>
                       <View style={styles.caloriesContainer}>
                         <Text style={styles.caloriesValue}>{ingredient.totalValues.calories}</Text>
@@ -449,7 +451,7 @@ export default function FoodAnalysisModal({
 
         {/* Botón de confirmar */}
         <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}>
-          <Text style={styles.confirmButtonText}>Agregar a mi diario</Text>
+          <Text style={styles.confirmButtonText}>{t('modals.add')}</Text>
         </TouchableOpacity>
 
         {/* Modal para agregar ingrediente */}
@@ -457,7 +459,7 @@ export default function FoodAnalysisModal({
           <Modal visible={showAddIngredientModal} transparent animationType="fade">
             <View style={styles.modalOverlay}>
               <View style={styles.addIngredientModal}>
-                <Text style={styles.modalTitle}>Agregar Ingrediente</Text>
+                <Text style={styles.modalTitle}>{t('modals.add')}</Text>
                 <TouchableOpacity
                   style={styles.optionButton}
                   onPress={() => {
@@ -465,7 +467,7 @@ export default function FoodAnalysisModal({
                     setTimeout(() => setShowBarcodeScanner(true), 300);
                   }}
                 >
-                  <Text style={styles.optionButtonText}>📱 Escanear código de barras</Text>
+                  <Text style={styles.optionButtonText}>📱 {t('food.scanBarcode')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.optionButton}
@@ -474,7 +476,7 @@ export default function FoodAnalysisModal({
                     setTimeout(() => setShowFoodSearch(true), 300);
                   }}
                 >
-                  <Text style={styles.optionButtonText}>🔍 Buscar en base de datos</Text>
+                  <Text style={styles.optionButtonText}>🔍 {t('food.searchDatabase')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.optionButton}
@@ -483,13 +485,13 @@ export default function FoodAnalysisModal({
                     setTimeout(() => setShowManualInput(true), 300);
                   }}
                 >
-                  <Text style={styles.optionButtonText}>✏️ Agregar manualmente</Text>
+                  <Text style={styles.optionButtonText}>✏️ {t('modals.add')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.optionButton, styles.cancelButton]}
                   onPress={() => setShowAddIngredientModal(false)}
                 >
-                  <Text style={styles.optionButtonText}>Cancelar</Text>
+                  <Text style={styles.optionButtonText}>{t('modals.cancel')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -1015,7 +1017,7 @@ function ManualIngredientModal({ visible, onClose, onConfirm }: ManualIngredient
       <View style={manualStyles.modalOverlay}>
         <View style={manualStyles.modalContent}>
           <View style={manualStyles.header}>
-            <Text style={manualStyles.title}>Agregar Ingrediente Manual</Text>
+            <Text style={manualStyles.title}>{t('modals.add')}</Text>
             <TouchableOpacity onPress={handleClose} style={manualStyles.closeButton}>
               <Text style={manualStyles.closeButtonText}>✕</Text>
             </TouchableOpacity>
@@ -1089,13 +1091,13 @@ function ManualIngredientModal({ visible, onClose, onConfirm }: ManualIngredient
               style={[manualStyles.button, manualStyles.cancelButton]}
               onPress={handleClose}
             >
-              <Text style={manualStyles.buttonText}>Cancelar</Text>
+              <Text style={manualStyles.buttonText}>{t('modals.cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[manualStyles.button, manualStyles.confirmButton]}
               onPress={handleConfirm}
             >
-              <Text style={manualStyles.buttonText}>Agregar</Text>
+              <Text style={manualStyles.buttonText}>{t('modals.add')}</Text>
             </TouchableOpacity>
           </View>
         </View>

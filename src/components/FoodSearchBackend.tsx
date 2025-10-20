@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Colors } from '../constants/colors';
 import { Food } from '../services/foodService';
 import foodService from '../services/foodService';
@@ -32,6 +33,7 @@ const FoodSearchBackend: React.FC<FoodSearchBackendProps> = ({
   onBarcodeScan,
   onAIScan,
 }) => {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Food[]>([]);
   const [loading, setLoading] = useState(false);
@@ -102,13 +104,13 @@ const FoodSearchBackend: React.FC<FoodSearchBackendProps> = ({
       </View>
       <View style={styles.foodMacros}>
         <Text style={styles.macroText}>
-          P: {item.protein_per_100g}g
+          {t('food.proteinShort')}: {item.protein_per_100g}g
         </Text>
         <Text style={styles.macroText}>
-          C: {item.carbs_per_100g}g
+          {t('food.carbsShort')}: {item.carbs_per_100g}g
         </Text>
         <Text style={styles.macroText}>
-          G: {item.fat_per_100g}g
+          {t('food.fatShort')}: {item.fat_per_100g}g
         </Text>
       </View>
     </TouchableOpacity>

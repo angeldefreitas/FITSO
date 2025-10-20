@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { Colors } from '../constants/colors';
 import { CommonStyles } from '../constants/styles';
@@ -22,6 +23,7 @@ interface Props {
 }
 
 export default function NutritionGoalsPicker({ profile, onGoalsChange, currentGoal, currentWeightGoalAmount, initialCustomGoals }: Props) {
+  const { t } = useTranslation();
   const [useCustomGoals, setUseCustomGoals] = useState(false);
   const [customCalories, setCustomCalories] = useState('');
   const [customProtein, setCustomProtein] = useState('');
@@ -137,7 +139,7 @@ export default function NutritionGoalsPicker({ profile, onGoalsChange, currentGo
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Objetivos Nutricionales Diarios</Text>
+      <Text style={styles.title}>{t('profile.dailyGoals')}</Text>
       
       {/* Toggle para objetivos personalizados */}
       <View style={styles.toggleContainer}>
@@ -146,7 +148,7 @@ export default function NutritionGoalsPicker({ profile, onGoalsChange, currentGo
           onPress={() => setUseCustomGoals(false)}
         >
           <Text style={[styles.toggleText, !useCustomGoals && styles.toggleTextActive]}>
-            🧮 Automático
+            🧮 {t('progress.automatic')}
           </Text>
         </TouchableOpacity>
         
@@ -155,7 +157,7 @@ export default function NutritionGoalsPicker({ profile, onGoalsChange, currentGo
           onPress={() => setUseCustomGoals(true)}
         >
           <Text style={[styles.toggleText, useCustomGoals && styles.toggleTextActive]}>
-            ⚙️ Personalizar
+            ⚙️ {t('progress.customize')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -164,27 +166,27 @@ export default function NutritionGoalsPicker({ profile, onGoalsChange, currentGo
       {!useCustomGoals && (
         <View style={styles.autoGoalsContainer}>
           <View style={styles.goalsCard}>
-            <Text style={styles.goalsTitle}>Objetivos Calculados</Text>
+            <Text style={styles.goalsTitle}>{t('progress.calculatedGoals') || 'Calculated Goals'}</Text>
             <Text style={styles.goalsSubtitle}>
-              Basados en tu perfil: {profile.name}, {profile.age} años, {profile.weight}kg, {profile.height}cm
+              {t('progress.basedOnProfile') || 'Based on your profile'}: {profile.name}, {profile.age} {t('auth.years') || 'years'}, {profile.weight}kg, {profile.height}cm
             </Text>
             
             <View style={styles.goalsGrid}>
               <View style={styles.goalItem}>
                 <Text style={styles.goalValue}>{autoGoals.calories}</Text>
-                <Text style={styles.goalLabel}>Calorías</Text>
+                <Text style={styles.goalLabel}>{t('food.calories')}</Text>
               </View>
               <View style={styles.goalItem}>
                 <Text style={styles.goalValue}>{autoGoals.protein}g</Text>
-                <Text style={styles.goalLabel}>Proteína</Text>
+                <Text style={styles.goalLabel}>{t('food.protein')}</Text>
               </View>
               <View style={styles.goalItem}>
                 <Text style={styles.goalValue}>{autoGoals.carbs}g</Text>
-                <Text style={styles.goalLabel}>Carbohidratos</Text>
+                <Text style={styles.goalLabel}>{t('food.carbs')}</Text>
               </View>
               <View style={styles.goalItem}>
                 <Text style={styles.goalValue}>{autoGoals.fat}g</Text>
-                <Text style={styles.goalLabel}>Grasas</Text>
+                <Text style={styles.goalLabel}>{t('food.fat')}</Text>
               </View>
             </View>
 
@@ -199,9 +201,9 @@ export default function NutritionGoalsPicker({ profile, onGoalsChange, currentGo
 
             {showRecommendations && (
               <View style={styles.recommendationsContainer}>
-                <Text style={styles.recommendationsTitle}>Recomendaciones</Text>
+                <Text style={styles.recommendationsTitle}>{t('progress.recommendations') || 'Recommendations'}</Text>
                 <Text style={styles.recommendationsText}>
-                  • Calorías de mantenimiento: {recommendations.maintenance} cal
+                  • {t('progress.maintenanceCalories') || 'Maintenance calories'}: {recommendations.maintenance} cal
                 </Text>
                 <Text style={styles.recommendationsText}>
                   • Objetivo actual: {recommendations.current} cal
@@ -222,14 +224,14 @@ export default function NutritionGoalsPicker({ profile, onGoalsChange, currentGo
       {useCustomGoals && (
         <View style={styles.customGoalsContainer}>
           <View style={styles.goalsCard}>
-            <Text style={styles.goalsTitle}>Configuración Personalizada</Text>
+            <Text style={styles.goalsTitle}>{t('progress.customConfig') || 'Custom Configuration'}</Text>
             <Text style={styles.goalsSubtitle}>
-              Define tus propios objetivos nutricionales
+              {t('progress.defineYourNutritionGoals') || 'Define your own nutrition goals'}
             </Text>
 
             <View style={styles.inputRow}>
               <View style={styles.halfInput}>
-                <Text style={styles.inputLabel}>Calorías</Text>
+                <Text style={styles.inputLabel}>{t('food.calories')}</Text>
                 <TextInput
                   value={customCalories}
                   onChangeText={setCustomCalories}
@@ -240,7 +242,7 @@ export default function NutritionGoalsPicker({ profile, onGoalsChange, currentGo
                 />
               </View>
               <View style={styles.halfInput}>
-                <Text style={styles.inputLabel}>Proteína (g)</Text>
+                <Text style={styles.inputLabel}>{t('food.protein')} (g)</Text>
                 <TextInput
                   value={customProtein}
                   onChangeText={setCustomProtein}
@@ -254,7 +256,7 @@ export default function NutritionGoalsPicker({ profile, onGoalsChange, currentGo
 
             <View style={styles.inputRow}>
               <View style={styles.halfInput}>
-                <Text style={styles.inputLabel}>Carbohidratos (g)</Text>
+                <Text style={styles.inputLabel}>{t('food.carbs')} (g)</Text>
                 <TextInput
                   value={customCarbs}
                   onChangeText={setCustomCarbs}
@@ -265,7 +267,7 @@ export default function NutritionGoalsPicker({ profile, onGoalsChange, currentGo
                 />
               </View>
               <View style={styles.halfInput}>
-                <Text style={styles.inputLabel}>Grasas (g)</Text>
+                <Text style={styles.inputLabel}>{t('food.fat')} (g)</Text>
                 <TextInput
                   value={customFat}
                   onChangeText={setCustomFat}
@@ -283,7 +285,7 @@ export default function NutritionGoalsPicker({ profile, onGoalsChange, currentGo
                 onPress={resetToAutoGoals}
               >
                 <Text style={styles.buttonTextSecondary}>
-                  Usar automático
+                  {t('progress.useAutomatic') || 'Use automatic'}
                 </Text>
               </TouchableOpacity>
               
@@ -292,7 +294,7 @@ export default function NutritionGoalsPicker({ profile, onGoalsChange, currentGo
                 onPress={handleCustomGoalsChange}
               >
                 <Text style={styles.buttonText}>
-                  Aplicar cambios
+                  {t('modals.save')}
                 </Text>
               </TouchableOpacity>
             </View>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions, Alert } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../constants/colors';
 import BottomNavigation from '../components/BottomNavigation';
@@ -24,6 +25,7 @@ interface ProgressTrackingScreenProps {
 type ChartType = 'peso' | 'medidas';
 
 const ProgressTrackingScreen: React.FC<ProgressTrackingScreenProps> = ({ onClose, onTabChange, onAddPress, currentTab = 'diario' }) => {
+  const { t } = useTranslation();
   const [selectedChart, setSelectedChart] = useState<ChartType>('peso');
   const [selectedTimeFilter, setSelectedTimeFilter] = useState<TimeFilter>('6months');
   const [progressData, setProgressData] = useState<ProgressData | null>(null);
@@ -44,7 +46,7 @@ const ProgressTrackingScreen: React.FC<ProgressTrackingScreenProps> = ({ onClose
       console.log('✅ Datos de progreso cargados:', data.entries.length, 'entradas');
     } catch (error) {
       console.error('Error loading progress data:', error);
-      Alert.alert('Error', 'No se pudieron cargar los datos de progreso');
+      Alert.alert(t('alerts.error'), t('progress.loadingError'));
     } finally {
       setIsLoading(false);
     }
@@ -66,25 +68,25 @@ const ProgressTrackingScreen: React.FC<ProgressTrackingScreenProps> = ({ onClose
 
   const handleDeleteEntry = async (entry: ProgressEntry) => {
     Alert.alert(
-      'Eliminar registro',
-      '¿Estás seguro de que quieres eliminar este registro?',
+      t('progress.deleteRecord'),
+      t('progress.deleteRecordMessage'),
       [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: t('modals.cancel'), style: 'cancel' },
         {
-          text: 'Eliminar',
+          text: t('modals.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
               if ('type' in entry) {
                 // Es una medida - por ahora no implementado
-                Alert.alert('Info', 'Eliminación de medidas próximamente disponible');
+                Alert.alert(t('alerts.info'), t('progress.deleteMeasuresSoon'));
               } else {
                 await progressService.deleteWeightEntry(entry.id);
                 await loadProgressData();
               }
             } catch (error) {
               console.error('Error deleting entry:', error);
-              Alert.alert('Error', 'No se pudo eliminar el registro');
+              Alert.alert(t('alerts.error'), t('progress.deleteError'));
             }
           }
         }
@@ -113,7 +115,7 @@ const ProgressTrackingScreen: React.FC<ProgressTrackingScreenProps> = ({ onClose
         <View style={styles.chartContainer}>
           <View style={styles.chartHeader}>
             <Text style={styles.chartTitle}>
-              {selectedChart === 'peso' ? 'Evolución del Peso' : 'Medidas Corporales'}
+              {selectedChart === 'peso' ? t('progress.weightEvolution') : t('progress.bodyMeasurements')}
             </Text>
             <Text style={styles.chartUnit}>
               {selectedChart === 'peso' ? 'kg' : 'cm'}
@@ -121,9 +123,9 @@ const ProgressTrackingScreen: React.FC<ProgressTrackingScreenProps> = ({ onClose
           </View>
           <View style={styles.emptyChart}>
             <Text style={styles.emptyChartText}>
-              {selectedChart === 'peso' 
-                ? 'Agrega tu primer peso para ver la evolución'
-                : 'Agrega tu primera medida para ver la evolución'
+              {selectedChart === 'peso'
+                ? t('progress.addFirstWeight')
+                : t('progress.addFirstMeasurement')
               }
             </Text>
           </View>
@@ -153,7 +155,7 @@ const ProgressTrackingScreen: React.FC<ProgressTrackingScreenProps> = ({ onClose
       <View style={styles.chartContainer}>
         <View style={styles.chartHeader}>
           <Text style={styles.chartTitle}>
-            {selectedChart === 'peso' ? 'Evolución del Peso' : 'Medidas Corporales'}
+            {selectedChart === 'peso' ? t('progress.weightEvolution') : t('progress.bodyMeasurements')}
           </Text>
           <Text style={styles.chartUnit}>
             {selectedChart === 'peso' ? 'kg' : 'cm'}
@@ -261,16 +263,7 @@ const ProgressTrackingScreen: React.FC<ProgressTrackingScreenProps> = ({ onClose
   };
 
   const getTimeFilterLabel = (filter: TimeFilter): string => {
-    const labels = {
-      '1month': '1 mes',
-      '2months': '2 meses',
-      '3months': '3 meses',
-      '6months': '6 meses',
-      '1year': '1 año',
-      'initial': 'Inicial',
-      'all': 'Todos'
-    };
-    return labels[filter];
+    return t(`progress.timeFilters.${filter}`);
   };
 
   return (
@@ -302,7 +295,7 @@ const ProgressTrackingScreen: React.FC<ProgressTrackingScreenProps> = ({ onClose
             onPress={() => setSelectedChart('peso')}
           >
             <Text style={[styles.selectorText, selectedChart === 'peso' && styles.selectorTextActive]}>
-              Peso
+              {t('progress.weight')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity 
@@ -310,7 +303,7 @@ const ProgressTrackingScreen: React.FC<ProgressTrackingScreenProps> = ({ onClose
             onPress={() => setSelectedChart('medidas')}
           >
             <Text style={[styles.selectorText, selectedChart === 'medidas' && styles.selectorTextActive]}>
-              Medidas
+              {t('progress.measurements')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -324,12 +317,12 @@ const ProgressTrackingScreen: React.FC<ProgressTrackingScreenProps> = ({ onClose
         {/* Indicador de peso actual del perfil */}
         {selectedChart === 'peso' && profile && (
           <View style={styles.profileWeightIndicator}>
-            <Text style={styles.profileWeightLabel}>Peso Actual del Perfil</Text>
+            <Text style={styles.profileWeightLabel}>{t('progress.currentProfileWeight')}</Text>
             <Text style={styles.profileWeightValue}>{profile.weight} kg</Text>
             <Text style={styles.profileWeightSubtext}>
               {profile.lastUpdated ? 
-                `Actualizado: ${new Date(profile.lastUpdated).toLocaleString('es-ES')}` : 
-                'Sincronizado en tiempo real'
+                `${t('progress.updated')}: ${new Date(profile.lastUpdated).toLocaleString('es-ES')}` : 
+                t('progress.syncedInRealTime')
               }
             </Text>
           </View>
@@ -361,7 +354,7 @@ const ProgressTrackingScreen: React.FC<ProgressTrackingScreenProps> = ({ onClose
         <View style={styles.addButtonContainer}>
           <TouchableOpacity style={styles.addButton} onPress={handleAddEntry}>
             <Text style={styles.addButtonText}>
-              + Agregar {selectedChart === 'peso' ? 'Peso' : 'Medida'}
+              + {t('modals.add')} {selectedChart === 'peso' ? t('progress.weight') : t('progress.measurements')}
             </Text>
           </TouchableOpacity>
         </View>

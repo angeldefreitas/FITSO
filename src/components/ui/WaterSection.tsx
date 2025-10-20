@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Animated, Easing } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Svg, { Path } from 'react-native-svg';
 import LottieView from 'lottie-react-native';
 
@@ -26,6 +27,7 @@ const WaterSection: React.FC<WaterSectionProps> = ({
   onUpdateGoal,
   onOpenGoalPicker,
 }) => {
+  const { t } = useTranslation();
   // Animaciones para el vaso de agua
   const waterProgressAnimation = useRef(new Animated.Value(0)).current;
   const waveAnimation = useRef(new Animated.Value(0)).current;
@@ -122,7 +124,7 @@ const WaterSection: React.FC<WaterSectionProps> = ({
       
       <View style={styles.waterHeader}>
         <View style={styles.waterHeaderCenter}>
-          <Text style={styles.waterTitle}>Agua</Text>
+          <Text style={styles.waterTitle}>{t('daily.water')}</Text>
           <Text style={styles.waterSubtitle}>
             {waterConsumed} / {waterGoal} vasos
           </Text>

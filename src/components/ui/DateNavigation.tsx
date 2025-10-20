@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Colors } from '../../constants/colors';
 
 interface DateNavigationProps {
@@ -19,6 +20,18 @@ const DateNavigation: React.FC<DateNavigationProps> = ({
   onNextMonth,
   onToday,
 }) => {
+  const { t, i18n } = useTranslation();
+  
+  // Función para obtener el locale correcto
+  const getLocale = () => {
+    switch (i18n.language) {
+      case 'es': return 'es-ES';
+      case 'en': return 'en-GB';
+      case 'pt': return 'pt-PT';
+      default: return 'es-ES';
+    }
+  };
+  
   // Generar días de la semana
   const getWeekDays = () => {
     const days: Array<{
@@ -39,7 +52,7 @@ const DateNavigation: React.FC<DateNavigationProps> = ({
       
       days.push({
         date: date,
-        dayName: date.toLocaleDateString('es-ES', { weekday: 'short' }).charAt(0).toUpperCase(),
+        dayName: date.toLocaleDateString(getLocale(), { weekday: 'short' }).charAt(0).toUpperCase(),
         dayNumber: date.getDate(),
         isToday: date.toDateString() === currentDate.toDateString(),
         isSelected: date.toDateString() === selectedDate.toDateString(),
@@ -69,11 +82,11 @@ const DateNavigation: React.FC<DateNavigationProps> = ({
           onPress={onToday}
         >
           <Text style={styles.monthTitleText}>
-            {selectedDate.toLocaleDateString('es-ES', { 
+            {selectedDate.toLocaleDateString(getLocale(), { 
               month: 'long', 
               year: 'numeric' 
             }).charAt(0).toUpperCase() + 
-            selectedDate.toLocaleDateString('es-ES', { 
+            selectedDate.toLocaleDateString(getLocale(), { 
               month: 'long', 
               year: 'numeric' 
             }).slice(1)}

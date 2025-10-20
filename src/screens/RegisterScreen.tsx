@@ -11,6 +11,7 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { Colors } from '../constants/colors';
 
@@ -19,6 +20,7 @@ interface RegisterScreenProps {
 }
 
 const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
+  const { t } = useTranslation();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,23 +30,23 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
 
   const validateForm = () => {
     if (!name.trim()) {
-      Alert.alert('Error', 'Por favor ingresa tu nombre');
+      Alert.alert(t('alerts.validationError'), t('auth.fullName'));
       return false;
     }
     if (!email.trim()) {
-      Alert.alert('Error', 'Por favor ingresa tu email');
+      Alert.alert(t('alerts.validationError'), t('auth.email'));
       return false;
     }
     if (!password) {
-      Alert.alert('Error', 'Por favor ingresa una contraseña');
+      Alert.alert(t('alerts.validationError'), t('auth.password'));
       return false;
     }
     if (password.length < 6) {
-      Alert.alert('Error', 'La contraseña debe tener al menos 6 caracteres');
+      Alert.alert(t('alerts.validationError'), t('auth.passwordTooShort'));
       return false;
     }
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Las contraseñas no coinciden');
+      Alert.alert(t('alerts.validationError'), t('auth.passwordsDoNotMatch'));
       return false;
     }
     return true;
@@ -57,13 +59,13 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
     try {
       await register({ name, email, password });
       Alert.alert(
-        '¡Registro exitoso!',
-        'Tu cuenta ha sido creada correctamente',
-        [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
+        t('auth.signUpSuccess'),
+        t('auth.signUpSuccess'),
+        [{ text: t('modals.ok'), onPress: () => navigation.navigate('Login') }]
       );
     } catch (error: any) {
       console.error('Error en registro:', error);
-      Alert.alert('Error', error.message || 'Error al crear la cuenta');
+      Alert.alert(t('alerts.error'), error.message || t('auth.signUpError'));
     } finally {
       setLoading(false);
     }
@@ -74,9 +76,9 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
     try {
       // TODO: Implementar registro con Google usando backend propio
       console.log('Google registro pendiente');
-      Alert.alert('Info', 'Registro con Google pendiente de implementar con backend propio');
+      Alert.alert(t('alerts.info'), t('auth.featureNotAvailable'));
     } catch (error: any) {
-      Alert.alert('Error', 'Error al registrarse con Google');
+      Alert.alert(t('alerts.error'), t('auth.signUpError'));
     } finally {
       setLoading(false);
     }
@@ -87,9 +89,9 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
     try {
       // TODO: Implementar registro con Apple usando backend propio
       console.log('Apple registro pendiente');
-      Alert.alert('Info', 'Registro con Apple pendiente de implementar con backend propio');
+      Alert.alert(t('alerts.info'), t('auth.featureNotAvailable'));
     } catch (error: any) {
-      Alert.alert('Error', 'Error al registrarse con Apple');
+      Alert.alert(t('alerts.error'), t('auth.signUpError'));
     } finally {
       setLoading(false);
     }
@@ -102,29 +104,29 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.content}>
-          <Text style={styles.title}>¡Únete a Fitso!</Text>
-          <Text style={styles.subtitle}>Crea tu cuenta para comenzar</Text>
+          <Text style={styles.title}>{t('auth.welcome')}</Text>
+          <Text style={styles.subtitle}>{t('auth.signUpTitle')}</Text>
 
           <View style={styles.form}>
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Nombre completo</Text>
+              <Text style={styles.label}>{t('auth.fullName')}</Text>
               <TextInput
                 style={styles.input}
                 value={name}
                 onChangeText={setName}
-                placeholder="Tu nombre completo"
+                placeholder={t('auth.fullName')}
                 autoCapitalize="words"
                 autoCorrect={false}
               />
             </View>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.label}>{t('auth.email')}</Text>
               <TextInput
                 style={styles.input}
                 value={email}
                 onChangeText={setEmail}
-                placeholder="tu@email.com"
+                placeholder={t('auth.email')}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -132,24 +134,24 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
             </View>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Contraseña</Text>
+              <Text style={styles.label}>{t('auth.password')}</Text>
               <TextInput
                 style={styles.input}
                 value={password}
                 onChangeText={setPassword}
-                placeholder="Mínimo 6 caracteres"
+                placeholder={t('auth.password')}
                 secureTextEntry
                 autoCapitalize="none"
               />
             </View>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Confirmar contraseña</Text>
+              <Text style={styles.label}>{t('auth.confirmPassword')}</Text>
               <TextInput
                 style={styles.input}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
-                placeholder="Repite tu contraseña"
+                placeholder={t('auth.confirmPassword')}
                 secureTextEntry
                 autoCapitalize="none"
               />
@@ -163,13 +165,13 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
               {(loading || authLoading) ? (
                 <ActivityIndicator color="white" />
               ) : (
-                <Text style={styles.registerButtonText}>Crear Cuenta</Text>
+                <Text style={styles.registerButtonText}>{t('auth.signUpButton')}</Text>
               )}
             </TouchableOpacity>
 
             <View style={styles.divider}>
               <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>o</Text>
+              <Text style={styles.dividerText}>{t('auth.or')}</Text>
               <View style={styles.dividerLine} />
             </View>
 
@@ -178,7 +180,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
               onPress={handleGoogleRegister}
               disabled={loading}
             >
-              <Text style={styles.socialButtonText}>Continuar con Google</Text>
+              <Text style={styles.socialButtonText}>{t('auth.continueWithGoogle')}</Text>
             </TouchableOpacity>
 
             {Platform.OS === 'ios' && (
@@ -188,24 +190,24 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
                 disabled={loading}
               >
                 <Text style={[styles.socialButtonText, styles.appleButtonText]}>
-                  Continuar con Apple
+                  {t('auth.continueWithGoogle')}
                 </Text>
               </TouchableOpacity>
             )}
           </View>
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>¿Ya tienes cuenta? </Text>
+            <Text style={styles.footerText}>{t('auth.alreadyHaveAccount')} </Text>
             <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-              <Text style={styles.footerLink}>Inicia sesión aquí</Text>
+              <Text style={styles.footerLink}>{t('auth.signIn')}</Text>
             </TouchableOpacity>
           </View>
 
           <Text style={styles.termsText}>
-            Al registrarte, aceptas nuestros{' '}
-            <Text style={styles.termsLink}>Términos de Servicio</Text>
-            {' '}y{' '}
-            <Text style={styles.termsLink}>Política de Privacidad</Text>
+            {t('auth.agreeToTerms')}{' '}
+            <Text style={styles.termsLink}>{t('auth.termsOfService')}</Text>
+            {' '}{t('auth.and')}{' '}
+            <Text style={styles.termsLink}>{t('auth.privacyPolicy')}</Text>
           </Text>
         </View>
       </ScrollView>

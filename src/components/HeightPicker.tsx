@@ -1,5 +1,6 @@
 import React from 'react';
 import NumberPicker from './NumberPicker';
+import { useTranslation } from 'react-i18next';
 
 interface HeightPickerProps {
   value: number;
@@ -7,6 +8,7 @@ interface HeightPickerProps {
 }
 
 export default function HeightPicker({ value, onValueChange }: HeightPickerProps) {
+  const { t } = useTranslation();
   return (
     <NumberPicker
       value={value}
@@ -15,8 +17,8 @@ export default function HeightPicker({ value, onValueChange }: HeightPickerProps
       max={250}
       step={1}
       unit=" cm"
-      placeholder="Seleccionar altura"
-      label="Altura"
+      placeholder={t('auth.height')}
+      label={t('auth.height')}
       allowDirectInput={true}
       keyboardType="numeric"
     />

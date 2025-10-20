@@ -13,11 +13,13 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../contexts/AuthContext';
 import { useProfile } from '../contexts/ProfileContext';
+import { useTranslation } from 'react-i18next';
 import { Colors } from '../constants/colors';
 import BiometricDataModal, { BiometricData } from '../components/modals/BiometricDataModal';
 import GoalsModal, { GoalsData } from '../components/modals/GoalsModal';
 import BottomNavigation from '../components/BottomNavigation';
 import ChangePasswordScreen from './ChangePasswordScreen';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 
 interface ProfileScreenProps {
   navigation?: any;
@@ -34,6 +36,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
 }) => {
   const { user, logout, updateProfile, deleteAccount, loading: authLoading, profileData, getProfileData, updateBiometricData, updateGoalsData } = useAuth();
   const { profile, updateProfileData } = useProfile();
+  const { t, i18n } = useTranslation();
   const [refreshing, setRefreshing] = useState(false);
   const [updating, setUpdating] = useState(false);
   
@@ -104,15 +107,15 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
   const handleLogout = () => {
     Alert.alert(
-      'Cerrar Sesión',
-      '¿Estás seguro de que quieres cerrar sesión?',
+      t('profile.logout'),
+      t('profile.logoutMessage'),
       [
         {
-          text: 'Cancelar',
+          text: t('modals.cancel'),
           style: 'cancel',
         },
         {
-          text: 'Cerrar Sesión',
+          text: t('profile.logout'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -124,7 +127,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 });
               }
             } catch (error: any) {
-              Alert.alert('Error', 'Error al cerrar sesión');
+              Alert.alert(t('alerts.error'), t('profile.logoutError'));
             }
           },
         },
@@ -140,41 +143,41 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
     if (navigation) {
       navigation.navigate('EditProfile');
     } else {
-      Alert.alert('Info', 'Funcionalidad de editar perfil próximamente');
+      Alert.alert(t('alerts.info'), t('profile.editProfileComingSoon'));
     }
   };
 
   const handleDeleteAccount = () => {
     Alert.alert(
-      'Eliminar Cuenta',
-      'Esta acción no se puede deshacer. Se eliminarán todos tus datos permanentemente. ¿Estás completamente seguro?',
+      t('profile.deleteAccount'),
+      t('profile.deleteAccountMessage'),
       [
         {
-          text: 'Cancelar',
+          text: t('modals.cancel'),
           style: 'cancel',
         },
         {
-          text: 'Eliminar Permanentemente',
+          text: t('profile.deleteAccountConfirm'),
           style: 'destructive',
           onPress: () => {
             // Segundo alert de confirmación
             Alert.alert(
-              'Confirmación Final',
-              'Última oportunidad. ¿Realmente quieres eliminar tu cuenta y todos tus datos?',
+              t('profile.finalConfirmation'),
+              t('profile.finalConfirmationMessage'),
               [
                 {
-                  text: 'No, cancelar',
+                  text: t('profile.noCancel'),
                   style: 'cancel',
                 },
                 {
-                  text: 'SÍ, ELIMINAR',
+                  text: t('profile.deleteAccountConfirm'),
                   style: 'destructive',
                   onPress: async () => {
                     try {
                       await deleteAccount();
                       Alert.alert(
-                        'Cuenta Eliminada',
-                        'Tu cuenta ha sido eliminada exitosamente. Gracias por usar Fitso.',
+                        t('profile.accountDeleted'),
+                        t('profile.accountDeletedMessage'),
                         [
                           {
                             text: 'OK',
@@ -191,7 +194,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                       );
                     } catch (error: any) {
                       console.error('Error eliminando cuenta:', error);
-                      Alert.alert('Error', error.message || 'Error al eliminar la cuenta');
+                      Alert.alert(t('alerts.error'), error.message || t('profile.deleteAccountError'));
                     }
                   },
                 },
@@ -230,7 +233,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
       console.log('✅ Datos biométricos guardados exitosamente');
       setBiometricData(data);
       setBiometricModalVisible(false);
-      Alert.alert('Éxito', 'Datos biométricos actualizados correctamente');
+      Alert.alert(t('alerts.success'), t('profile.biometricDataUpdated'));
     } catch (error: any) {
       console.error('❌ Error guardando datos biométricos:', error);
       console.error('❌ Error details:', {
@@ -239,7 +242,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
         status: error.response?.status,
         stack: error.stack
       });
-      Alert.alert('Error', error.message || 'Error al guardar los datos biométricos');
+      Alert.alert(t('alerts.error'), error.message || t('profile.biometricDataUpdated'));
     } finally {
       setSavingBiometric(false);
     }
@@ -251,10 +254,10 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
       await updateGoalsData(data);
       setGoalsData(data);
       setGoalsModalVisible(false);
-      Alert.alert('Éxito', 'Metas actualizadas correctamente');
+      Alert.alert(t('alerts.success'), t('profile.goalsUpdated'));
     } catch (error: any) {
       console.error('Error guardando metas:', error);
-      Alert.alert('Error', error.message || 'Error al guardar las metas');
+      Alert.alert(t('alerts.error'), error.message || t('profile.goalsUpdated'));
     } finally {
       setSavingGoals(false);
     }
@@ -263,7 +266,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const getBiometricSummary = () => {
     // Verificar que biometricData existe antes de acceder a sus propiedades
     if (!biometricData) {
-      return 'Completa tus datos biométricos';
+      return t('profile.completeBiometricData');
     }
     
     const parts: string[] = [];
@@ -276,37 +279,37 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                          biometricData.gender === 'female' ? '♀' : '⚧';
       parts.push(genderEmoji);
     }
-    return parts.length > 0 ? parts.join(' • ') : 'Completa tus datos biométricos';
+    return parts.length > 0 ? parts.join(' • ') : t('profile.completeBiometricData');
   };
 
   const getGoalsSummary = () => {
     // Verificar que goalsData existe antes de acceder a sus propiedades
     if (!goalsData) {
-      return 'Configura tus objetivos';
+      return t('profile.configureGoals');
     }
     
     const parts: string[] = [];
     const goalLabels = {
-      lose_weight: '🔥 Perder peso',
-      gain_weight: '💪 Ganar peso',
-      maintain_weight: '⚖️ Mantener peso'
+      lose_weight: t('profile.loseWeight'),
+      gain_weight: t('profile.gainWeight'),
+      maintain_weight: t('profile.maintainWeight')
     };
     
     if (goalsData.goal) {
       parts.push(goalLabels[goalsData.goal]);
       
       if (goalsData.goal === 'lose_weight') {
-        parts.push(`Perder ${goalsData.weightGoalAmount} kg/semana`);
+        parts.push(t('profile.loseWeightPerWeek', { amount: goalsData.weightGoalAmount }));
       } else if (goalsData.goal === 'gain_weight') {
-        parts.push(`Ganar ${goalsData.weightGoalAmount} kg/semana`);
+        parts.push(t('profile.gainWeightPerWeek', { amount: goalsData.weightGoalAmount }));
       }
     }
     
     if (goalsData.nutritionGoals) {
-      parts.push(`${Math.round(goalsData.nutritionGoals.calories || 0)} cal/día`);
+      parts.push(t('profile.caloriesPerDay', { calories: Math.round(goalsData.nutritionGoals.calories || 0) }));
     }
     
-    return parts.length > 0 ? parts.join(' • ') : 'Configura tus objetivos';
+    return parts.length > 0 ? parts.join(' • ') : t('profile.configureGoals');
   };
 
   const onRefresh = async () => {
@@ -314,9 +317,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
     try {
       setLoadingProfile(true);
       await getProfileData();
-      Alert.alert('Actualización', 'Datos de perfil actualizados correctamente');
+      Alert.alert(t('profile.profileUpdated'), t('profile.profileUpdated'));
     } catch (error) {
-      Alert.alert('Error', 'No se pudieron cargar los datos del perfil.');
+      Alert.alert(t('alerts.error'), t('profile.profileUpdateError'));
     } finally {
       setLoadingProfile(false);
       setRefreshing(false);
@@ -325,7 +328,10 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES', {
+    // Usar locale actual
+    const localeMap: Record<string, string> = { es: 'es-ES', en: 'en-GB', pt: 'pt-PT' };
+    const currentLocale = localeMap[(i18n as any)?.language] || 'en-GB';
+    return date.toLocaleDateString(currentLocale, {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -347,6 +353,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
       locations={[0, 0.3, 0.7, 1]}
       style={styles.container}
     >
+      <LanguageSwitcher style={styles.languageSwitcherFixed} />
       <ScrollView
         style={styles.scrollView}
         refreshControl={
@@ -367,54 +374,54 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 {user?.name?.charAt(0).toUpperCase() || 'U'}
               </Text>
             </View>
-            <Text style={styles.name}>{user?.name || 'Usuario'}</Text>
+            <Text style={styles.name}>{user?.name || t('profile.user')}</Text>
             <Text style={styles.email}>{user?.email}</Text>
             <View style={styles.verificationStatus}>
               <Text style={styles.verificationText}>
-                {user?.is_verified ? '✅ Verificado' : '⚠️ No verificado'}
+                {user?.is_verified ? t('profile.verified') : t('profile.notVerified')}
               </Text>
             </View>
           </View>
 
         {/* Profile Info */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Información de la Cuenta</Text>
+          <Text style={styles.sectionTitle}>{t('profile.accountInfo')}</Text>
           
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Nombre:</Text>
-            <Text style={styles.infoValue}>{user?.name || 'No especificado'}</Text>
+            <Text style={styles.infoLabel}>{t('profile.name')}</Text>
+            <Text style={styles.infoValue}>{user?.name || t('profile.notSpecified')}</Text>
           </View>
           
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Email:</Text>
+            <Text style={styles.infoLabel}>{t('profile.email')}</Text>
             <Text style={styles.infoValue}>{user?.email}</Text>
           </View>
           
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Miembro desde:</Text>
+            <Text style={styles.infoLabel}>{t('profile.memberSince')}</Text>
             <Text style={styles.infoValue}>
-              {user?.created_at ? formatDate(user.created_at) : 'No disponible'}
+              {user?.created_at ? formatDate(user.created_at) : t('profile.notAvailable')}
             </Text>
           </View>
           
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Última actualización:</Text>
+            <Text style={styles.infoLabel}>{t('profile.lastUpdate')}</Text>
             <Text style={styles.infoValue}>
-              {user?.updated_at ? formatDate(user.updated_at) : 'No disponible'}
+              {user?.updated_at ? formatDate(user.updated_at) : t('profile.notAvailable')}
             </Text>
           </View>
         </View>
 
         {/* Datos Biométricos */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Datos Biométricos</Text>
+          <Text style={styles.sectionTitle}>{t('profile.biometricData')}</Text>
           
           <TouchableOpacity
             style={styles.actionButton}
             onPress={() => setBiometricModalVisible(true)}
           >
             <View style={styles.actionButtonContent}>
-              <Text style={styles.actionButtonText}>📏 Ver/Actualizar Datos</Text>
+              <Text style={styles.actionButtonText}>{t('profile.viewUpdateData')}</Text>
               <Text style={styles.actionButtonSubtext}>{getBiometricSummary()}</Text>
             </View>
             <Text style={styles.actionButtonArrow}>›</Text>
@@ -423,14 +430,14 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
         {/* Metas */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Metas</Text>
+          <Text style={styles.sectionTitle}>{t('profile.goals')}</Text>
           
           <TouchableOpacity
             style={styles.actionButton}
             onPress={() => setGoalsModalVisible(true)}
           >
             <View style={styles.actionButtonContent}>
-              <Text style={styles.actionButtonText}>🎯 Ver/Actualizar Metas</Text>
+              <Text style={styles.actionButtonText}>{t('profile.viewUpdateGoals')}</Text>
               <Text style={styles.actionButtonSubtext}>{getGoalsSummary()}</Text>
             </View>
             <Text style={styles.actionButtonArrow}>›</Text>
@@ -439,47 +446,47 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
         {/* Actions */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Configuración</Text>
+          <Text style={styles.sectionTitle}>{t('profile.settings')}</Text>
           
           <TouchableOpacity
             style={styles.actionButton}
             onPress={handleEditProfile}
           >
-            <Text style={styles.actionButtonText}>✏️ Editar Perfil</Text>
+            <Text style={styles.actionButtonText}>{t('profile.editProfile')}</Text>
           </TouchableOpacity>
           
           <TouchableOpacity
             style={styles.actionButton}
             onPress={handleChangePassword}
           >
-            <Text style={styles.actionButtonText}>🔒 Cambiar Contraseña</Text>
+            <Text style={styles.actionButtonText}>{t('profile.changePassword')}</Text>
           </TouchableOpacity>
           
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => Alert.alert('Info', 'Notificaciones próximamente')}
+            onPress={() => Alert.alert(t('alerts.info'), t('profile.notificationsComingSoon'))}
           >
-            <Text style={styles.actionButtonText}>🔔 Notificaciones</Text>
+            <Text style={styles.actionButtonText}>🔔 {t('profile.notifications')}</Text>
           </TouchableOpacity>
           
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => Alert.alert('Info', 'Privacidad próximamente')}
+            onPress={() => Alert.alert(t('alerts.info'), t('profile.privacyComingSoon'))}
           >
-            <Text style={styles.actionButtonText}>🛡️ Privacidad</Text>
+            <Text style={styles.actionButtonText}>🛡️ {t('profile.privacy')}</Text>
           </TouchableOpacity>
         </View>
 
         {/* Danger Zone */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Zona de Peligro</Text>
+          <Text style={styles.sectionTitle}>{t('profile.dangerZone')}</Text>
           
           <TouchableOpacity
             style={[styles.actionButton, styles.dangerButton]}
             onPress={handleDeleteAccount}
           >
             <Text style={[styles.actionButtonText, styles.dangerText]}>
-              🗑️ Eliminar Cuenta
+              🗑️ {t('profile.deleteAccount')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -489,7 +496,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
           style={styles.logoutButton}
           onPress={handleLogout}
         >
-          <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
+          <Text style={styles.logoutButtonText}>{t('profile.logout')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -557,6 +564,12 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+  },
+  languageSwitcherFixed: {
+    position: 'absolute',
+    top: 50,
+    right: 16,
+    zIndex: 20,
   },
   scrollView: {
     flex: 1,
@@ -705,6 +718,10 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  languageSwitcher: {
+    marginBottom: 12,
+    alignSelf: 'flex-start',
   },
 });
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, View, Text, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 interface MacroProgressBarsProps {
   proteinProgress: number; // 0-100
@@ -26,6 +27,7 @@ export default function MacroProgressBars({
   carbsGoal,
   textColor = '#000000',
 }: MacroProgressBarsProps) {
+  const { t } = useTranslation();
   const proteinAnimatedValue = useRef(new Animated.Value(0)).current;
   const fatAnimatedValue = useRef(new Animated.Value(0)).current;
   const carbsAnimatedValue = useRef(new Animated.Value(0)).current;
@@ -88,7 +90,7 @@ export default function MacroProgressBars({
     <View style={styles.container}>
       <View style={styles.macrosRow}>
         {renderMacroBar(
-          'Proteína',
+          t('food.protein'),
           '#FF6B35',
           proteinProgress,
           proteinValue,
@@ -96,7 +98,7 @@ export default function MacroProgressBars({
           proteinAnimatedValue
         )}
         {renderMacroBar(
-          'Grasas',
+          t('food.fat'),
           '#4CAF50',
           fatProgress,
           fatValue,
@@ -104,7 +106,7 @@ export default function MacroProgressBars({
           fatAnimatedValue
         )}
         {renderMacroBar(
-          'Carbos',
+          t('food.carbs'),
           '#2196F3',
           carbsProgress,
           carbsValue,

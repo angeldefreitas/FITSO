@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Modal, Alert } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 interface MealTypeSelectorProps {
   visible: boolean;
@@ -12,11 +13,13 @@ const MealTypeSelector: React.FC<MealTypeSelectorProps> = ({
   onClose,
   onMealTypeSelect,
 }) => {
+  const { t } = useTranslation();
+  
   const mealTypes = [
-    { type: 'Desayuno', icon: '🥞' },
-    { type: 'Almuerzo', icon: '🍲' },
-    { type: 'Snacks', icon: '🥑' },
-    { type: 'Cena', icon: '🍗' }
+    { type: 'Desayuno', icon: '🥞', translation: t('daily.breakfast') },
+    { type: 'Almuerzo', icon: '🍲', translation: t('daily.lunch') },
+    { type: 'Snacks', icon: '🥑', translation: t('daily.snacks') },
+    { type: 'Cena', icon: '🍗', translation: t('daily.dinner') }
   ];
 
   return (
@@ -29,7 +32,7 @@ const MealTypeSelector: React.FC<MealTypeSelectorProps> = ({
       <View style={styles.modalOverlay}>
         <View style={styles.mealTypeSelectorContainer}>
           <View style={styles.mealTypeSelectorHeader}>
-            <Text style={styles.mealTypeSelectorTitle}>¿Qué vas a comer?</Text>
+            <Text style={styles.mealTypeSelectorTitle}>{t('daily.whatWillYouEat')}</Text>
             <TouchableOpacity 
               onPress={onClose} 
               style={styles.mealTypeSelectorCloseButton}
@@ -46,7 +49,7 @@ const MealTypeSelector: React.FC<MealTypeSelectorProps> = ({
                 onPress={() => onMealTypeSelect(mealType.type)}
               >
                 <Text style={styles.mealTypeEmoji}>{mealType.icon}</Text>
-                <Text style={styles.mealTypeText}>{mealType.type}</Text>
+                <Text style={styles.mealTypeText}>{mealType.translation}</Text>
               </TouchableOpacity>
             ))}
           </View>

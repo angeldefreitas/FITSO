@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
 import MealSection from './MealSection';
 
 interface Meal {
@@ -42,11 +43,13 @@ const CollapsibleMealsSection: React.FC<CollapsibleMealsSectionProps> = ({
   expandedSections,
   onToggleSection,
 }) => {
+  const { t } = useTranslation();
+  
   const mealTypes = [
-    { type: 'Desayuno', icon: '🥞' },
-    { type: 'Almuerzo', icon: '🍲' },
-    { type: 'Snacks', icon: '🥑' },
-    { type: 'Cena', icon: '🍗' }
+    { type: 'Desayuno', icon: '🥞', translation: t('daily.breakfast') },
+    { type: 'Almuerzo', icon: '🍲', translation: t('daily.lunch') },
+    { type: 'Snacks', icon: '🥑', translation: t('daily.snacks') },
+    { type: 'Cena', icon: '🍗', translation: t('daily.dinner') }
   ];
 
   // Calcular totales de todas las comidas del día
@@ -133,7 +136,7 @@ const CollapsibleMealsSection: React.FC<CollapsibleMealsSectionProps> = ({
         {/* Título cuando está expandida - al lado del botón */}
         {isExpanded && (
           <View style={styles.expandedTitleContainer}>
-            <Text style={styles.expandedTitleText}>Registro Diario</Text>
+            <Text style={styles.expandedTitleText}>{t('daily.history') || t('profile.dailyGoals')}</Text>
           </View>
         )}
         
@@ -156,7 +159,7 @@ const CollapsibleMealsSection: React.FC<CollapsibleMealsSectionProps> = ({
                 />
               </Svg>
             </View>
-            <Text style={styles.collapsibleMealsTitle}>Registro Diario</Text>
+            <Text style={styles.collapsibleMealsTitle}>{t('daily.history') || t('profile.dailyGoals')}</Text>
           </TouchableOpacity>
         )}
       </View>

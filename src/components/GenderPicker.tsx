@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Colors } from '../constants/colors';
 
 interface GenderPickerProps {
@@ -8,14 +9,15 @@ interface GenderPickerProps {
 }
 
 export default function GenderPicker({ value, onValueChange }: GenderPickerProps) {
+  const { t } = useTranslation();
   const genders = [
-    { key: 'masculino', label: 'Masculino', emoji: '♂️' },
-    { key: 'femenino', label: 'Femenino', emoji: '♀️' },
+    { key: 'masculino', label: t('auth.male'), emoji: '♂️' },
+    { key: 'femenino', label: t('auth.female'), emoji: '♀️' },
   ];
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Sexo biológico</Text>
+      <Text style={styles.label}>{t('auth.gender')}</Text>
       <View style={styles.genderContainer}>
         {genders.map((gender) => (
           <TouchableOpacity

@@ -9,6 +9,7 @@ import {
   Dimensions,
   Alert,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 import LottieView from 'lottie-react-native';
 import { Colors } from '../constants/colors';
@@ -21,6 +22,7 @@ interface PremiumScreenProps {
 }
 
 export default function PremiumScreen({ onClose }: PremiumScreenProps) {
+  const { t } = useTranslation();
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('monthly');
   const { purchaseSubscription, restorePurchases, loading } = usePremium();
 
@@ -33,9 +35,9 @@ export default function PremiumScreen({ onClose }: PremiumScreenProps) {
     } catch (error) {
       console.error('Error en suscripción:', error);
       Alert.alert(
-        'Error',
-        'No se pudo procesar la compra. Inténtalo de nuevo.',
-        [{ text: 'OK' }]
+        t('alerts.error'),
+        t('premium.subscriptionError'),
+        [{ text: t('modals.ok') }]
       );
     }
   };
@@ -44,9 +46,9 @@ export default function PremiumScreen({ onClose }: PremiumScreenProps) {
     try {
       await restorePurchases();
       Alert.alert(
-        'Compras Restauradas',
-        'Se han restaurado tus compras anteriores.',
-        [{ text: 'OK' }]
+        t('premium.purchasesRestored'),
+        t('premium.purchasesRestoredMessage'),
+        [{ text: t('modals.ok') }]
       );
     } catch (error) {
       console.error('Error restaurando compras:', error);
@@ -81,6 +83,11 @@ export default function PremiumScreen({ onClose }: PremiumScreenProps) {
           </TouchableOpacity>
         </View>
 
+        {/* App Title as header */}
+        <View style={styles.appHeader}>
+          <Text style={styles.appTitle}>FITSO</Text>
+        </View>
+
         {/* Premium Icon Animation */}
         <View style={styles.iconContainer}>
           <LottieView
@@ -92,9 +99,9 @@ export default function PremiumScreen({ onClose }: PremiumScreenProps) {
         </View>
 
         {/* Title */}
-        <Text style={styles.title}>Suscríbete a Premium</Text>
+        <Text style={styles.title}>{t('premium.subscribeToPremium')}</Text>
         <Text style={styles.subtitle}>
-          Desbloquea el poder completo de Fitso
+          {t('premium.unlockFullPower')}
         </Text>
 
         {/* Subscription Plans */}
@@ -108,7 +115,7 @@ export default function PremiumScreen({ onClose }: PremiumScreenProps) {
             onPress={() => setSelectedPlan('monthly')}
           >
             <View style={styles.planHeader}>
-              <Text style={styles.planTitle}>Mensual</Text>
+              <Text style={styles.planTitle}>{t('premium.monthly')}</Text>
               {selectedPlan === 'monthly' && (
                 <View style={styles.checkmark}>
                   <Text style={styles.checkmarkText}>✓</Text>
@@ -116,7 +123,7 @@ export default function PremiumScreen({ onClose }: PremiumScreenProps) {
               )}
             </View>
             <Text style={styles.planPrice}>$2.99</Text>
-            <Text style={styles.planBilling}>Facturado mensualmente</Text>
+            <Text style={styles.planBilling}>{t('premium.billedMonthly')}</Text>
           </TouchableOpacity>
 
           {/* Yearly Plan */}
@@ -128,7 +135,7 @@ export default function PremiumScreen({ onClose }: PremiumScreenProps) {
             onPress={() => setSelectedPlan('yearly')}
           >
             <View style={styles.planHeader}>
-              <Text style={styles.planTitle}>Anual</Text>
+              <Text style={styles.planTitle}>{t('premium.yearly')}</Text>
               {selectedPlan === 'yearly' && (
                 <View style={styles.checkmark}>
                   <Text style={styles.checkmarkText}>✓</Text>
@@ -136,9 +143,9 @@ export default function PremiumScreen({ onClose }: PremiumScreenProps) {
               )}
             </View>
             <Text style={styles.planPrice}>$19.99</Text>
-            <Text style={styles.planBilling}>Facturado anualmente</Text>
+            <Text style={styles.planBilling}>{t('premium.billedYearly')}</Text>
             <View style={styles.saveBadge}>
-              <Text style={styles.saveText}>AHORRA 44%</Text>
+              <Text style={styles.saveText}>{t('premium.savePercent', { percent: 44 })}</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -147,19 +154,19 @@ export default function PremiumScreen({ onClose }: PremiumScreenProps) {
         <View style={styles.featuresContainer}>
           <View style={styles.featureItem}>
             <Text style={styles.featureIcon}>🤖</Text>
-            <Text style={styles.featureText}>Uso ILIMITADO de la IA</Text>
+            <Text style={styles.featureText}>{t('premium.unlimitedAI')}</Text>
           </View>
           <View style={styles.featureItem}>
             <Text style={styles.featureIcon}>🚫</Text>
-            <Text style={styles.featureText}>Sin anuncios</Text>
+            <Text style={styles.featureText}>{t('premium.noAds')}</Text>
           </View>
           <View style={styles.featureItem}>
             <Text style={styles.featureIcon}>📊</Text>
-            <Text style={styles.featureText}>Análisis nutricional avanzado</Text>
+            <Text style={styles.featureText}>{t('premium.advancedNutrition')}</Text>
           </View>
           <View style={styles.featureItem}>
             <Text style={styles.featureIcon}>☁️</Text>
-            <Text style={styles.featureText}>Sincronización en la nube</Text>
+            <Text style={styles.featureText}>{t('premium.cloudSync')}</Text>
           </View>
         </View>
 
@@ -170,19 +177,18 @@ export default function PremiumScreen({ onClose }: PremiumScreenProps) {
           disabled={loading}
         >
           <Text style={styles.subscribeButtonText}>
-            {loading ? 'Procesando...' : 'Suscribirse Ahora'}
+            {loading ? t('modals.loading') : t('premium.subscribeNow')}
           </Text>
         </TouchableOpacity>
 
         {/* Restore Button */}
         <TouchableOpacity style={styles.restoreButton} onPress={handleRestore}>
-          <Text style={styles.restoreButtonText}>Restaurar Compras</Text>
+          <Text style={styles.restoreButtonText}>{t('premium.restorePurchases')}</Text>
         </TouchableOpacity>
 
         {/* Terms */}
         <Text style={styles.termsText}>
-          Al suscribirte, aceptas nuestros Términos de Servicio y Política de Privacidad.
-          La suscripción se renueva automáticamente.
+          {t('premium.termsNote')}
         </Text>
         </ScrollView>
       </LinearGradient>
@@ -222,12 +228,27 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 30,
+    marginTop: -35,
+    marginBottom: -25,
   },
   premiumIcon: {
     width: 120,
     height: 120,
+  },
+  appHeader: {
+    paddingTop: 0,
+    marginTop: -20,
+    paddingBottom: 0,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  appTitle: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: Colors.textPrimary,
+    letterSpacing: 2,
+    textAlign: 'center',
   },
   title: {
     fontSize: 32,

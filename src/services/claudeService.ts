@@ -1,4 +1,5 @@
 import { FoodAnalysis, ImageType } from '../types/food';
+import i18n from '../config/i18n';
 import * as FileSystem from 'expo-file-system/legacy';
 
 class ClaudeService {
@@ -15,6 +16,9 @@ class ClaudeService {
       console.log('🌐 Enviando petición a Claude API...');
       console.log('🌐 URL:', this.CLAUDE_API_URL);
       
+      const lang = i18n.language || 'en';
+      const langName = lang === 'es' ? 'español' : lang === 'pt' ? 'portugués' : 'inglés';
+
       const requestBody = {
         model: 'claude-3-haiku-20240307',
         max_tokens: 1000,
@@ -24,14 +28,15 @@ class ClaudeService {
               content: [
                 {
                   type: 'text',
-                  text: `Analiza esta imagen de comida y proporciona información nutricional detallada. 
+                  text: `Analiza esta imagen de comida y proporciona información nutricional detallada.
+                  Responde únicamente en ${langName} según el idioma configurado del dispositivo.
                   Responde en formato JSON con la siguiente estructura:
                   {
-                    "name": "nombre del plato",
-                    "description": "descripción breve",
+                    "name": "dish name",
+                    "description": "short description",
                     "ingredients": [
                       {
-                        "name": "ingrediente",
+                        "name": "ingredient",
                         "per100g": {
                           "calories": 0,
                           "proteins": 0,

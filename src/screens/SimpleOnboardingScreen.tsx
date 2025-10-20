@@ -9,6 +9,7 @@ import {
   Alert 
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 import AgePicker from '../components/AgePicker';
 import WeightPicker from '../components/WeightPicker';
 import HeightPicker from '../components/HeightPicker';
@@ -23,6 +24,7 @@ type Props = {
 
 export default function SimpleOnboardingScreen({ onCompleted }: Props) {
   const { user } = useAuth();
+  const { t } = useTranslation();
   console.log('🔄 SimpleOnboardingScreen montado - user:', user?.id);
   console.log('🔄 SimpleOnboardingScreen - onCompleted function:', typeof onCompleted);
   const [age, setAge] = useState(25);
@@ -37,7 +39,7 @@ export default function SimpleOnboardingScreen({ onCompleted }: Props) {
   const handleSubmit = async () => {
     if (!isFormValid || isSubmitting) {
       if (!isFormValid) {
-        Alert.alert('Error', 'Por favor completa todos los campos');
+        Alert.alert(t('common.error'), t('auth.allFieldsRequired'));
       }
       return;
     }
@@ -50,11 +52,11 @@ export default function SimpleOnboardingScreen({ onCompleted }: Props) {
         age: age,
         heightCm: height,
         weightKg: weight,
-        gender: gender === 'masculino' ? 'male' : 'female',
-        activityLevel: activityLevel === 'sedentario' ? 'sedentary' :
+        gender: (gender === 'masculino' ? 'male' : 'female') as 'male' | 'female',
+        activityLevel: (activityLevel === 'sedentario' ? 'sedentary' :
                       activityLevel === 'ligero' ? 'light' :
                       activityLevel === 'moderado' ? 'moderate' :
-                      activityLevel === 'intenso' ? 'very_active' : 'moderate',
+                      activityLevel === 'intenso' ? 'very_active' : 'moderate') as 'sedentary' | 'light' | 'moderate' | 'very_active',
         goal: goal,
         weightGoalAmount: goal !== 'maintain_weight' ? 0.5 : 0.5
       };
@@ -67,7 +69,7 @@ export default function SimpleOnboardingScreen({ onCompleted }: Props) {
       
     } catch (error) {
       console.error('❌ Error guardando datos:', error);
-      Alert.alert('Error', 'Error al guardar los datos. Inténtalo de nuevo.');
+      Alert.alert(t('common.error'), t('alerts.serverErrorMessage'));
     } finally {
       setIsSubmitting(false);
     }
@@ -87,8 +89,8 @@ export default function SimpleOnboardingScreen({ onCompleted }: Props) {
         <Text style={styles.appTitle}>FITSO</Text>
       </View>
 
-      <Text style={styles.title}>Completa tu perfil</Text>
-      <Text style={styles.subtitle}>Necesitamos algunos datos para personalizar tu experiencia</Text>
+      <Text style={styles.title}>{t('profile.updateBasicInfo')}</Text>
+      <Text style={styles.subtitle}>{t('auth.signUpTitle')}</Text>
 
       {/* Edad */}
       <AgePicker
@@ -110,14 +112,14 @@ export default function SimpleOnboardingScreen({ onCompleted }: Props) {
 
       {/* Género */}
       <View style={styles.inputGroup}>
-        <Text style={styles.label}>Género</Text>
+        <Text style={styles.label}>{t('auth.gender')}</Text>
         <View style={styles.genderContainer}>
           <TouchableOpacity 
             style={[styles.genderButton, gender === 'masculino' && styles.genderButtonSelected]}
             onPress={() => setGender('masculino')}
           >
             <Text style={[styles.genderButtonText, gender === 'masculino' && styles.genderButtonTextSelected]}>
-              Masculino
+              {t('auth.male')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity 
@@ -125,7 +127,7 @@ export default function SimpleOnboardingScreen({ onCompleted }: Props) {
             onPress={() => setGender('femenino')}
           >
             <Text style={[styles.genderButtonText, gender === 'femenino' && styles.genderButtonTextSelected]}>
-              Femenino
+              {t('auth.female')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -133,13 +135,13 @@ export default function SimpleOnboardingScreen({ onCompleted }: Props) {
 
       {/* Nivel de actividad */}
       <View style={styles.inputGroup}>
-        <Text style={styles.label}>Nivel de actividad</Text>
+        <Text style={styles.label}>{t('auth.activityLevel')}</Text>
         <View style={styles.activityContainer}>
           {[
-            { key: 'sedentario', label: 'Sedentario' },
-            { key: 'ligero', label: 'Ligero' },
-            { key: 'moderado', label: 'Moderado' },
-            { key: 'intenso', label: 'Intenso' }
+            { key: 'sedentario', label: t('auth.sedentary') },
+            { key: 'ligero', label: t('auth.light') },
+            { key: 'moderado', label: t('auth.moderate') },
+            { key: 'intenso', label: t('auth.active') }
           ].map((item) => (
             <TouchableOpacity
               key={item.key}
@@ -156,14 +158,14 @@ export default function SimpleOnboardingScreen({ onCompleted }: Props) {
 
       {/* Meta */}
       <View style={styles.inputGroup}>
-        <Text style={styles.label}>Tu meta</Text>
+        <Text style={styles.label}>{t('auth.goal')}</Text>
         <View style={styles.goalContainer}>
           <TouchableOpacity 
             style={[styles.goalButton, goal === 'lose_weight' && styles.goalButtonSelected]}
             onPress={() => setGoal('lose_weight')}
           >
             <Text style={[styles.goalButtonText, goal === 'lose_weight' && styles.goalButtonTextSelected]}>
-              Perder peso
+              {t('auth.loseWeight')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity 
@@ -171,7 +173,7 @@ export default function SimpleOnboardingScreen({ onCompleted }: Props) {
             onPress={() => setGoal('maintain_weight')}
           >
             <Text style={[styles.goalButtonText, goal === 'maintain_weight' && styles.goalButtonTextSelected]}>
-              Mantener peso
+              {t('auth.maintainWeight')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity 
@@ -179,7 +181,7 @@ export default function SimpleOnboardingScreen({ onCompleted }: Props) {
             onPress={() => setGoal('gain_weight')}
           >
             <Text style={[styles.goalButtonText, goal === 'gain_weight' && styles.goalButtonTextSelected]}>
-              Ganar peso
+              {t('auth.gainWeight')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -188,7 +190,7 @@ export default function SimpleOnboardingScreen({ onCompleted }: Props) {
       {/* Cantidad de peso objetivo */}
       {goal === 'lose_weight' && (
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>¿Cuánto peso quieres perder por semana?</Text>
+          <Text style={styles.label}>{t('profile.loseWeightPerWeek', { amount: '' }).replace(' {{amount}}', '')}</Text>
           <View style={styles.weightOptionsContainer}>
             {[1.0, 0.8, 0.5, 0.2].map((option) => (
               <TouchableOpacity
@@ -207,7 +209,7 @@ export default function SimpleOnboardingScreen({ onCompleted }: Props) {
       
       {goal === 'gain_weight' && (
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>¿Cuánto peso quieres ganar por semana?</Text>
+          <Text style={styles.label}>{t('profile.gainWeightPerWeek', { amount: '' }).replace(' {{amount}}', '')}</Text>
           <View style={styles.weightOptionsContainer}>
             {[0.2, 0.5].map((option) => (
               <TouchableOpacity
@@ -231,7 +233,7 @@ export default function SimpleOnboardingScreen({ onCompleted }: Props) {
         disabled={!isFormValid || isSubmitting}
       >
         <Text style={styles.continueButtonText}>
-          {isSubmitting ? 'Guardando...' : 'Continuar'}
+          {isSubmitting ? t('common.loading') : t('modals.continue')}
         </Text>
       </TouchableOpacity>
     </ScrollView>

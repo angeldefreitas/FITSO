@@ -9,6 +9,7 @@ import {
   StyleSheet 
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import { useTranslation } from 'react-i18next';
 
 interface NumberPickerProps {
   value: number;
@@ -37,6 +38,7 @@ export default function NumberPicker({
   modalTitle,
   customOptions
 }: NumberPickerProps) {
+  const { t } = useTranslation();
   const [isVisible, setIsVisible] = useState(false);
   const [tempValue, setTempValue] = useState(value);
 
@@ -97,7 +99,7 @@ export default function NumberPicker({
         onPress={() => setIsVisible(true)}
       >
         <Text style={styles.pickerText}>
-          {value ? `${value}${unit}` : placeholder}
+          {value ? `${value}${unit}` : (placeholder || t('modals.select') || 'Seleccionar')}
         </Text>
         <Text style={styles.pickerIcon}>▼</Text>
       </TouchableOpacity>
@@ -112,13 +114,13 @@ export default function NumberPicker({
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <TouchableOpacity onPress={handleCancel}>
-                <Text style={styles.cancelButton}>Cancelar</Text>
+                <Text style={styles.cancelButton}>{t('modals.cancel')}</Text>
               </TouchableOpacity>
               <Text style={styles.modalTitle} numberOfLines={1}>
                 {modalTitle || label}
               </Text>
               <TouchableOpacity onPress={handleConfirm}>
-                <Text style={styles.confirmButton}>Confirmar</Text>
+                <Text style={styles.confirmButton}>{t('modals.confirm')}</Text>
               </TouchableOpacity>
             </View>
 

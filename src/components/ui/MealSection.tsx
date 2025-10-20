@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import ColoredMacros from '../ColoredMacros';
 
 interface Meal {
@@ -51,6 +52,18 @@ const MealSection: React.FC<MealSectionProps> = ({
   totals,
   goals,
 }) => {
+  const { t } = useTranslation();
+  
+  // Función para obtener la traducción del tipo de comida
+  const getMealTypeTranslation = (mealType: string) => {
+    const translations: { [key: string]: string } = {
+      'Desayuno': t('daily.breakfast'),
+      'Almuerzo': t('daily.lunch'),
+      'Snacks': t('daily.snacks'),
+      'Cena': t('daily.dinner')
+    };
+    return translations[mealType] || mealType;
+  };
   const renderMealItem = (item: Meal) => (
     <TouchableOpacity 
       style={styles.mealItemRow}
@@ -93,7 +106,7 @@ const MealSection: React.FC<MealSectionProps> = ({
             <Text style={styles.mealSectionEmoji}>{icon}</Text>
           </View>
           <View style={styles.mealSectionInfo}>
-            <Text style={styles.mealSectionTitle}>{mealType}</Text>
+            <Text style={styles.mealSectionTitle}>{getMealTypeTranslation(mealType)}</Text>
             <Text style={styles.mealSectionCalories}>
               {totals.calories} / {goals.calories} kcal
             </Text>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Colors } from '../../constants/colors';
 import { ProgressSummary as ProgressSummaryType } from '../../types/progress';
 
@@ -14,6 +15,7 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({
   type,
   timeFilter
 }) => {
+  const { t } = useTranslation();
   const unit = type === 'peso' ? 'kg' : 'cm';
   const changeIcon = summary.isIncrease ? '↗️' : '↘️';
   const changeColor = summary.isIncrease ? '#FF6B6B' : '#4ECDC4';
@@ -21,7 +23,7 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Resumen de Progreso</Text>
+        <Text style={styles.title}>{t('progress.progressSummary')}</Text>
         <Text style={styles.timeFilter}>{timeFilter}</Text>
       </View>
 
@@ -29,19 +31,19 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({
         {/* Peso/Medida Inicial */}
         <View style={styles.metricItem}>
           <Text style={styles.metricLabel}>
-            {type === 'peso' ? 'PESO INICIAL' : 'INICIO'}
+            {type === 'peso' ? t('progress.initialWeight') : t('progress.initialMeasurement')}
           </Text>
           <Text style={styles.metricValue}>
             {summary.initialValue.toFixed(1)} {unit}
           </Text>
           {type === 'peso' && (
-            <Text style={styles.metricSubtext}>Del perfil</Text>
+            <Text style={styles.metricSubtext}>{t('progress.fromProfile')}</Text>
           )}
         </View>
 
         {/* Peso/Medida Actual */}
         <View style={styles.metricItem}>
-          <Text style={styles.metricLabel}>ACTUAL</Text>
+          <Text style={styles.metricLabel}>{t('progress.current')}</Text>
           <Text style={styles.metricValue}>
             {summary.currentValue.toFixed(1)} {unit}
           </Text>
@@ -49,7 +51,7 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({
 
         {/* Cambio */}
         <View style={styles.metricItem}>
-          <Text style={styles.metricLabel}>CAMBIO</Text>
+          <Text style={styles.metricLabel}>{t('progress.change')}</Text>
           <View style={styles.changeContainer}>
             <Text style={styles.changeIcon}>{changeIcon}</Text>
             <Text style={[styles.changeValue, { color: changeColor }]}>

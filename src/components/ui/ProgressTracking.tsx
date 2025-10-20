@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Modal, Alert, TextInput } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LottieView from 'lottie-react-native';
@@ -35,6 +36,7 @@ const ProgressTracking: React.FC<ProgressTrackingProps> = ({
   onCaloriesBurnedChange,
   selectedDate = new Date(),
 }) => {
+  const { t } = useTranslation();
   const [selectedChart, setSelectedChart] = useState<ChartType>('peso');
   const [progressData, setProgressData] = useState<ProgressData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -231,7 +233,7 @@ const ProgressTracking: React.FC<ProgressTrackingProps> = ({
         >
           <View style={styles.chartHeader}>
             <Text style={styles.chartTitle}>
-              {selectedChart === 'peso' ? 'Evolución del Peso' : 'Medidas Corporales'}
+              {selectedChart === 'peso' ? t('progress.weightEvolution') : t('progress.bodyMeasurements')}
             </Text>
             <Text style={styles.chartUnit}>
               {selectedChart === 'peso' ? 'kg' : 'cm'}
@@ -271,7 +273,7 @@ const ProgressTracking: React.FC<ProgressTrackingProps> = ({
       <TouchableOpacity style={styles.chartContainer} onPress={onChartPress} activeOpacity={0.8}>
         <View style={styles.chartHeader}>
           <Text style={styles.chartTitle}>
-            {selectedChart === 'peso' ? 'Evolución del Peso' : 'Medidas Corporales'}
+            {selectedChart === 'peso' ? t('progress.weightEvolution') : t('progress.bodyMeasurements')}
           </Text>
           <Text style={styles.chartUnit}>
             {selectedChart === 'peso' ? 'kg' : 'cm'}
@@ -399,7 +401,7 @@ const ProgressTracking: React.FC<ProgressTrackingProps> = ({
         >
           {/* Título y botón fuera del círculo */}
           <View style={styles.caloriesHeader}>
-            <Text style={styles.caloriesTitle}>Calorías Quemadas</Text>
+            <Text style={styles.caloriesTitle}>{t('progress.caloriesBurned')}</Text>
             <TouchableOpacity 
               style={styles.plusButton}
               onPress={() => setShowCaloriesModal(true)}
@@ -470,8 +472,8 @@ const ProgressTracking: React.FC<ProgressTrackingProps> = ({
       <View style={styles.gradient}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Progreso</Text>
-          <Text style={styles.subtitle}>Evolución y actividad</Text>
+          <Text style={styles.title}>{t('progress.title')}</Text>
+          <Text style={styles.subtitle}>{t('progress.subtitle')}</Text>
         </View>
 
         <View style={styles.contentContainer}>
@@ -489,7 +491,7 @@ const ProgressTracking: React.FC<ProgressTrackingProps> = ({
                 }}
               >
                 <Text style={[styles.selectorText, selectedChart === 'peso' && styles.selectorTextActive]}>
-                  Peso
+                  {t('progress.weight')}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity 
@@ -502,7 +504,7 @@ const ProgressTracking: React.FC<ProgressTrackingProps> = ({
                 }}
               >
                 <Text style={[styles.selectorText, selectedChart === 'medidas' && styles.selectorTextActive]}>
-                  Medidas
+                  {t('progress.measurements')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -527,7 +529,7 @@ const ProgressTracking: React.FC<ProgressTrackingProps> = ({
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Calorías Quemadas</Text>
+              <Text style={styles.modalTitle}>{t('progress.caloriesBurned')}</Text>
               <TouchableOpacity 
                 style={styles.closeButton}
                 onPress={() => setShowCaloriesModal(false)}
@@ -538,7 +540,7 @@ const ProgressTracking: React.FC<ProgressTrackingProps> = ({
 
             <View style={styles.caloriesInputSection}>
               <Text style={styles.caloriesInputTitle}>
-                Agregar o quitar calorías:
+                {t('progress.addOrRemoveCalories')}:
               </Text>
               
               <View style={styles.caloriesInputContainer}>
@@ -601,13 +603,13 @@ const ProgressTracking: React.FC<ProgressTrackingProps> = ({
                           setCaloriesGoalInput(caloriesData.goal);
                         }}
                       >
-                        <Text style={styles.cancelButtonText}>Cancelar</Text>
+                        <Text style={styles.cancelButtonText}>{t('modals.cancel')}</Text>
                       </TouchableOpacity>
                       <TouchableOpacity 
                         style={[styles.goalInputButton, styles.saveButton]}
                         onPress={handleUpdateGoal}
                       >
-                        <Text style={styles.saveButtonText}>Guardar</Text>
+                        <Text style={styles.saveButtonText}>{t('modals.save')}</Text>
                       </TouchableOpacity>
                     </View>
                   </View>

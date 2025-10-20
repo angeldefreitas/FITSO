@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, TouchableOpacity, StyleSheet, Text, Modal, ScrollView, Animated } from 'react-native';
 import { Colors } from '../constants/colors';
+import { useTranslation } from 'react-i18next';
 import Svg, { Path } from 'react-native-svg';
 import { NutritionGoals, calculateNutritionProgress } from '../lib/nutritionCalculator';
 
@@ -28,6 +29,7 @@ interface Notification {
 }
 
 export default function BottomNavigation({ activeTab, onTabChange, onAddPress, onProgressPress, onPremiumPress, nutritionGoals, consumed }: BottomNavigationProps) {
+  const { t } = useTranslation();
   const [showNotifications, setShowNotifications] = useState(false);
 
   // Generar recomendaciones nutricionales
@@ -287,7 +289,7 @@ export default function BottomNavigation({ activeTab, onTabChange, onAddPress, o
         <View style={styles.modalOverlay}>
           <View style={styles.notificationsContainer}>
             <View style={styles.notificationsHeader}>
-              <Text style={styles.notificationsTitle}>Notificaciones</Text>
+              <Text style={styles.notificationsTitle}>{t('navigation.notifications')}</Text>
               <TouchableOpacity
                 onPress={() => setShowNotifications(false)}
                 style={styles.closeButton}

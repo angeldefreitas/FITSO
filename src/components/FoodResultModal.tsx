@@ -12,6 +12,7 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../constants/colors';
 import BannerAd from './BannerAd';
@@ -39,6 +40,7 @@ export default function FoodResultModal({
   onConfirm,
   isLoading = false,
 }: FoodResultModalProps) {
+  const { t } = useTranslation();
   const [quantity, setQuantity] = useState('100');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [calculatedNutrition, setCalculatedNutrition] = useState({
@@ -195,9 +197,9 @@ export default function FoodResultModal({
           <View style={styles.nutritionInfo}>
             <Text style={styles.nutritionTitle}>Información Nutricional (por 100g):</Text>
             <Text style={styles.nutritionText}>Calorías: {product.nutrition.calories}</Text>
-            <Text style={styles.nutritionText}>Proteína: {product.nutrition.protein}g</Text>
-            <Text style={styles.nutritionText}>Carbohidratos: {product.nutrition.carbs}g</Text>
-            <Text style={styles.nutritionText}>Grasas: {product.nutrition.fat}g</Text>
+            <Text style={styles.nutritionText}>{t('food.protein')}: {product.nutrition.protein}g</Text>
+            <Text style={styles.nutritionText}>{t('food.carbs')}: {product.nutrition.carbs}g</Text>
+            <Text style={styles.nutritionText}>{t('food.fat')}: {product.nutrition.fat}g</Text>
           </View>
         </View>
       );
@@ -215,9 +217,9 @@ export default function FoodResultModal({
           <View style={styles.nutritionInfo}>
             <Text style={styles.nutritionTitle}>Información Nutricional Total:</Text>
             <Text style={styles.nutritionText}>Calorías: {foodAnalysis.totalNutrients.calories}</Text>
-            <Text style={styles.nutritionText}>Proteína: {foodAnalysis.totalNutrients.proteins}g</Text>
-            <Text style={styles.nutritionText}>Carbohidratos: {foodAnalysis.totalNutrients.carbs}g</Text>
-            <Text style={styles.nutritionText}>Grasas: {foodAnalysis.totalNutrients.fats}g</Text>
+            <Text style={styles.nutritionText}>{t('food.protein')}: {foodAnalysis.totalNutrients.proteins}g</Text>
+            <Text style={styles.nutritionText}>{t('food.carbs')}: {foodAnalysis.totalNutrients.carbs}g</Text>
+            <Text style={styles.nutritionText}>{t('food.fat')}: {foodAnalysis.totalNutrients.fats}g</Text>
           </View>
 
           {foodAnalysis.ingredients && foodAnalysis.ingredients.length > 0 && (
@@ -256,7 +258,7 @@ export default function FoodResultModal({
             <View style={styles.modalContainer}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>
-                  {product ? 'Especificar Cantidad' : 'Especificar Cantidad'}
+                  {t('food.servingSize')}
                 </Text>
                 <TouchableOpacity onPress={onClose} style={styles.closeButton}>
                   <Text style={styles.closeButtonText}>✕</Text>
@@ -271,14 +273,14 @@ export default function FoodResultModal({
             {isLoading ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color={Colors.textPrimary} />
-                <Text style={styles.loadingText}>Procesando...</Text>
+                <Text style={styles.loadingText}>{t('common.loading')}</Text>
               </View>
             ) : (
               <>
                 {/* Información del alimento */}
                 <View style={styles.foodInfo}>
                   <Text style={styles.foodName}>
-                    {product ? `Producto: ${product.name}` : `Producto: ${foodAnalysis?.name}`}
+                    {product ? `${t('food.product')}: ${product.name}` : `${t('food.product')}: ${foodAnalysis?.name}`}
                   </Text>
                   {foodAnalysis && foodAnalysis.description && (
                     <Text style={styles.foodCategory}>
@@ -298,7 +300,7 @@ export default function FoodResultModal({
 
                 {/* Input de cantidad */}
                 <View style={styles.quantitySection}>
-                  <Text style={styles.quantityLabel}>Ingresa la cantidad (gramos)</Text>
+                  <Text style={styles.quantityLabel}>{t('food.enterQuantityGrams')}</Text>
                   <TextInput
                     style={styles.quantityInput}
                     value={quantity}
@@ -313,7 +315,7 @@ export default function FoodResultModal({
 
                 {/* Valores Nutricionales */}
                 <View style={styles.nutritionSection}>
-                  <Text style={styles.nutritionTitle}>Valores Nutricionales</Text>
+                  <Text style={styles.nutritionTitle}>{t('food.nutritionalValues')}</Text>
                   
                   {/* Círculo de calorías centrado */}
                   <View style={styles.caloriesContainer}>
@@ -340,7 +342,7 @@ export default function FoodResultModal({
                         backgroundColor="rgba(255, 107, 53, 0.2)"
                         currentValue={calculatedNutrition.protein.toFixed(1)}
                         targetValue="g"
-                        label="Proteína"
+                        label={t('food.protein')}
                         textColor="#2c3e50"
                       />
                     </View>
@@ -354,7 +356,7 @@ export default function FoodResultModal({
                         backgroundColor="rgba(76, 175, 80, 0.2)"
                         currentValue={calculatedNutrition.fat.toFixed(1)}
                         targetValue="g"
-                        label="Grasas"
+                        label={t('food.fat')}
                         textColor="#2c3e50"
                       />
                     </View>
@@ -368,7 +370,7 @@ export default function FoodResultModal({
                         backgroundColor="rgba(33, 150, 243, 0.2)"
                         currentValue={calculatedNutrition.carbs.toFixed(1)}
                         targetValue="g"
-                        label="Carbos"
+                        label={t('food.carbs')}
                         textColor="#2c3e50"
                       />
                     </View>
@@ -385,7 +387,7 @@ export default function FoodResultModal({
                     style={styles.cancelButton}
                     onPress={onClose}
                   >
-                    <Text style={styles.cancelButtonText}>Cancelar</Text>
+                    <Text style={styles.cancelButtonText}>{t('modals.cancel')}</Text>
                   </TouchableOpacity>
                   
                   <TouchableOpacity
@@ -394,7 +396,7 @@ export default function FoodResultModal({
                     disabled={isSubmitting}
                   >
                     <Text style={styles.confirmButtonText}>
-                      {isSubmitting ? 'Agregando...' : 'Agregar'}
+                      {isSubmitting ? t('modals.loading') : t('modals.add')}
                     </Text>
                   </TouchableOpacity>
                 </View>

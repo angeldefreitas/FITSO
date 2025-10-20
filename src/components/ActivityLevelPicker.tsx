@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Colors } from '../constants/colors';
 
 interface ActivityLevelPickerProps {
@@ -8,16 +9,17 @@ interface ActivityLevelPickerProps {
 }
 
 export default function ActivityLevelPicker({ value, onValueChange }: ActivityLevelPickerProps) {
+  const { t } = useTranslation();
   const activityLevels = [
-    { key: 'sedentario', label: 'No muy activo', emoji: '🛋️', description: 'Trabajo de escritorio, poco ejercicio' },
-    { key: 'ligero', label: 'Ligeramente activo', emoji: '🚶‍♂️', description: 'Ejercicio ligero 1-3 días/semana' },
-    { key: 'moderado', label: 'Activo', emoji: '🏃‍♂️', description: 'Ejercicio moderado 3-5 días/semana' },
-    { key: 'intenso', label: 'Bastante activo', emoji: '💪', description: 'Ejercicio intenso 6-7 días/semana' },
+    { key: 'sedentario', label: t('auth.sedentary'), emoji: '🛋️', description: t('auth.sedentaryDescription') },
+    { key: 'ligero', label: t('auth.light'), emoji: '🚶‍♂️', description: t('auth.lightDescription') },
+    { key: 'moderado', label: t('auth.moderate'), emoji: '🏃‍♂️', description: t('auth.moderateDescription') },
+    { key: 'intenso', label: t('auth.active'), emoji: '💪', description: t('auth.activeDescription') },
   ];
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Nivel de actividad física</Text>
+      <Text style={styles.label}>{t('auth.activityLevel')}</Text>
       <View style={styles.levelsContainer}>
         {activityLevels.map((level) => (
           <TouchableOpacity

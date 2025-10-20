@@ -11,6 +11,7 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../contexts/AuthContext';
 import { Colors } from '../constants/colors';
@@ -20,6 +21,7 @@ interface EditProfileScreenProps {
 }
 
 const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => {
+  const { t } = useTranslation();
   const { user, updateProfile, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState('');
@@ -34,18 +36,18 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
 
   const validateForm = () => {
     if (!name.trim()) {
-      Alert.alert('Error', 'El nombre es requerido');
+      Alert.alert(t('alerts.error'), t('auth.nameRequired'));
       return false;
     }
 
     if (!email.trim()) {
-      Alert.alert('Error', 'El email es requerido');
+      Alert.alert(t('alerts.error'), t('auth.emailRequired'));
       return false;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      Alert.alert('Error', 'Ingresa un email válido');
+      Alert.alert(t('alerts.error'), t('auth.invalidEmail'));
       return false;
     }
 
@@ -63,13 +65,13 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
       });
       
       Alert.alert(
-        '¡Perfil actualizado!',
+        t('profile.profileUpdated'),
         'Tu perfil ha sido actualizado exitosamente',
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
+        [{ text: t('modals.ok'), onPress: () => navigation.goBack() }]
       );
     } catch (error: any) {
       console.error('Error actualizando perfil:', error);
-      Alert.alert('Error', error.message || 'Error al actualizar el perfil');
+      Alert.alert(t('alerts.error'), error.message || t('profile.updateError'));
     } finally {
       setLoading(false);
     }
@@ -77,8 +79,8 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
 
   const handleCancel = () => {
     Alert.alert(
-      'Cancelar cambios',
-      '¿Estás seguro de que quieres descartar los cambios?',
+      t('alerts.discardChanges'),
+      t('alerts.discardChangesMessage'),
       [
         { text: 'Continuar editando', style: 'cancel' },
         { text: 'Descartar', style: 'destructive', onPress: () => navigation.goBack() },
@@ -99,13 +101,13 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
         >
           <ScrollView contentContainerStyle={styles.scrollContainer}>
             <View style={styles.content}>
-              <Text style={styles.title}>Editar Perfil</Text>
+              <Text style={styles.title}>{t('profile.editProfile')}</Text>
               <Text style={styles.subtitle}>
-                Actualiza tu información básica
+                {t('profile.updateBasicInfo')}
               </Text>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Nombre completo</Text>
+            <Text style={styles.label}>{t('auth.fullName')}</Text>
             <TextInput
               style={styles.input}
               value={name}
@@ -117,7 +119,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Email</Text>
+            <Text style={styles.label}>{t('auth.email')}</Text>
             <TextInput
               style={styles.input}
               value={email}
@@ -151,7 +153,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
             {(loading || authLoading) ? (
               <ActivityIndicator color="white" />
             ) : (
-              <Text style={styles.saveButtonText}>Guardar Cambios</Text>
+              <Text style={styles.saveButtonText}>{t('profile.saveChanges')}</Text>
             )}
           </TouchableOpacity>
 
@@ -159,7 +161,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
                 style={styles.cancelButton}
                 onPress={handleCancel}
               >
-                <Text style={styles.cancelButtonText}>Cancelar</Text>
+                <Text style={styles.cancelButtonText}>{t('modals.cancel')}</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>

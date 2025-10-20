@@ -11,6 +11,7 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { Colors } from '../constants/colors';
 
@@ -19,6 +20,7 @@ interface ForgotPasswordScreenProps {
 }
 
 const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ navigation }) => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
@@ -26,13 +28,13 @@ const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ navigation 
 
   const handleResetPassword = async () => {
     if (!email.trim()) {
-      Alert.alert('Error', 'Por favor ingresa tu email');
+      Alert.alert(t('alerts.error'), t('auth.emailRequired'));
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      Alert.alert('Error', 'Por favor ingresa un email válido');
+      Alert.alert(t('alerts.error'), t('auth.invalidEmail'));
       return;
     }
 
@@ -41,12 +43,12 @@ const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ navigation 
       await forgotPassword({ email });
       setEmailSent(true);
       Alert.alert(
-        'Email enviado',
-        'Si el email existe, recibirás instrucciones para restablecer tu contraseña'
+        t('auth.emailSent'),
+        t('auth.emailSentMessage'),
       );
     } catch (error: any) {
       console.error('Error en forgot password:', error);
-      Alert.alert('Error', error.message || 'Error al enviar el email de recuperación');
+      Alert.alert(t('alerts.error'), error.message || t('auth.forgotPasswordError'));
     } finally {
       setLoading(false);
     }
@@ -56,9 +58,9 @@ const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ navigation 
     setLoading(true);
     try {
       await forgotPassword({ email });
-      Alert.alert('Éxito', 'Email de recuperación reenviado');
+      Alert.alert(t('alerts.success'), t('auth.emailResent'));
     } catch (error: any) {
-      Alert.alert('Error', 'Error al reenviar el email');
+      Alert.alert(t('alerts.error'), t('auth.resendError'));
     } finally {
       setLoading(false);
     }
@@ -73,9 +75,9 @@ const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ navigation 
               <Text style={styles.successIconText}>📧</Text>
             </View>
             
-            <Text style={styles.title}>¡Email enviado!</Text>
+            <Text style={styles.title}>{t('auth.emailSent')}!</Text>
             <Text style={styles.subtitle}>
-              Hemos enviado un enlace de recuperación a:
+              {t('auth.emailSentTo')}:
             </Text>
             <Text style={styles.emailText}>{email}</Text>
             
@@ -99,7 +101,7 @@ const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ navigation 
               style={styles.backButton}
               onPress={() => navigation.navigate('Login')}
             >
-              <Text style={styles.backButtonText}>Volver al inicio de sesión</Text>
+              <Text style={styles.backButtonText}>{t('auth.backToLogin')}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -114,14 +116,14 @@ const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ navigation 
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.content}>
-          <Text style={styles.title}>¿Olvidaste tu contraseña?</Text>
+          <Text style={styles.title}>{t('auth.forgotPassword')}</Text>
           <Text style={styles.subtitle}>
             No te preocupes, te enviaremos un enlace para restablecer tu contraseña.
           </Text>
 
           <View style={styles.form}>
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.label}>{t('auth.email')}</Text>
               <TextInput
                 style={styles.input}
                 value={email}
@@ -142,7 +144,7 @@ const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ navigation 
               {(loading || authLoading) ? (
                 <ActivityIndicator color="white" />
               ) : (
-                <Text style={styles.resetButtonText}>Enviar enlace de recuperación</Text>
+                <Text style={styles.resetButtonText}>{t('auth.sendRecoveryLink')}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -151,7 +153,7 @@ const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ navigation 
             style={styles.backButton}
             onPress={() => navigation.navigate('Login')}
           >
-            <Text style={styles.backButtonText}>Volver al inicio de sesión</Text>
+            <Text style={styles.backButtonText}>{t('auth.backToLogin')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

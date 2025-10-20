@@ -9,6 +9,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Colors } from '../../constants/colors';
 import LoseWeightPicker from '../LoseWeightPicker';
 import GainWeightPicker from '../GainWeightPicker';
@@ -43,6 +44,7 @@ const GoalsModal: React.FC<GoalsModalProps> = ({
   loading = false,
   biometricData,
 }) => {
+  const { t } = useTranslation();
   const [goal, setGoal] = useState<'lose_weight' | 'gain_weight' | 'maintain_weight'>('lose_weight');
   const [weightGoalAmount, setWeightGoalAmount] = useState(0.5);
   const [nutritionGoals, setNutritionGoals] = useState<any>(null);
@@ -98,9 +100,9 @@ const GoalsModal: React.FC<GoalsModalProps> = ({
   };
 
   const goalsOptions = [
-    { key: 'lose_weight', label: 'Perder peso', emoji: '🔥', color: '#e74c3c' },
-    { key: 'gain_weight', label: 'Ganar peso', emoji: '💪', color: '#3498db' },
-    { key: 'maintain_weight', label: 'Mantener peso', emoji: '⚖️', color: '#2ecc71' },
+    { key: 'lose_weight', label: t('auth.loseWeight'), emoji: '🔥', color: '#e74c3c' },
+    { key: 'gain_weight', label: t('auth.gainWeight'), emoji: '💪', color: '#3498db' },
+    { key: 'maintain_weight', label: t('auth.maintainWeight'), emoji: '⚖️', color: '#2ecc71' },
   ];
 
   return (
@@ -113,9 +115,9 @@ const GoalsModal: React.FC<GoalsModalProps> = ({
       <View style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={handleCancel} style={styles.cancelButton}>
-            <Text style={styles.cancelButtonText}>Cancelar</Text>
+            <Text style={styles.cancelButtonText}>{t('modals.cancel')}</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>Metas y Objetivos</Text>
+          <Text style={styles.title}>{t('profile.goals')}</Text>
           <TouchableOpacity 
             onPress={handleSave} 
             style={[styles.saveButton, loading && styles.disabledButton]}
@@ -124,19 +126,19 @@ const GoalsModal: React.FC<GoalsModalProps> = ({
             {loading ? (
               <ActivityIndicator color="white" size="small" />
             ) : (
-              <Text style={styles.saveButtonText}>Guardar</Text>
+              <Text style={styles.saveButtonText}>{t('modals.save')}</Text>
             )}
           </TouchableOpacity>
         </View>
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           <Text style={styles.subtitle}>
-            Define tus objetivos de salud y fitness
+            {t('profile.configureGoals')}
           </Text>
 
           {/* Objetivo principal */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Objetivo principal</Text>
+            <Text style={styles.inputLabel}>{t('profile.goals')}</Text>
             <View style={styles.goalsGrid}>
               {goalsOptions.map((goalOption) => (
                 <TouchableOpacity
@@ -162,7 +164,7 @@ const GoalsModal: React.FC<GoalsModalProps> = ({
           {/* Cantidad de peso objetivo */}
           {goal === 'lose_weight' && (
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Cantidad a perder (kg/semana)</Text>
+              <Text style={styles.inputLabel}>{t('profile.loseWeightPerWeek', { amount: '' }).replace(' {{amount}}', '')}</Text>
               <View style={styles.pickerWrapper}>
                 <LoseWeightPicker
                   value={weightGoalAmount}
@@ -174,7 +176,7 @@ const GoalsModal: React.FC<GoalsModalProps> = ({
 
           {goal === 'gain_weight' && (
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Cantidad a ganar (kg/semana)</Text>
+              <Text style={styles.inputLabel}>{t('profile.gainWeightPerWeek', { amount: '' }).replace(' {{amount}}', '')}</Text>
               <View style={styles.pickerWrapper}>
                 <GainWeightPicker
                   value={weightGoalAmount}
@@ -187,12 +189,12 @@ const GoalsModal: React.FC<GoalsModalProps> = ({
           {/* Objetivos Nutricionales */}
           {biometricData && (
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Objetivos nutricionales</Text>
+              <Text style={styles.inputLabel}>{t('profile.dailyGoals')}</Text>
               <View style={styles.pickerWrapper}>
                 <NutritionGoalsPicker
                   profile={{
                     id: 'temp',
-                    name: 'Usuario',
+                    name: t('profile.user'),
                     age: biometricData.age,
                     height: biometricData.height,
                     weight: biometricData.weight,

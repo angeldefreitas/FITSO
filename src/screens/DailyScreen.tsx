@@ -14,6 +14,7 @@ import { calculateNutritionGoals, calculateNutritionProgress, NutritionGoals } f
 import { useAuth } from '../contexts/AuthContext';
 import { useProfile } from '../contexts/ProfileContext';
 import { usePremium } from '../contexts/PremiumContext';
+import { useTranslation } from 'react-i18next';
 import CircularProgress from '../components/CircularProgress';
 import CircularProgressBar from '../components/CircularProgressBar';
 import MacroProgressBars from '../components/MacroProgressBars';
@@ -81,6 +82,18 @@ export default function DailyScreen({ onTabChange, shouldOpenAddModal, onModalOp
   const { user, profileData, getProfileData } = useAuth();
   const { profile } = useProfile();
   const { isPremium, canUseAIScan, recordAIScan, dailyScansUsed } = usePremium();
+  const { t } = useTranslation();
+  
+  // Mapeo de tipos de comida a traducciones
+  const getMealTypeTranslation = (mealType: string) => {
+    const translations: { [key: string]: string } = {
+      'Desayuno': t('daily.breakfast'),
+      'Almuerzo': t('daily.lunch'),
+      'Snacks': t('daily.snacks'),
+      'Cena': t('daily.dinner')
+    };
+    return translations[mealType] || mealType;
+  };
   
   // Estados locales
   const [name, setName] = useState('');
@@ -984,7 +997,7 @@ export default function DailyScreen({ onTabChange, shouldOpenAddModal, onModalOp
         >
           <View style={dailyScreenStyles.caloriesLeft}>
             <Text style={dailyScreenStyles.caloriesConsumedNumber}>{totalCalories}</Text>
-            <Text style={dailyScreenStyles.caloriesConsumedLabel}>Consumidas</Text>
+            <Text style={dailyScreenStyles.caloriesConsumedLabel}>{t('daily.caloriesConsumed')}</Text>
           </View>
           
           <View style={dailyScreenStyles.caloriesCenter}>
@@ -996,13 +1009,13 @@ export default function DailyScreen({ onTabChange, shouldOpenAddModal, onModalOp
               backgroundColor="rgba(128, 128, 128, 0.1)"
             >
               <Text style={dailyScreenStyles.caloriesRemainingNumber}>{remainingCalories}</Text>
-              <Text style={dailyScreenStyles.caloriesRemainingLabel}>kcal restantes</Text>
+              <Text style={dailyScreenStyles.caloriesRemainingLabel}>{t('daily.caloriesRemaining')}</Text>
             </CircularProgressBar>
           </View>
           
           <View style={dailyScreenStyles.caloriesRight}>
             <Text style={dailyScreenStyles.caloriesGoalNumber}>{calorieGoal}</Text>
-            <Text style={dailyScreenStyles.caloriesGoalLabel}>Objetivo</Text>
+            <Text style={dailyScreenStyles.caloriesGoalLabel}>{t('daily.caloriesGoal')}</Text>
           </View>
         </TouchableOpacity>
 

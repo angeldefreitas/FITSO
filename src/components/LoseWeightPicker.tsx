@@ -1,5 +1,6 @@
 import React from 'react';
 import NumberPicker from './NumberPicker';
+import { useTranslation } from 'react-i18next';
 
 interface LoseWeightPickerProps {
   value: number;
@@ -7,6 +8,7 @@ interface LoseWeightPickerProps {
 }
 
 export default function LoseWeightPicker({ value, onValueChange }: LoseWeightPickerProps) {
+  const { t, i18n } = useTranslation();
   // Opciones específicas para perder peso
   const loseWeightOptions = [1.0, 0.8, 0.5, 0.2];
   
@@ -17,10 +19,10 @@ export default function LoseWeightPicker({ value, onValueChange }: LoseWeightPic
       min={0.2}
       max={1.0}
       step={0.1}
-      unit=" kg/semana"
-      placeholder="Seleccionar cantidad"
-      label="¿Cuánto peso quieres perder por semana?"
-      modalTitle="¿Cuánto peso deseas perder?"
+      unit={i18n.language === 'pt' ? ' kg/semana' : i18n.language === 'en' ? ' kg/week' : ' kg/semana'}
+      placeholder={t('modals.select') || 'Select'}
+      label={t('profile.loseWeightPerWeek', { amount: '' }).replace(' {{amount}}', '')}
+      modalTitle={t('profile.loseWeightPerWeek', { amount: '' }).replace(' {{amount}}', '')}
       customOptions={loseWeightOptions}
     />
   );

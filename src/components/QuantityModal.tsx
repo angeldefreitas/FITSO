@@ -11,6 +11,7 @@ import {
   Keyboard,
   ScrollView,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../constants/colors';
 import { FoodItem } from '../types/food';
@@ -43,6 +44,7 @@ export default function QuantityModal({
   mode = 'add',
   currentMeals = [],
 }: QuantityModalProps) {
+  const { t } = useTranslation();
   const [quantity, setQuantity] = useState('100');
   const [calculatedNutrition, setCalculatedNutrition] = useState({
     calories: 0,
@@ -216,7 +218,7 @@ export default function QuantityModal({
             <View style={styles.modalContainer}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>
-                  {mode === 'edit' ? 'Editar Cantidad' : 'Especificar Cantidad'}
+                  {mode === 'edit' ? t('modals.edit') : t('food.servingSize')}
                 </Text>
                 <TouchableOpacity onPress={onClose} style={styles.closeButton}>
                   <Text style={styles.closeButtonText}>✕</Text>
@@ -235,13 +237,13 @@ export default function QuantityModal({
                     {food.category.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())} • {food.subcategory.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                   </Text>
                   <Text style={styles.foodServingSize}>
-                    Valores nutricionales por 100g
+                    {t('food.nutritionalValuesPer100g')}
                   </Text>
                 </View>
 
                 {/* Input de cantidad */}
                 <View style={styles.quantitySection}>
-                  <Text style={styles.quantityLabel}>Cantidad (gramos)</Text>
+                  <Text style={styles.quantityLabel}>{t('food.servingSize')}</Text>
                   <TextInput
                     style={styles.quantityInput}
                     value={quantity}
@@ -256,7 +258,7 @@ export default function QuantityModal({
 
                 {/* Valores Nutricionales */}
                 <View style={styles.nutritionSection}>
-                  <Text style={styles.nutritionTitle}>Valores Nutricionales</Text>
+                  <Text style={styles.nutritionTitle}>{t('food.nutritionalValues')}</Text>
                   
                   {/* Círculo de calorías centrado - muestra progreso hacia objetivo */}
                   <View style={styles.caloriesContainer}>
@@ -283,7 +285,7 @@ export default function QuantityModal({
                         backgroundColor="rgba(255, 107, 53, 0.2)"
                         currentValue={calculatedNutrition.protein}
                         targetValue={100}
-                        label="Proteína"
+                        label={t('food.protein')}
                         textColor="#000000"
                       />
                       <Text style={styles.macroValue}>{calculatedNutrition.protein.toFixed(1)}g</Text>
@@ -298,7 +300,7 @@ export default function QuantityModal({
                         backgroundColor="rgba(76, 175, 80, 0.2)"
                         currentValue={calculatedNutrition.fat}
                         targetValue={100}
-                        label="Grasas"
+                        label={t('food.fat')}
                         textColor="#000000"
                       />
                       <Text style={styles.macroValue}>{calculatedNutrition.fat.toFixed(1)}g</Text>
@@ -313,7 +315,7 @@ export default function QuantityModal({
                         backgroundColor="rgba(33, 150, 243, 0.2)"
                         currentValue={calculatedNutrition.carbs}
                         targetValue={100}
-                        label="Carbos"
+                        label={t('food.carbs')}
                         textColor="#000000"
                       />
                       <Text style={styles.macroValue}>{calculatedNutrition.carbs.toFixed(1)}g</Text>
@@ -328,7 +330,7 @@ export default function QuantityModal({
                   style={styles.cancelButton}
                   onPress={onClose}
                 >
-                  <Text style={styles.cancelButtonText}>Cancelar</Text>
+                  <Text style={styles.cancelButtonText}>{t('modals.cancel')}</Text>
                 </TouchableOpacity>
                 
                 <TouchableOpacity
@@ -336,7 +338,7 @@ export default function QuantityModal({
                   onPress={handleConfirm}
                 >
                   <Text style={styles.confirmButtonText}>
-                    {mode === 'edit' ? 'Actualizar' : 'Agregar'}
+                    {mode === 'edit' ? t('modals.update') : t('modals.add')}
                   </Text>
                 </TouchableOpacity>
               </View>

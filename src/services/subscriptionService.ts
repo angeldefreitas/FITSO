@@ -1,43 +1,79 @@
-// Importación condicional de react-native-iap para evitar errores
-let iapModule: any = null;
+// Importación condicional de react-native-purchases para evitar errores
+let Purchases: any = null;
+
+// Función para verificar si estamos en un entorno real (no simulador)
+const isRealDevice = () => {
+  return !__DEV__ || (typeof window !== 'undefined' && window.location?.hostname !== 'localhost');
+};
+
+// Función helper para verificar si Purchases está disponible
+const isPurchasesAvailable = () => {
+  return Purchases && typeof Purchases.configure === 'function';
+};
+
 try {
-  iapModule = require('react-native-iap');
+  if (isRealDevice()) {
+    Purchases = require('react-native-purchases');
+  } else {
+    console.warn('⚠️ En modo desarrollo/simulador, usando modo simulación para RevenueCat');
+  }
 } catch (error) {
-  console.warn('⚠️ react-native-iap no disponible, usando modo simulación');
+  console.warn('⚠️ react-native-purchases no disponible, usando modo simulación');
 }
 
-// Tipos por defecto si el módulo no está disponible
+// Tipos para RevenueCat
 interface Product {
-  productId: string;
-  price: string;
-  currency: string;
-  title: string;
+  identifier: string;
   description: string;
+  title: string;
+  price: number;
+  priceString: string;
+  currencyCode: string;
 }
 
-interface Purchase {
-  productId: string;
-  transactionId: string;
-  transactionDate: number;
-  transactionReceipt: string;
+interface CustomerInfo {
+  activeSubscriptions: string[];
+  allPurchaseDates: { [key: string]: string };
+  nonSubscriptionTransactions: any[];
+  firstSeen: string;
+  originalAppUserId: string;
+  managementURL: string | null;
+  originalApplicationVersion: string | null;
+  originalPurchaseDate: string | null;
+  allExpirationDates: { [key: string]: string | null };
+  entitlements: {
+    all: { [key: string]: any };
+    active: { [key: string]: any };
+  };
 }
 
 interface PurchaseError {
   code: string;
   message: string;
+  underlyingErrorMessage?: string;
 }
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
-// IDs de productos de suscripción
+// IDs de productos de suscripción para RevenueCat
 const SUBSCRIPTION_PRODUCTS = [
   'fitso_premium_monthly',
   'fitso_premium_yearly',
 ];
 
+// Entitlement ID (esto lo configurarás en RevenueCat dashboard)
+const PREMIUM_ENTITLEMENT = 'Premium';
+
 // Claves de almacenamiento
 const PREMIUM_STATUS_KEY = '@fitso_premium_status';
 const DAILY_SCANS_KEY = '@fitso_daily_scans';
+
+// API Keys de RevenueCat (las obtendrás del dashboard)
+const REVENUECAT_API_KEY = {
+  ios: 'sk_ORwbKeMvzBapPnHcbzlxbGeulgeAi', // API key de RevenueCat para iOS (producción)
+  ios_sandbox: 'test_oHHhNQjFIioQxDmtSBjCJzqpRRT', // Sandbox API key para testing
+  android: 'your_android_api_key_here', // Reemplazar con tu API key real cuando esté listo
+};
 
 export interface PremiumStatus {
   isPremium: boolean;
@@ -50,28 +86,38 @@ export interface PremiumStatus {
 class SubscriptionService {
   private isInitialized = false;
   private products: Product[] = [];
-  private purchaseUpdateSubscription: any = null;
-  private purchaseErrorSubscription: any = null;
 
   async initialize(): Promise<void> {
     try {
       if (this.isInitialized) return;
 
-      console.log('🔄 Inicializando servicio de suscripciones...');
+      console.log('🔄 Inicializando servicio de suscripciones con RevenueCat...');
       
-      // Verificar si react-native-iap está disponible
-      if (!iapModule) {
-        console.warn('⚠️ react-native-iap no disponible, usando modo simulación');
+      // Verificar si react-native-purchases está disponible
+      if (!Purchases) {
+        console.warn('⚠️ react-native-purchases no disponible, usando modo simulación');
         this.isInitialized = true;
         return;
       }
-      
-      // Inicializar conexión con la tienda
-      const result = await iapModule.initConnection();
-      console.log('✅ Conexión con tienda inicializada:', result);
 
-      // Configurar listeners de compras
-      this.setupPurchaseListeners();
+      // Configurar RevenueCat - usar API key de producción
+      const apiKey = Platform.OS === 'ios' ? REVENUECAT_API_KEY.ios : REVENUECAT_API_KEY.android;
+      
+      if (apiKey === 'your_ios_api_key_here' || apiKey === 'your_android_api_key_here') {
+        console.warn('⚠️ API keys de RevenueCat no configuradas, usando modo simulación');
+        this.isInitialized = true;
+        return;
+      }
+
+      // Configurar RevenueCat solo si está disponible
+      if (isPurchasesAvailable()) {
+        await Purchases.configure({ apiKey });
+        console.log('✅ RevenueCat configurado correctamente');
+      } else {
+        console.warn('⚠️ RevenueCat no disponible, usando modo simulación');
+        this.isInitialized = true;
+        return;
+      }
 
       // Obtener productos disponibles
       await this.loadProducts();
@@ -85,51 +131,26 @@ class SubscriptionService {
     }
   }
 
-  private setupPurchaseListeners(): void {
-    if (!iapModule) return;
-    
-    // Listener para compras exitosas
-    this.purchaseUpdateSubscription = iapModule.purchaseUpdatedListener(
-      async (purchase: Purchase) => {
-        console.log('🛒 Compra actualizada:', purchase);
-        try {
-          // Procesar la compra
-          await this.processPurchase(purchase);
-          
-          // Finalizar la transacción
-          await iapModule.finishTransaction({ purchase, isConsumable: false });
-          
-          console.log('✅ Compra procesada exitosamente');
-        } catch (error) {
-          console.error('❌ Error procesando compra:', error);
-        }
-      }
-    );
-
-    // Listener para errores de compra
-    this.purchaseErrorSubscription = iapModule.purchaseErrorListener(
-      (error: PurchaseError) => {
-        console.error('❌ Error en compra:', error);
-      }
-    );
-  }
+  // RevenueCat maneja automáticamente los listeners, no necesitamos configurarlos manualmente
 
   private async loadProducts(): Promise<void> {
     try {
-      if (!iapModule) {
-        console.warn('⚠️ react-native-iap no disponible, usando productos simulados');
+      if (!Purchases) {
+        console.warn('⚠️ react-native-purchases no disponible, usando productos simulados');
         this.products = [
           {
-            productId: 'fitso_premium_monthly',
-            price: '2.99',
-            currency: 'USD',
+            identifier: 'fitso_premium_monthly',
+            price: 2.99,
+            priceString: '$2.99',
+            currencyCode: 'USD',
             title: 'Fitso Premium Mensual',
             description: 'Suscripción mensual a Fitso Premium'
           },
           {
-            productId: 'fitso_premium_yearly',
-            price: '19.99',
-            currency: 'USD',
+            identifier: 'fitso_premium_yearly',
+            price: 19.99,
+            priceString: '$19.99',
+            currencyCode: 'USD',
             title: 'Fitso Premium Anual',
             description: 'Suscripción anual a Fitso Premium'
           }
@@ -137,23 +158,42 @@ class SubscriptionService {
         return;
       }
       
-      this.products = await iapModule.getProducts({ skus: SUBSCRIPTION_PRODUCTS });
-      console.log('📦 Productos cargados:', this.products);
+      if (!isPurchasesAvailable()) {
+        console.warn('⚠️ RevenueCat no disponible, usando productos simulados');
+        return;
+      }
+      
+      const offerings = await Purchases.getOfferings();
+      if (offerings.current) {
+        this.products = offerings.current.availablePackages.map(pkg => ({
+          identifier: pkg.identifier,
+          price: pkg.product.price,
+          priceString: pkg.product.priceString,
+          currencyCode: pkg.product.currencyCode,
+          title: pkg.product.title,
+          description: pkg.product.description,
+        }));
+        console.log('📦 Productos cargados desde RevenueCat:', this.products);
+      } else {
+        throw new Error('No hay ofertas disponibles');
+      }
     } catch (error) {
       console.error('❌ Error cargando productos:', error);
       // En caso de error, usar productos simulados
       this.products = [
         {
-          productId: 'fitso_premium_monthly',
-          price: '2.99',
-          currency: 'USD',
+          identifier: 'fitso_premium_monthly',
+          price: 2.99,
+          priceString: '$2.99',
+          currencyCode: 'USD',
           title: 'Fitso Premium Mensual',
           description: 'Suscripción mensual a Fitso Premium'
         },
         {
-          productId: 'fitso_premium_yearly',
-          price: '19.99',
-          currency: 'USD',
+          identifier: 'fitso_premium_yearly',
+          price: 19.99,
+          priceString: '$19.99',
+          currencyCode: 'USD',
           title: 'Fitso Premium Anual',
           description: 'Suscripción anual a Fitso Premium'
         }
@@ -161,23 +201,7 @@ class SubscriptionService {
     }
   }
 
-  private async processPurchase(purchase: Purchase): Promise<void> {
-    try {
-      // Determinar tipo de suscripción
-      const subscriptionType = purchase.productId === 'fitso_premium_monthly' ? 'monthly' : 'yearly';
-      
-      // Verificar con el backend
-      await this.verifyReceiptWithBackend(purchase);
-      
-      // Actualizar estado local
-      await this.refreshPremiumStatusFromBackend();
-      
-      console.log('✅ Compra procesada y verificada con el backend');
-    } catch (error) {
-      console.error('❌ Error procesando compra:', error);
-      throw error;
-    }
-  }
+  // RevenueCat maneja automáticamente el procesamiento de compras
 
   async getProducts(): Promise<Product[]> {
     if (!this.isInitialized) {
@@ -195,28 +219,55 @@ class SubscriptionService {
       console.log('🛒 Iniciando compra de suscripción:', productId);
       
       // Verificar que el producto existe
-      const product = this.products.find(p => p.productId === productId);
+      const product = this.products.find(p => p.identifier === productId);
       if (!product) {
         throw new Error('Producto no encontrado');
       }
 
-      if (!iapModule) {
-        console.warn('⚠️ react-native-iap no disponible, simulando compra');
+      if (!Purchases) {
+        console.warn('⚠️ react-native-purchases no disponible, simulando compra');
         // Simular compra exitosa
-        const mockPurchase: Purchase = {
-          productId,
-          transactionId: `mock_${Date.now()}`,
-          transactionDate: Date.now(),
-          transactionReceipt: 'mock_receipt'
+        const mockStatus: PremiumStatus = {
+          isPremium: true,
+          subscriptionType: productId === 'fitso_premium_monthly' ? 'monthly' : 'yearly',
+          expiresAt: new Date(Date.now() + (productId === 'fitso_premium_monthly' ? 30 : 365) * 24 * 60 * 60 * 1000).toISOString(),
+          dailyScansUsed: 0,
+          lastScanDate: null,
         };
-        await this.processPurchase(mockPurchase);
+        await this.savePremiumStatus(mockStatus);
         return;
       }
 
-      // Solicitar compra
-      await iapModule.requestPurchase({ sku: productId });
+      // Obtener ofertas de RevenueCat
+      if (!isPurchasesAvailable()) {
+        throw new Error('RevenueCat no disponible en el simulador');
+      }
       
-      console.log('✅ Compra solicitada exitosamente');
+      const offerings = await Purchases.getOfferings();
+      if (!offerings.current) {
+        throw new Error('No hay ofertas disponibles');
+      }
+
+      // Encontrar el paquete correspondiente
+      const packageToPurchase = offerings.current.availablePackages.find(
+        pkg => pkg.identifier === productId || pkg.product.identifier === productId
+      );
+
+      if (!packageToPurchase) {
+        throw new Error('Paquete no encontrado en RevenueCat');
+      }
+
+      // Realizar la compra
+      const { customerInfo } = await Purchases.purchasePackage(packageToPurchase);
+      
+      // Verificar si el usuario tiene acceso premium
+      if (customerInfo.entitlements.active[PREMIUM_ENTITLEMENT]) {
+        console.log('✅ Compra exitosa, usuario tiene acceso premium');
+        await this.refreshPremiumStatusFromRevenueCat();
+      } else {
+        throw new Error('Compra exitosa pero sin acceso premium');
+      }
+      
     } catch (error) {
       console.error('❌ Error en compra:', error);
       throw error;
@@ -231,22 +282,21 @@ class SubscriptionService {
 
       console.log('🔄 Restaurando compras...');
       
-      if (!iapModule) {
-        console.warn('⚠️ react-native-iap no disponible, no se pueden restaurar compras');
+      if (!Purchases) {
+        console.warn('⚠️ react-native-purchases no disponible, no se pueden restaurar compras');
         return;
       }
 
-      // Obtener compras disponibles
-      const purchases = await iapModule.getAvailablePurchases();
-      console.log('📦 Compras encontradas:', purchases);
+      // Restaurar compras con RevenueCat
+      const customerInfo = await Purchases.restorePurchases();
+      console.log('📦 Información del cliente restaurada:', customerInfo);
 
-      if (purchases.length > 0) {
-        // Procesar la compra más reciente
-        const latestPurchase = purchases[0];
-        await this.processPurchase(latestPurchase);
-        console.log('✅ Compras restauradas exitosamente');
+      // Verificar si el usuario tiene acceso premium
+      if (customerInfo.entitlements.active[PREMIUM_ENTITLEMENT]) {
+        console.log('✅ Compras restauradas exitosamente, usuario tiene acceso premium');
+        await this.refreshPremiumStatusFromRevenueCat();
       } else {
-        console.log('ℹ️ No se encontraron compras para restaurar');
+        console.log('ℹ️ No se encontraron compras premium para restaurar');
       }
     } catch (error) {
       console.error('❌ Error restaurando compras:', error);
@@ -256,16 +306,14 @@ class SubscriptionService {
 
   async getPremiumStatus(): Promise<PremiumStatus> {
     try {
-      // Primero intentar obtener del backend
-      try {
-        const backendStatus = await this.getPremiumStatusFromBackend();
-        if (backendStatus) {
-          // Sincronizar con estado local
-          await this.savePremiumStatus(backendStatus);
-          return backendStatus;
+      // Si RevenueCat está disponible, usar su información
+      if (Purchases && this.isInitialized) {
+        try {
+          const customerInfo = await Purchases.getCustomerInfo();
+          return this.parseCustomerInfoToPremiumStatus(customerInfo);
+        } catch (error) {
+          console.log('⚠️ Error obteniendo información de RevenueCat, usando estado local:', error.message);
         }
-      } catch (backendError) {
-        console.log('⚠️ Error obteniendo estado del backend, usando estado local:', backendError.message);
       }
 
       // Fallback al estado local
@@ -395,29 +443,49 @@ class SubscriptionService {
     }
   }
 
-  // Métodos para comunicación con el backend
-  private async verifyReceiptWithBackend(purchase: Purchase): Promise<void> {
-    try {
-      const { default: apiService } = await import('./apiService');
+  // Métodos auxiliares para RevenueCat
+  private parseCustomerInfoToPremiumStatus(customerInfo: CustomerInfo): PremiumStatus {
+    const premiumEntitlement = customerInfo.entitlements.active[PREMIUM_ENTITLEMENT];
+    
+    if (premiumEntitlement) {
+      // Determinar tipo de suscripción basado en los productos activos
+      const activeSubscriptions = customerInfo.activeSubscriptions;
+      let subscriptionType: 'monthly' | 'yearly' | null = null;
       
-      const response = await apiService.post('/subscriptions/verify-receipt', {
-        userId: await this.getCurrentUserId(),
-        receiptData: purchase.transactionReceipt
-      });
-
-      if (!response.success) {
-        throw new Error(response.message || 'Error verificando recibo con el backend');
+      if (activeSubscriptions.includes('fitso_premium_monthly')) {
+        subscriptionType = 'monthly';
+      } else if (activeSubscriptions.includes('fitso_premium_yearly')) {
+        subscriptionType = 'yearly';
       }
 
-      console.log('✅ Recibo verificado con el backend');
+      return {
+        isPremium: true,
+        subscriptionType,
+        expiresAt: premiumEntitlement.expirationDate,
+        dailyScansUsed: 0,
+        lastScanDate: null,
+      };
+    }
+
+    return {
+      isPremium: false,
+      subscriptionType: null,
+      expiresAt: null,
+      dailyScansUsed: 0,
+      lastScanDate: null,
+    };
+  }
+
+  private async refreshPremiumStatusFromRevenueCat(): Promise<void> {
+    try {
+      if (!Purchases) return;
+      
+      const customerInfo = await Purchases.getCustomerInfo();
+      const status = this.parseCustomerInfoToPremiumStatus(customerInfo);
+      await this.savePremiumStatus(status);
+      console.log('✅ Estado premium actualizado desde RevenueCat');
     } catch (error) {
-      // Si es error de autenticación, no fallar la compra
-      if (error.message?.includes('Usuario no autenticado')) {
-        console.log('⚠️ Usuario no autenticado, saltando verificación con backend');
-        return;
-      }
-      console.error('❌ Error verificando recibo con el backend:', error);
-      throw error;
+      console.error('❌ Error refrescando estado desde RevenueCat:', error);
     }
   }
 
@@ -487,23 +555,8 @@ class SubscriptionService {
 
   async cleanup(): Promise<void> {
     try {
-      if (this.purchaseUpdateSubscription) {
-        this.purchaseUpdateSubscription.remove();
-        this.purchaseUpdateSubscription = null;
-      }
-      
-      if (this.purchaseErrorSubscription) {
-        this.purchaseErrorSubscription.remove();
-        this.purchaseErrorSubscription = null;
-      }
-      
-      if (iapModule) {
-        try {
-          iapModule.endConnection();
-        } catch (error) {
-          console.warn('⚠️ Error cerrando conexión IAP:', error);
-        }
-      }
+      // RevenueCat no requiere limpieza manual como react-native-iap
+      // Se encarga automáticamente de la gestión de conexiones
       
       this.isInitialized = false;
       console.log('🧹 Servicio de suscripciones limpiado');

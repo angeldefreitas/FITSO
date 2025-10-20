@@ -1,5 +1,6 @@
 import React from 'react';
 import NumberPicker from './NumberPicker';
+import { useTranslation } from 'react-i18next';
 
 interface GainWeightPickerProps {
   value: number;
@@ -7,6 +8,7 @@ interface GainWeightPickerProps {
 }
 
 export default function GainWeightPicker({ value, onValueChange }: GainWeightPickerProps) {
+  const { t, i18n } = useTranslation();
   // Opciones específicas para ganar peso
   const gainWeightOptions = [0.2, 0.5];
   
@@ -17,10 +19,10 @@ export default function GainWeightPicker({ value, onValueChange }: GainWeightPic
       min={0.2}
       max={0.5}
       step={0.1}
-      unit=" kg/semana"
-      placeholder="Seleccionar cantidad"
-      label="¿Cuánto peso quieres ganar por semana?"
-      modalTitle="¿Cuánto peso deseas ganar?"
+      unit={i18n.language === 'pt' ? ' kg/semana' : i18n.language === 'en' ? ' kg/week' : ' kg/semana'}
+      placeholder={t('modals.select') || 'Select'}
+      label={t('profile.gainWeightPerWeek', { amount: '' }).replace(' {{amount}}', '')}
+      modalTitle={t('profile.gainWeightPerWeek', { amount: '' }).replace(' {{amount}}', '')}
       customOptions={gainWeightOptions}
     />
   );

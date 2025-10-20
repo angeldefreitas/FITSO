@@ -11,6 +11,7 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { Colors } from '../constants/colors';
 
@@ -19,6 +20,7 @@ interface ChangePasswordScreenProps {
 }
 
 const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation }) => {
+  const { t } = useTranslation();
   const { changePassword, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
@@ -30,27 +32,27 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
 
   const validateForm = () => {
     if (!currentPassword.trim()) {
-      Alert.alert('Error', 'Ingresa tu contraseña actual');
+      Alert.alert(t('alerts.error'), t('auth.currentPasswordRequired'));
       return false;
     }
 
     if (!newPassword.trim()) {
-      Alert.alert('Error', 'Ingresa una nueva contraseña');
+      Alert.alert(t('alerts.error'), t('auth.newPasswordRequired'));
       return false;
     }
 
     if (newPassword.length < 6) {
-      Alert.alert('Error', 'La nueva contraseña debe tener al menos 6 caracteres');
+      Alert.alert(t('alerts.error'), t('auth.passwordTooShort'));
       return false;
     }
 
     if (newPassword !== confirmPassword) {
-      Alert.alert('Error', 'Las contraseñas no coinciden');
+      Alert.alert(t('alerts.error'), t('auth.passwordsDoNotMatch'));
       return false;
     }
 
     if (currentPassword === newPassword) {
-      Alert.alert('Error', 'La nueva contraseña debe ser diferente a la actual');
+      Alert.alert(t('alerts.error'), t('auth.newPasswordMustBeDifferent'));
       return false;
     }
 
@@ -68,13 +70,13 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
       });
       
       Alert.alert(
-        '¡Contraseña actualizada!',
+        t('auth.passwordUpdated'),
         'Tu contraseña ha sido cambiada exitosamente',
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
+        [{ text: t('modals.ok'), onPress: () => navigation.goBack() }]
       );
     } catch (error: any) {
       console.error('Error cambiando contraseña:', error);
-      Alert.alert('Error', error.message || 'Error al cambiar la contraseña');
+      Alert.alert(t('alerts.error'), error.message || t('auth.changePasswordError'));
     } finally {
       setLoading(false);
     }
@@ -87,13 +89,13 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.content}>
-          <Text style={styles.title}>Cambiar Contraseña</Text>
+          <Text style={styles.title}>{t('auth.changePassword')}</Text>
           <Text style={styles.subtitle}>
             Ingresa tu contraseña actual y la nueva contraseña
           </Text>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Contraseña actual</Text>
+            <Text style={styles.label}>{t('auth.currentPassword')}</Text>
             <View style={styles.passwordContainer}>
               <TextInput
                 style={styles.input}
@@ -116,7 +118,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Nueva contraseña</Text>
+            <Text style={styles.label}>{t('auth.newPassword')}</Text>
             <View style={styles.passwordContainer}>
               <TextInput
                 style={styles.input}
@@ -139,7 +141,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Confirmar nueva contraseña</Text>
+            <Text style={styles.label}>{t('auth.confirmNewPassword')}</Text>
             <View style={styles.passwordContainer}>
               <TextInput
                 style={styles.input}
@@ -176,7 +178,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
             {(loading || authLoading) ? (
               <ActivityIndicator color="white" />
             ) : (
-              <Text style={styles.changeButtonText}>Cambiar Contraseña</Text>
+              <Text style={styles.changeButtonText}>{t('auth.changePassword')}</Text>
             )}
           </TouchableOpacity>
 
@@ -184,7 +186,7 @@ const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({ navigation 
             style={styles.cancelButton}
             onPress={() => navigation.goBack()}
           >
-            <Text style={styles.cancelButtonText}>Cancelar</Text>
+            <Text style={styles.cancelButtonText}>{t('modals.cancel')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

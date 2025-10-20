@@ -9,6 +9,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Colors } from '../../constants/colors';
 import AgePicker from '../AgePicker';
 import WeightPicker from '../WeightPicker';
@@ -39,6 +40,7 @@ const BiometricDataModal: React.FC<BiometricDataModalProps> = ({
   initialData,
   loading = false,
 }) => {
+  const { t } = useTranslation();
   const [age, setAge] = useState(25);
   const [heightCm, setHeightCm] = useState(175);
   const [weightKg, setWeightKg] = useState(70);
@@ -87,9 +89,9 @@ const BiometricDataModal: React.FC<BiometricDataModalProps> = ({
       <View style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={handleCancel} style={styles.cancelButton}>
-            <Text style={styles.cancelButtonText}>Cancelar</Text>
+            <Text style={styles.cancelButtonText}>{t('modals.cancel')}</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>Datos Biométricos</Text>
+          <Text style={styles.title}>{t('profile.biometricData')}</Text>
           <TouchableOpacity 
             onPress={handleSave} 
             style={[styles.saveButton, loading && styles.disabledButton]}
@@ -98,19 +100,19 @@ const BiometricDataModal: React.FC<BiometricDataModalProps> = ({
             {loading ? (
               <ActivityIndicator color="white" size="small" />
             ) : (
-              <Text style={styles.saveButtonText}>Guardar</Text>
+              <Text style={styles.saveButtonText}>{t('modals.save')}</Text>
             )}
           </TouchableOpacity>
         </View>
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           <Text style={styles.subtitle}>
-            Actualiza tu información física para cálculos más precisos
+            {t('profile.updateBasicInfo')}
           </Text>
 
           {/* Edad */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Edad</Text>
+            <Text style={styles.inputLabel}>{t('auth.age')}</Text>
             <AgePicker
               value={age}
               onValueChange={setAge}
@@ -120,14 +122,14 @@ const BiometricDataModal: React.FC<BiometricDataModalProps> = ({
           {/* Peso y Altura */}
           <View style={styles.row}>
             <View style={styles.halfWidth}>
-              <Text style={styles.inputLabel}>Peso (kg)</Text>
+              <Text style={styles.inputLabel}>{t('auth.weight')} (kg)</Text>
               <WeightPicker
                 value={weightKg}
                 onValueChange={setWeightKg}
               />
             </View>
             <View style={styles.halfWidth}>
-              <Text style={styles.inputLabel}>Altura (cm)</Text>
+              <Text style={styles.inputLabel}>{t('auth.height')} (cm)</Text>
               <HeightPicker
                 value={heightCm}
                 onValueChange={setHeightCm}
@@ -137,7 +139,7 @@ const BiometricDataModal: React.FC<BiometricDataModalProps> = ({
 
           {/* Sexo biológico */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Sexo biológico</Text>
+            <Text style={styles.inputLabel}>{t('auth.gender')}</Text>
             <View style={styles.genderContainer}>
               <TouchableOpacity
                 style={[
@@ -151,7 +153,7 @@ const BiometricDataModal: React.FC<BiometricDataModalProps> = ({
                   styles.genderText,
                   gender === 'male' && styles.genderTextActive
                 ]}>
-                  Masculino
+                  {t('auth.male')}
                 </Text>
               </TouchableOpacity>
 
@@ -167,7 +169,7 @@ const BiometricDataModal: React.FC<BiometricDataModalProps> = ({
                   styles.genderText,
                   gender === 'female' && styles.genderTextActive
                 ]}>
-                  Femenino
+                  {t('auth.female')}
                 </Text>
               </TouchableOpacity>
 
@@ -176,7 +178,7 @@ const BiometricDataModal: React.FC<BiometricDataModalProps> = ({
 
           {/* Nivel de actividad física */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Nivel de actividad física</Text>
+            <Text style={styles.inputLabel}>{t('auth.activityLevel')}</Text>
             <View style={styles.activityGrid}>
               <TouchableOpacity
                 style={[
@@ -190,13 +192,13 @@ const BiometricDataModal: React.FC<BiometricDataModalProps> = ({
                   styles.activityTitle,
                   activityLevel === 'sedentary' && styles.activityTitleActive
                 ]}>
-                  Sedentario
+                  {t('auth.sedentary')}
                 </Text>
                 <Text style={[
                   styles.activitySubtitle,
                   activityLevel === 'sedentary' && styles.activitySubtitleActive
                 ]}>
-                  Trabajo de escritorio, poco ejercicio
+                  {t('auth.sedentaryDescription')}
                 </Text>
               </TouchableOpacity>
 
@@ -212,13 +214,13 @@ const BiometricDataModal: React.FC<BiometricDataModalProps> = ({
                   styles.activityTitle,
                   activityLevel === 'light' && styles.activityTitleActive
                 ]}>
-                  Ligeramente activo
+                  {t('auth.light')}
                 </Text>
                 <Text style={[
                   styles.activitySubtitle,
                   activityLevel === 'light' && styles.activitySubtitleActive
                 ]}>
-                  Ejercicio ligero 1-3 días/semana
+                  {t('auth.lightDescription')}
                 </Text>
               </TouchableOpacity>
 
@@ -234,13 +236,13 @@ const BiometricDataModal: React.FC<BiometricDataModalProps> = ({
                   styles.activityTitle,
                   activityLevel === 'moderate' && styles.activityTitleActive
                 ]}>
-                  Moderadamente activo
+                  {t('auth.moderate')}
                 </Text>
                 <Text style={[
                   styles.activitySubtitle,
                   activityLevel === 'moderate' && styles.activitySubtitleActive
                 ]}>
-                  Ejercicio moderado 3-5 días/semana
+                  {t('auth.moderateDescription')}
                 </Text>
               </TouchableOpacity>
 
@@ -256,13 +258,13 @@ const BiometricDataModal: React.FC<BiometricDataModalProps> = ({
                   styles.activityTitle,
                   activityLevel === 'active' && styles.activityTitleActive
                 ]}>
-                  Muy activo
+                  {t('auth.active')}
                 </Text>
                 <Text style={[
                   styles.activitySubtitle,
                   activityLevel === 'active' && styles.activitySubtitleActive
                 ]}>
-                  Ejercicio intenso 6-7 días/semana
+                  {t('auth.activeDescription')}
                 </Text>
               </TouchableOpacity>
             </View>

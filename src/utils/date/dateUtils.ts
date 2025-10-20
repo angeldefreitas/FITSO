@@ -2,6 +2,18 @@
  * Utilidades para manejo de fechas
  */
 
+import i18n from '../../config/i18n';
+
+// Función para obtener el locale correcto
+const getLocale = () => {
+  switch (i18n.language) {
+    case 'es': return 'es-ES';
+    case 'en': return 'en-GB';
+    case 'pt': return 'pt-PT';
+    default: return 'es-ES';
+  }
+};
+
 export const formatDate = () => {
   const today = new Date();
   const options: Intl.DateTimeFormatOptions = { 
@@ -10,7 +22,7 @@ export const formatDate = () => {
     month: 'long', 
     day: 'numeric' 
   };
-  return today.toLocaleDateString('es-ES', options);
+  return today.toLocaleDateString(getLocale(), options);
 };
 
 export const getWeekDays = (selectedDate: Date, currentDate: Date) => {
@@ -32,7 +44,7 @@ export const getWeekDays = (selectedDate: Date, currentDate: Date) => {
     
     days.push({
       date: date,
-      dayName: date.toLocaleDateString('es-ES', { weekday: 'short' }).charAt(0).toUpperCase(),
+      dayName: date.toLocaleDateString(getLocale(), { weekday: 'short' }).charAt(0).toUpperCase(),
       dayNumber: date.getDate(),
       isToday: date.toDateString() === currentDate.toDateString(),
       isSelected: date.toDateString() === selectedDate.toDateString(),
@@ -45,11 +57,11 @@ export const getWeekDays = (selectedDate: Date, currentDate: Date) => {
 };
 
 export const formatMonthYear = (date: Date) => {
-  return date.toLocaleDateString('es-ES', { 
+  return date.toLocaleDateString(getLocale(), { 
     month: 'long', 
     year: 'numeric' 
   }).charAt(0).toUpperCase() + 
-  date.toLocaleDateString('es-ES', { 
+  date.toLocaleDateString(getLocale(), { 
     month: 'long', 
     year: 'numeric' 
   }).slice(1);

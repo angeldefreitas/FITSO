@@ -10,6 +10,7 @@ import {
   ImageBackground,
   Image
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../../constants/colors';
 import { MealHistoryItem } from '../../hooks/custom/useMealHistory';
@@ -24,6 +25,7 @@ const { width } = Dimensions.get('window');
 const cardWidth = (width - 60) / 2; // 2 columnas con padding de 20px a cada lado + 20px entre columnas
 
 export default function MealHistory({ historyItems, onMealPress, onDeleteMeal }: MealHistoryProps) {
+  const { t } = useTranslation();
   const MealCard = ({ item }: { item: MealHistoryItem }) => {
     const handleMealPress = () => {
       onMealPress(item);
@@ -31,12 +33,12 @@ export default function MealHistory({ historyItems, onMealPress, onDeleteMeal }:
 
     const handleDeletePress = () => {
       Alert.alert(
-        'Eliminar del historial',
-        `¿Estás seguro de que quieres eliminar "${item.name}" del historial?`,
+        t('alerts.deleteHistory'),
+        t('alerts.deleteHistoryMessage'),
         [
-          { text: 'Cancelar', style: 'cancel' },
+          { text: t('modals.cancel'), style: 'cancel' },
           { 
-            text: 'Eliminar', 
+            text: t('modals.delete'), 
             style: 'destructive',
             onPress: () => onDeleteMeal(item.id)
           }
@@ -77,9 +79,9 @@ export default function MealHistory({ historyItems, onMealPress, onDeleteMeal }:
         <View style={styles.nutritionInfo}>
           <Text style={hasImage ? styles.caloriesTextWithImage : styles.caloriesText}>{item.calories} kcal</Text>
           <View style={styles.macrosRow}>
-            <Text style={[hasImage ? styles.macroTextWithImage : styles.macroText, { color: '#FF6B35' }]}>P: {item.protein}g</Text>
-            <Text style={[hasImage ? styles.macroTextWithImage : styles.macroText, { color: '#2196F3' }]}>C: {item.carbs}g</Text>
-            <Text style={[hasImage ? styles.macroTextWithImage : styles.macroText, { color: '#4CAF50' }]}>G: {item.fat}g</Text>
+            <Text style={[hasImage ? styles.macroTextWithImage : styles.macroText, { color: '#FF6B35' }]}>{t('food.proteinShort')}: {item.protein}g</Text>
+            <Text style={[hasImage ? styles.macroTextWithImage : styles.macroText, { color: '#2196F3' }]}>{t('food.carbsShort')}: {item.carbs}g</Text>
+            <Text style={[hasImage ? styles.macroTextWithImage : styles.macroText, { color: '#4CAF50' }]}>{t('food.fatShort')}: {item.fat}g</Text>
           </View>
         </View>
 
@@ -119,7 +121,7 @@ export default function MealHistory({ historyItems, onMealPress, onDeleteMeal }:
   if (historyItems.length === 0) {
     return (
       <View style={styles.container}>
-        <Text style={styles.sectionTitle}>Historial</Text>
+        <Text style={styles.sectionTitle}>{t('daily.history')}</Text>
         <View style={styles.emptyState}>
           <Text style={styles.emptyStateText}>
             No hay comidas en el historial
@@ -145,7 +147,7 @@ export default function MealHistory({ historyItems, onMealPress, onDeleteMeal }:
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>Historial</Text>
+      <Text style={styles.sectionTitle}>{t('daily.history')}</Text>
       <ScrollView 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContainer}

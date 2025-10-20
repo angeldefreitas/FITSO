@@ -12,14 +12,17 @@ import {
   ActivityIndicator,
   Image,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { Colors } from '../constants/colors';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 
 interface LoginScreenProps {
   navigation: any;
 }
 
 const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -27,17 +30,17 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Por favor completa todos los campos');
+      Alert.alert(t('alerts.validationError'), t('auth.allFieldsRequired'));
       return;
     }
 
     setLoading(true);
     try {
       await login({ email, password });
-      Alert.alert('Éxito', '¡Inicio de sesión exitoso!');
+      Alert.alert(t('common.success'), t('auth.signInSuccess'));
     } catch (error: any) {
       console.error('Error en login:', error);
-      Alert.alert('Error', error.message || 'Error al iniciar sesión');
+      Alert.alert(t('alerts.error'), error.message || t('auth.signInError'));
     } finally {
       setLoading(false);
     }
@@ -49,6 +52,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       style={styles.container} 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
+      {/* Selector de idioma - esquina superior derecha */}
+      <LanguageSwitcher style={styles.languageSwitcher} />
       {/* Imagen de fondo */}
       <View style={styles.backgroundContainer}>
         <Image 
@@ -59,17 +64,17 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       </View>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.content}>
-          <Text style={styles.title}>¡Bienvenido a FITSO!</Text>
-          <Text style={styles.subtitle}>Inicia sesión para continuar</Text>
+          <Text style={styles.title}>{t('auth.welcome')}</Text>
+          <Text style={styles.subtitle}>{t('auth.signInTitle')}</Text>
 
           <View style={styles.form}>
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.label}>{t('auth.email')}</Text>
               <TextInput
                 style={styles.input}
                 value={email}
                 onChangeText={setEmail}
-                placeholder="tu@email.com"
+                placeholder={t('auth.email')}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -77,12 +82,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             </View>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Contraseña</Text>
+              <Text style={styles.label}>{t('auth.password')}</Text>
               <TextInput
                 style={styles.input}
                 value={password}
                 onChangeText={setPassword}
-                placeholder="Tu contraseña"
+                placeholder={t('auth.password')}
                 secureTextEntry
                 autoCapitalize="none"
               />
@@ -92,7 +97,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               style={styles.forgotPassword}
               onPress={() => navigation.navigate('ForgotPassword')}
             >
-              <Text style={styles.forgotPasswordText}>¿Olvidaste tu contraseña?</Text>
+              <Text style={styles.forgotPasswordText}>{t('auth.forgotPassword')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -103,16 +108,16 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               {(loading || authLoading) ? (
                 <ActivityIndicator color="white" />
               ) : (
-                <Text style={styles.loginButtonText}>Iniciar Sesión</Text>
+                <Text style={styles.loginButtonText}>{t('auth.signInButton')}</Text>
               )}
             </TouchableOpacity>
 
           </View>
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>¿No tienes cuenta? </Text>
+            <Text style={styles.footerText}>{t('auth.alreadyHaveAccount')} </Text>
             <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-              <Text style={styles.footerLink}>Regístrate aquí</Text>
+              <Text style={styles.footerLink}>{t('auth.createAccount')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -135,6 +140,13 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     alignItems: 'center',
     paddingTop: '15%',
+  },
+  languageSwitcher: {
+    position: 'absolute',
+    top: 50,
+    right: 16,
+    zIndex: 10,
+    alignSelf: 'auto',
   },
   backgroundImage: {
     width: '75%',
