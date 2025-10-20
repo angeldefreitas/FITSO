@@ -176,6 +176,18 @@ const startServer = async () => {
     // Verificar e inicializar base de datos si es necesario
     await checkAndInitializeDatabase();
 
+    // Desplegar sistema FITSO Foods en producción
+    if (process.env.NODE_ENV === 'production') {
+      try {
+        console.log('🚀 Ejecutando despliegue de sistema FITSO Foods...');
+        const deployFitsoFoods = require('../scripts/deploy-fitso-foods');
+        await deployFitsoFoods();
+      } catch (error) {
+        console.error('❌ Error desplegando sistema FITSO Foods:', error);
+        // No salir del proceso, continuar con el servidor
+      }
+    }
+
     // Iniciar servidor
     app.listen(PORT, () => {
       console.log(`🚀 Servidor iniciado en puerto ${PORT}`);
