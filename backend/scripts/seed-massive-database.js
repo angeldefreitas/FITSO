@@ -677,7 +677,7 @@ async function seedMassiveDatabase() {
         translations: {
           en: { name: 'Shrimp', description: 'Fresh shrimp, high protein', unit_short: 'g', unit_long: 'gram' },
           pt: { name: 'Camarão', description: 'Camarão fresco, alta proteína', unit_short: 'g', unit_long: 'grama' }
-ซ        },
+        },
         synonyms: {
           es: ['camarones', 'gambas'],
           en: ['shrimp', 'prawns'],
