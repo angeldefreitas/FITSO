@@ -126,110 +126,14 @@ async function deployFitsoFoods() {
     if (foodCount === 0) {
       console.log('🌱 Sembrando datos iniciales...');
       
-      // Datos de ejemplo
-      const sampleFoods = [
-        {
-          name: 'Pollo',
-          brand: null,
-          barcode: null,
-          calories_per_100g: 165,
-          protein_per_100g: 31,
-          carbs_per_100g: 0,
-          fat_per_100g: 3.6,
-          fiber_per_100g: 0,
-          sugar_per_100g: 0,
-          sodium_per_100g: 74,
-          category: 'Proteins',
-          subcategory: 'Meat',
-          tags: ['pollo', 'ave', 'carne', 'proteína'],
-          translations: {
-            es: { name: 'Pollo', description: 'Carne de ave magra, rica en proteínas' },
-            en: { name: 'Chicken', description: 'Lean poultry meat, rich in protein' },
-            pt: { name: 'Frango', description: 'Carne de ave magra, rica em proteínas' }
-          },
-          synonyms: {
-            es: ['pollo', 'ave', 'carne de pollo'],
-            en: ['chicken', 'poultry', 'breast'],
-            pt: ['frango', 'ave', 'carne de frango']
-          }
-        },
-        {
-          name: 'Arroz',
-          brand: null,
-          barcode: null,
-          calories_per_100g: 130,
-          protein_per_100g: 2.7,
-          carbs_per_100g: 28,
-          fat_per_100g: 0.3,
-          fiber_per_100g: 0.4,
-          sugar_per_100g: 0.1,
-          sodium_per_100g: 1,
-          category: 'Carbohydrates',
-          subcategory: 'Grains',
-          tags: ['arroz', 'cereal', 'carbohidrato'],
-          translations: {
-            es: { name: 'Arroz', description: 'Cereal cocido, fuente de carbohidratos' },
-            en: { name: 'Rice', description: 'Cooked cereal, source of carbohydrates' },
-            pt: { name: 'Arroz', description: 'Cereal cozido, fonte de carboidratos' }
-          },
-          synonyms: {
-            es: ['arroz', 'cereal', 'grano'],
-            en: ['rice', 'grain', 'cereal'],
-            pt: ['arroz', 'cereal', 'grão']
-          }
-        }
-      ];
+      // Ejecutar scripts de seed
+      const seedFoodTranslations = require('./seed-food-translations');
+      const seedAdditionalEnglishFoods = require('./seed-additional-english-foods');
+      const seedComprehensiveFoods = require('./seed-comprehensive-foods');
       
-      for (const foodData of sampleFoods) {
-        const { translations, synonyms, ...baseFoodData } = foodData;
-        
-        // Insertar alimento
-        const foodInsertQuery = `
-          INSERT INTO fitso_foods (
-            name, brand, barcode, calories_per_100g, protein_per_100g, 
-            carbs_per_100g, fat_per_100g, fiber_per_100g, sugar_per_100g, 
-            sodium_per_100g, category, subcategory, tags, is_custom
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-          RETURNING id
-        `;
-        
-        const foodParams = [
-          baseFoodData.name, baseFoodData.brand, baseFoodData.barcode,
-          baseFoodData.calories_per_100g, baseFoodData.protein_per_100g,
-          baseFoodData.carbs_per_100g, baseFoodData.fat_per_100g,
-          baseFoodData.fiber_per_100g, baseFoodData.sugar_per_100g,
-          baseFoodData.sodium_per_100g, baseFoodData.category,
-          baseFoodData.subcategory, baseFoodData.tags, false
-        ];
-        
-        const foodResult = await db.query(foodInsertQuery, foodParams);
-        const foodId = foodResult.rows[0].id;
-        
-        // Insertar traducciones
-        for (const [locale, translation] of Object.entries(translations)) {
-          const translationQuery = `
-            INSERT INTO fitso_food_translations (
-              food_id, locale, name, description, is_reviewed, source_lang
-            ) VALUES ($1, $2, $3, $4, $5, $6)
-          `;
-          
-          await db.query(translationQuery, [
-            foodId, locale, translation.name, translation.description, true, 'es'
-          ]);
-        }
-        
-        // Insertar sinónimos
-        for (const [locale, localeSynonyms] of Object.entries(synonyms)) {
-          for (const synonym of localeSynonyms) {
-            const synonymQuery = `
-              INSERT INTO fitso_food_synonyms (food_id, locale, synonym)
-              VALUES ($1, $2, $3)
-            `;
-            
-            await db.query(synonymQuery, [foodId, locale, synonym]);
-          }
-        }
-      }
+      await seedFoodTranslations();
+      await seedAdditionalEnglishFoods();
+      await seedComprehensiveFoods();
       
       console.log('✅ Datos iniciales sembrados exitosamente');
     } else {
