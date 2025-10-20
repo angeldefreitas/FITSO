@@ -18,7 +18,7 @@ class FitsoFood {
         ), with_fallback AS (
           SELECT 
             r.*,
-            COALESCE(r.t_name, ften.name, f.name) AS name_loc,
+            COALESCE(r.t_name, ften.name, r.name) AS name_loc,
             COALESCE(r.t_description, ften.description) AS description_loc,
             COALESCE(r.t_unit_short, ften.unit_short, 'g') AS unit_short_loc,
             COALESCE(r.t_unit_long, ften.unit_long, 'gramos') AS unit_long_loc
