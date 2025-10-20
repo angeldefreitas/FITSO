@@ -138,10 +138,42 @@ const getFitsoFoodStats = async (req, res) => {
   }
 };
 
+// Obtener alimentos aleatorios para pantalla inicial
+const getRandomFitsoFoods = async (req, res) => {
+  try {
+    const { category, limit = 30, lang } = req.query;
+    const userId = req.user.id;
+
+    const foods = await FitsoFood.getRandom({
+      category,
+      limit: parseInt(limit),
+      userId,
+      lang: lang || req.headers['accept-language']?.split(',')[0]?.slice(0,2) || 'es'
+    });
+
+    res.json({
+      success: true,
+      data: {
+        foods,
+        count: foods.length,
+        category: category || 'all',
+        language: lang || req.headers['accept-language']?.split(',')[0]?.slice(0,2) || 'es'
+      }
+    });
+  } catch (error) {
+    console.error('Error getting random fitso foods:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error obteniendo alimentos aleatorios FITSO'
+    });
+  }
+};
+
 module.exports = {
   searchFitsoFoods,
   getFitsoFoodById,
   getFitsoFoodByBarcode,
   getFitsoCategories,
-  getFitsoFoodStats
+  getFitsoFoodStats,
+  getRandomFitsoFoods
 };

@@ -125,6 +125,47 @@ export default function FoodSearchScreen({
     }
   };
 
+  // Cargar alimentos aleatorios cuando se abra la pantalla
+  useEffect(() => {
+    const loadInitialFoods = async () => {
+      if (visible && searchQuery.trim().length < 2 && !selectedCategory) {
+        console.log('🎲 Cargando alimentos aleatorios iniciales...');
+        setIsSearching(true);
+        try {
+          const response = await foodService.getRandomFoods(undefined, 30);
+          console.log('📡 Alimentos aleatorios cargados:', response.foods.length);
+          const serverResults = response.foods.map(food => ({
+            id: food.id,
+            name: food.name,
+            description: food.description || '',
+            calories: food.calories_per_100g,
+            protein: food.protein_per_100g,
+            carbs: food.carbs_per_100g,
+            fat: food.fat_per_100g,
+            fiber: food.fiber_per_100g || 0,
+            sugar: food.sugar_per_100g || 0,
+            sodium: food.sodium_per_100g || 0,
+            category: (food.category || 'otros') as FoodCategory,
+            subcategory: (food.subcategory || 'otros') as FoodSubcategory,
+            tags: food.tags || [],
+            brand: food.brand || '',
+            servingSize: '100g',
+            barcode: !!food.barcode,
+            dataSource: 'local' as const,
+            isCustom: false
+          }));
+          setServerFoods(serverResults);
+        } catch (error) {
+          console.error('❌ Error cargando alimentos aleatorios:', error);
+          setServerFoods([]);
+        } finally {
+          setIsSearching(false);
+        }
+      }
+    };
+    loadInitialFoods();
+  }, [visible, selectedCategory]);
+
   // Buscar en el servidor cuando cambie la query
   useEffect(() => {
     const searchServerFoods = async () => {
@@ -174,6 +215,83 @@ export default function FoodSearchScreen({
   useEffect(() => {
     filterFoods();
   }, [searchQuery, selectedCategory, selectedSubcategory, customFoods, serverFoods]);
+
+  // Cargar alimentos por categoría cuando se seleccione una
+  useEffect(() => {
+    const loadFoodsByCategory = async () => {
+      if (selectedCategory && selectedCategory !== 'Creado' && selectedCategory !== 'Todos' && searchQuery.trim().length < 2) {
+        console.log('🏷️ Cargando alimentos por categoría:', selectedCategory);
+        setIsSearching(true);
+        try {
+          const response = await foodService.getRandomFoods(selectedCategory, 30);
+          console.log('📡 Alimentos de categoría cargados:', response.foods.length);
+          const serverResults = response.foods.map(food => ({
+            id: food.id,
+            name: food.name,
+            description: food.description || '',
+            calories: food.calories_per_100g,
+            protein: food.protein_per_100g,
+            carbs: food.carbs_per_100g,
+            fat: food.fat_per_100g,
+            fiber: food.fiber_per_100g || 0,
+            sugar: food.sugar_per_100g || 0,
+            sodium: food.sodium_per_100g || 0,
+            category: (food.category || 'otros') as FoodCategory,
+            subcategory: (food.subcategory || 'otros') as FoodSubcategory,
+            tags: food.tags || [],
+            brand: food.brand || '',
+            servingSize: '100g',
+            barcode: !!food.barcode,
+            dataSource: 'local' as const,
+            isCustom: false
+          }));
+          setServerFoods(serverResults);
+        } catch (error) {
+          console.error('❌ Error cargando alimentos por categoría:', error);
+          setServerFoods([]);
+        } finally {
+          setIsSearching(false);
+        }
+      } else if (selectedCategory === 'Todos' || selectedCategory === '') {
+        // Si se selecciona "Todos" o se limpia, cargar aleatorios
+        const loadRandomFoods = async () => {
+          console.log('🎲 Recargando alimentos aleatorios...');
+          setIsSearching(true);
+          try {
+            const response = await foodService.getRandomFoods(undefined, 30);
+            const serverResults = response.foods.map(food => ({
+              id: food.id,
+              name: food.name,
+              description: food.description || '',
+              calories: food.calories_per_100g,
+              protein: food.protein_per_100g,
+              carbs: food.carbs_per_100g,
+              fat: food.fat_per_100g,
+              fiber: food.fiber_per_100g || 0,
+              sugar: food.sugar_per_100g || 0,
+              sodium: food.sodium_per_100g || 0,
+              category: (food.category || 'otros') as FoodCategory,
+              subcategory: (food.subcategory || 'otros') as FoodSubcategory,
+              tags: food.tags || [],
+              brand: food.brand || '',
+              servingSize: '100g',
+              barcode: !!food.barcode,
+              dataSource: 'local' as const,
+              isCustom: false
+            }));
+            setServerFoods(serverResults);
+          } catch (error) {
+            console.error('❌ Error recargando alimentos aleatorios:', error);
+            setServerFoods([]);
+          } finally {
+            setIsSearching(false);
+          }
+        };
+        loadRandomFoods();
+      }
+    };
+    loadFoodsByCategory();
+  }, [selectedCategory]);
 
   useEffect(() => {
     if (selectedCategory && selectedCategory !== 'Creado' && selectedCategory !== 'Todos') {

@@ -210,6 +210,67 @@ class FitsoFood {
       throw error;
     }
   }
+
+  // Obtener alimentos aleatorios con prioridad para favoritos del usuario
+  static async getRandom({ category, limit = 30, userId, lang = 'es' }) {
+    try {
+      let sql = `
+        WITH requested AS (
+          SELECT 
+            f.*,
+            ft.name as t_name,
+            ft.description as t_description,
+            ft.unit_short as t_unit_short,
+            ft.unit_long as t_unit_long
+          FROM fitso_foods f
+          LEFT JOIN fitso_food_translations ft 
+            ON ft.food_id = f.id AND ft.locale = $1
+        ), with_fallback AS (
+          SELECT 
+            r.*,
+            COALESCE(r.t_name, ften.name, r.name) AS name_loc,
+            COALESCE(r.t_description, ften.description) AS description_loc,
+            COALESCE(r.t_unit_short, ften.unit_short, 'g') AS unit_short_loc,
+            COALESCE(r.t_unit_long, ften.unit_long, 'gramos') AS unit_long_loc,
+            -- Prioridad: favoritos del usuario primero, luego aleatorios
+            CASE 
+              WHEN ften.id IS NOT NULL THEN 1
+              ELSE 2 
+            END as priority
+          FROM requested r
+          LEFT JOIN fitso_food_translations ften 
+            ON ften.food_id = r.id AND ften.locale = 'en'
+        )
+        SELECT * FROM with_fallback WHERE 1=1
+      `;
+      
+      const params = [lang];
+      let paramCount = 0;
+
+      if (category && category !== 'all') {
+        paramCount++;
+        sql += ` AND category = $${paramCount + 1}`;
+        params.push(category);
+      }
+
+      // Ordenar por prioridad (favoritos primero) y luego aleatorio
+      sql += ` ORDER BY priority ASC, RANDOM() LIMIT $${paramCount + 2}`;
+      params.push(limit);
+
+      const result = await db.query(sql, params);
+      
+      return result.rows.map(row => ({
+        ...row,
+        name: row.name_loc || row.name,
+        description: row.description_loc || row.description,
+        unit_short: row.unit_short_loc || 'g',
+        unit_long: row.unit_long_loc || 'gramos',
+      }));
+    } catch (error) {
+      console.error('Error getting random fitso foods:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = FitsoFood;

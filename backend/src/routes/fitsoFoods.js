@@ -9,6 +9,9 @@ router.use(authenticateToken);
 // Buscar alimentos FITSO con traducciones
 router.get('/search', fitsoFoodController.searchFitsoFoods);
 
+// Obtener alimentos aleatorios para pantalla inicial
+router.get('/random', fitsoFoodController.getRandomFitsoFoods);
+
 // Obtener alimento FITSO por ID
 router.get('/:id', fitsoFoodController.getFitsoFoodById);
 

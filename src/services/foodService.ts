@@ -86,6 +86,18 @@ class FoodService {
     throw new Error(response.message || 'Error buscando alimentos');
   }
 
+  // Obtener alimentos aleatorios para pantalla inicial
+  async getRandomFoods(category?: string, limit: number = 30): Promise<FoodSearchResponse> {
+    const categoryParam = category ? `&category=${encodeURIComponent(category)}` : '';
+    const response = await apiService.get<FoodSearchResponse>(`/fitso-foods/random?limit=${limit}${categoryParam}`);
+    
+    if (response.success && response.data) {
+      return response.data;
+    }
+    
+    throw new Error(response.message || 'Error obteniendo alimentos aleatorios');
+  }
+
   // Buscar alimento por código de barras
   async getFoodByBarcode(barcode: string): Promise<Food | null> {
     try {
