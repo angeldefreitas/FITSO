@@ -19,7 +19,6 @@ import BannerAd from '../components/BannerAd';
 import { useAuth } from '../contexts/AuthContext';
 import { usePremium } from '../contexts/PremiumContext';
 import { FoodItem, FoodCategory, FoodSubcategory } from '../types/food';
-import foodService from '../services/foodService';
 import QuantityModal from '../components/QuantityModal';
 import ColoredMacros from '../components/ColoredMacros';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -62,7 +61,6 @@ export default function FoodSearchScreen({
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredFoods, setFilteredFoods] = useState<FoodItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [serverFoods, setServerFoods] = useState<FoodItem[]>([]);
   
   // Forzar re-render cuando cambie el estado premium
   const [refreshKey, setRefreshKey] = useState(0);
@@ -125,179 +123,21 @@ export default function FoodSearchScreen({
     }
   };
 
-  // Cargar alimentos aleatorios cuando se abra la pantalla
-  useEffect(() => {
-    const loadInitialFoods = async () => {
-      if (visible && searchQuery.trim().length < 2 && !selectedCategory) {
-        console.log('🎲 Cargando alimentos aleatorios iniciales...');
-        setIsSearching(true);
-        try {
-          const response = await foodService.getRandomFoods(undefined, 30);
-          console.log('📡 Alimentos aleatorios cargados:', response.foods.length);
-          const serverResults = response.foods.map(food => ({
-            id: food.id,
-            name: food.name,
-            description: food.description || '',
-            calories: food.calories_per_100g,
-            protein: food.protein_per_100g,
-            carbs: food.carbs_per_100g,
-            fat: food.fat_per_100g,
-            fiber: food.fiber_per_100g || 0,
-            sugar: food.sugar_per_100g || 0,
-            sodium: food.sodium_per_100g || 0,
-            category: (food.category || 'otros') as FoodCategory,
-            subcategory: (food.subcategory || 'otros') as FoodSubcategory,
-            tags: food.tags || [],
-            brand: food.brand || '',
-            servingSize: '100g',
-            barcode: !!food.barcode,
-            dataSource: 'local' as const,
-            isCustom: false
-          }));
-          setServerFoods(serverResults);
-        } catch (error) {
-          console.error('❌ Error cargando alimentos aleatorios:', error);
-          setServerFoods([]);
-        } finally {
-          setIsSearching(false);
-        }
-      }
-    };
-    loadInitialFoods();
-  }, [visible, selectedCategory]);
+  // Ya no cargamos alimentos del servidor
 
-  // Buscar en el servidor cuando cambie la query
-  useEffect(() => {
-    const searchServerFoods = async () => {
-      if (searchQuery.trim().length >= 2) {
-        console.log('🔍 Buscando en servidor:', searchQuery.trim());
-        console.log('👤 Usuario autenticado:', !!user);
-        setIsSearching(true);
-        try {
-          const response = await foodService.searchFoods(searchQuery.trim(), 20);
-          console.log('📡 Respuesta del servidor:', response);
-          const serverResults = response.foods.map(food => ({
-            id: food.id,
-            name: food.name,
-            description: food.description || '',
-            calories: food.calories_per_100g,
-            protein: food.protein_per_100g,
-            carbs: food.carbs_per_100g,
-            fat: food.fat_per_100g,
-            fiber: food.fiber_per_100g || 0,
-            sugar: food.sugar_per_100g || 0,
-            sodium: food.sodium_per_100g || 0,
-            category: (food.category || 'otros') as FoodCategory,
-            subcategory: (food.subcategory || 'otros') as FoodSubcategory,
-            tags: food.tags || [],
-            brand: food.brand || '',
-            servingSize: '100g',
-            barcode: !!food.barcode,
-            dataSource: 'local' as const,
-            isCustom: false
-          }));
-          setServerFoods(serverResults);
-        } catch (error) {
-          console.error('❌ Error buscando alimentos en servidor:', error);
-          console.error('❌ Detalles del error:', error.message);
-          setServerFoods([]);
-        } finally {
-          setIsSearching(false);
-        }
-      } else {
-        setServerFoods([]);
-      }
-    };
-
-    searchServerFoods();
-  }, [searchQuery]);
+  // Ya no buscamos en el servidor
 
   useEffect(() => {
     filterFoods();
-  }, [searchQuery, selectedCategory, selectedSubcategory, customFoods, serverFoods]);
+  }, [searchQuery, selectedCategory, selectedSubcategory, customFoods]);
 
-  // Cargar alimentos por categoría cuando se seleccione una
-  useEffect(() => {
-    const loadFoodsByCategory = async () => {
-      if (selectedCategory && selectedCategory !== 'Creado' && selectedCategory !== 'Todos' && searchQuery.trim().length < 2) {
-        console.log('🏷️ Cargando alimentos por categoría:', selectedCategory);
-        setIsSearching(true);
-        try {
-          const response = await foodService.getRandomFoods(selectedCategory, 30);
-          console.log('📡 Alimentos de categoría cargados:', response.foods.length);
-          const serverResults = response.foods.map(food => ({
-            id: food.id,
-            name: food.name,
-            description: food.description || '',
-            calories: food.calories_per_100g,
-            protein: food.protein_per_100g,
-            carbs: food.carbs_per_100g,
-            fat: food.fat_per_100g,
-            fiber: food.fiber_per_100g || 0,
-            sugar: food.sugar_per_100g || 0,
-            sodium: food.sodium_per_100g || 0,
-            category: (food.category || 'otros') as FoodCategory,
-            subcategory: (food.subcategory || 'otros') as FoodSubcategory,
-            tags: food.tags || [],
-            brand: food.brand || '',
-            servingSize: '100g',
-            barcode: !!food.barcode,
-            dataSource: 'local' as const,
-            isCustom: false
-          }));
-          setServerFoods(serverResults);
-        } catch (error) {
-          console.error('❌ Error cargando alimentos por categoría:', error);
-          setServerFoods([]);
-        } finally {
-          setIsSearching(false);
-        }
-      } else if (selectedCategory === 'Todos' || selectedCategory === '') {
-        // Si se selecciona "Todos" o se limpia, cargar aleatorios
-        const loadRandomFoods = async () => {
-          console.log('🎲 Recargando alimentos aleatorios...');
-          setIsSearching(true);
-          try {
-            const response = await foodService.getRandomFoods(undefined, 30);
-            const serverResults = response.foods.map(food => ({
-              id: food.id,
-              name: food.name,
-              description: food.description || '',
-              calories: food.calories_per_100g,
-              protein: food.protein_per_100g,
-              carbs: food.carbs_per_100g,
-              fat: food.fat_per_100g,
-              fiber: food.fiber_per_100g || 0,
-              sugar: food.sugar_per_100g || 0,
-              sodium: food.sodium_per_100g || 0,
-              category: (food.category || 'otros') as FoodCategory,
-              subcategory: (food.subcategory || 'otros') as FoodSubcategory,
-              tags: food.tags || [],
-              brand: food.brand || '',
-              servingSize: '100g',
-              barcode: !!food.barcode,
-              dataSource: 'local' as const,
-              isCustom: false
-            }));
-            setServerFoods(serverResults);
-          } catch (error) {
-            console.error('❌ Error recargando alimentos aleatorios:', error);
-            setServerFoods([]);
-          } finally {
-            setIsSearching(false);
-          }
-        };
-        loadRandomFoods();
-      }
-    };
-    loadFoodsByCategory();
-  }, [selectedCategory]);
+  // Ya no cargamos alimentos por categoría del servidor
 
   useEffect(() => {
     if (selectedCategory && selectedCategory !== 'Creado' && selectedCategory !== 'Todos') {
-      // Obtener subcategorías únicas de la categoría seleccionada desde serverFoods
+      // Obtener subcategorías únicas de la categoría seleccionada desde customFoods
       const subcategories = [...new Set(
-        serverFoods
+        customFoods
           .filter(food => food.category === selectedCategory)
           .map(food => food.subcategory)
           .filter(sub => sub && sub.trim() !== '')
@@ -311,37 +151,37 @@ export default function FoodSearchScreen({
       setAvailableSubcategories([]);
       setSelectedSubcategory('');
     }
-  }, [selectedCategory, serverFoods]);
+  }, [selectedCategory, customFoods]);
 
   const filterFoods = () => {
     try {
       let results: FoodItem[] = [];
 
-      // Si hay una búsqueda activa, usar resultados del servidor
-      if (searchQuery.trim().length >= 2) {
-        results = [...serverFoods];
-        
-        // Filtrar por categoría si está seleccionada
-        if (selectedCategory && selectedCategory !== 'Todos') {
-          results = results.filter(food => food.category === selectedCategory);
-        }
-        
-        // Filtrar por subcategoría si está seleccionada
-        if (selectedSubcategory) {
-          results = results.filter(food => food.subcategory === selectedSubcategory);
-        }
+      // Solo usar comidas personalizadas
+      if (selectedCategory === 'Creado') {
+        results = [...customFoods];
       } else {
-        // Sin búsqueda activa, mostrar comidas personalizadas o todas
-        if (selectedCategory === 'Creado') {
-          results = [...customFoods];
-        } else {
-          // Mostrar mensaje de "Escribe para buscar" o comidas personalizadas
-          results = [...customFoods];
-        }
+        // Mostrar comidas personalizadas por defecto
+        results = [...customFoods];
+      }
+
+      // Filtrar por búsqueda si hay query
+      if (searchQuery.trim().length >= 2) {
+        const query = searchQuery.toLowerCase();
+        results = results.filter(food => 
+          food.name.toLowerCase().includes(query) ||
+          food.description?.toLowerCase().includes(query) ||
+          food.brand?.toLowerCase().includes(query)
+        );
+      }
+
+      // Filtrar por subcategoría si está seleccionada
+      if (selectedSubcategory) {
+        results = results.filter(food => food.subcategory === selectedSubcategory);
       }
 
       setFilteredFoods(results);
-      console.log(`🔍 Filtrados ${results.length} alimentos`);
+      console.log(`🔍 Filtrados ${results.length} alimentos personalizados`);
     } catch (error) {
       console.error('❌ Error filtrando alimentos:', error);
       setFilteredFoods([]);
@@ -629,7 +469,10 @@ export default function FoodSearchScreen({
 
         <View style={foodSearchScreenStyles.resultsContainer}>
           <Text style={foodSearchScreenStyles.resultsTitle}>
-            {isSearching ? t('food.searching') : `${filteredFoods.length} ${t('food.search')}`}
+            {isSearching ? t('food.searching') : 
+             filteredFoods.length === 0 ? 
+             'No hay comidas personalizadas. Crea una nueva comida o escanea con IA.' :
+             `${filteredFoods.length} comidas personalizadas`}
           </Text>
           <FlatList
             data={filteredFoods}

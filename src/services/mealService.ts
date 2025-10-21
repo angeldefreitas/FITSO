@@ -1,5 +1,24 @@
 import apiService, { ApiResponse } from './apiService';
-import { Food } from './foodService';
+// Definir interfaz Food localmente ya que foodService fue eliminado
+export interface Food {
+  id: string;
+  name: string;
+  description?: string;
+  brand?: string;
+  barcode?: string;
+  calories_per_100g: number;
+  protein_per_100g: number;
+  carbs_per_100g: number;
+  fat_per_100g: number;
+  fiber_per_100g: number;
+  sugar_per_100g: number;
+  sodium_per_100g: number;
+  category?: string;
+  subcategory?: string;
+  tags?: string[];
+  created_at: string;
+  updated_at: string;
+}
 
 export interface Meal {
   id: string;

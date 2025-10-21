@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import mealService from '../../services/mealService';
-import foodService from '../../services/foodService';
 import { useAuth } from '../../contexts/AuthContext';
 
 export interface Meal {
@@ -91,16 +90,16 @@ export const useMealsBackend = (selectedDate: Date) => {
       console.log('📊 Respuesta del backend:', response);
       
       // Verificar que la respuesta tiene la estructura correcta
-      if (!response || !response.data || !response.data.meals) {
+      if (!response || !response.meals) {
         console.warn('⚠️ Respuesta del backend no tiene la estructura esperada:', response);
         setMeals([]);
         return;
       }
       
-      console.log('✅ Backend response - Meals encontradas:', response.data.meals.length);
+      console.log('✅ Backend response - Meals encontradas:', response.meals.length);
       
       // Convertir las comidas del backend al formato del frontend
-      const convertedMeals: Meal[] = response.data.meals.map(meal => {
+      const convertedMeals: Meal[] = response.meals.map(meal => {
         console.log('🔄 Convirtiendo comida:', meal.name || meal.food?.name, 'Calorías:', meal.nutrition?.calories);
         return {
           id: meal.id,
@@ -166,43 +165,31 @@ export const useMealsBackend = (selectedDate: Date) => {
         'Snacks': 'snack'
       } as const;
 
-      // Si es una comida de la base de datos local (desde FoodSearchScreen), crear el alimento primero
-      if (mealData.source === 'database' && mealData.sourceData?.food) {
-        console.log('🍽️ Procesando comida de base de datos local:', mealData.sourceData.food);
-        
-        // Crear el alimento en la base de datos PostgreSQL
-        const foodData = {
-          name: mealData.sourceData.food.name,
-          brand: 'Local',
-          barcode: undefined,
-          calories_per_100g: mealData.sourceData.food.calories,
-          protein_per_100g: mealData.sourceData.food.protein,
-          carbs_per_100g: mealData.sourceData.food.carbs,
-          fat_per_100g: mealData.sourceData.food.fat,
-          fiber_per_100g: mealData.sourceData.food.fiber || 0,
-          sugar_per_100g: mealData.sourceData.food.sugar || 0,
-          sodium_per_100g: mealData.sourceData.food.sodium || 0
-        };
-
-        console.log('📦 Datos del alimento a crear:', foodData);
-        const foodResponse = await foodService.createFood(foodData);
-        console.log('✅ Alimento creado:', foodResponse);
-        const foodId = foodResponse.id;
-
-        // Crear entrada de comida con la cantidad especificada
-        const mealEntry = {
-          food_id: foodId,
-          quantity: mealData.sourceData.quantity,
-          meal_type: mealTypeMap[mealData.mealType],
-          entry_date: entryDate
-        };
-
-        console.log('🍽️ Entrada de comida a crear:', mealEntry);
-        const createdMeal = await mealService.addMeal(mealEntry);
-        console.log('✅ Entrada de comida creada:', createdMeal);
-      } else {
-        throw new Error('Tipo de comida no soportado para el backend');
-      }
+      // Ya no creamos alimentos en el servidor, solo guardamos las comidas localmente
+      console.log('🍽️ Guardando comida localmente:', mealData);
+      
+      // Guardar en AsyncStorage como antes
+      const storageKey = `@fitso_meals_${user?.id || 'default'}_${entryDate}`;
+      const existingMeals = await AsyncStorage.getItem(storageKey);
+      const meals = existingMeals ? JSON.parse(existingMeals) : [];
+      
+      const newMeal: Meal = {
+        id: `meal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        name: mealData.name,
+        calories: mealData.calories,
+        protein: mealData.protein,
+        carbs: mealData.carbs,
+        fat: mealData.fat,
+        createdAt: new Date().toISOString(),
+        date: entryDate,
+        mealType: mealData.mealType,
+        source: mealData.source,
+        sourceData: mealData.sourceData
+      };
+      
+      meals.push(newMeal);
+      await AsyncStorage.setItem(storageKey, JSON.stringify(meals));
+      console.log('✅ Comida guardada localmente:', newMeal);
 
       // Recargar comidas después de agregar
       console.log('🔄 Recargando comidas después de agregar...');
@@ -321,14 +308,14 @@ export const useMealsBackend = (selectedDate: Date) => {
       const response = await mealService.getMealHistory(30);
       
       // Verificar que la respuesta tiene la estructura correcta
-      if (!response || !response.data || !response.data.history) {
+      if (!response || !response.history) {
         console.warn('⚠️ Respuesta del historial no tiene la estructura esperada:', response);
         setHistory([]);
         return;
       }
       
       // Convertir a formato de historial
-      const historyItems: MealHistoryItem[] = response.data.history.map(day => ({
+      const historyItems: MealHistoryItem[] = response.history.map(day => ({
         id: day.date,
         name: `Comidas del ${new Date(day.date).toLocaleDateString('es-ES')}`,
         calories: 0, // Se calculará si es necesario
