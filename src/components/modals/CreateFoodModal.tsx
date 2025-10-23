@@ -87,13 +87,13 @@ const CreateFoodModal: React.FC<CreateFoodModalProps> = ({ visible, onClose, onS
             <TextInput
               value={description}
               onChangeText={setDescription}
-              placeholder="Descripción (opcional)"
+              placeholder={t('food.descriptionOptional')}
               placeholderTextColor="#6c757d"
               style={styles.input}
             />
 
             <Text style={styles.nutritionLabel}>
-              Valores nutricionales por 100g
+              {t('food.nutritionalValuesPer100g')}
             </Text>
             
             <View style={styles.row}>
@@ -119,7 +119,7 @@ const CreateFoodModal: React.FC<CreateFoodModalProps> = ({ visible, onClose, onS
               <TextInput
                 value={carbs}
                 onChangeText={(text) => handleNumericInput(text, setCarbs)}
-                placeholder="Carbohidratos (g)"
+                placeholder={t('food.carbohydratesG')}
                 placeholderTextColor="#6c757d"
                 keyboardType="numeric"
                 style={[styles.input, styles.halfInput]}
@@ -127,7 +127,7 @@ const CreateFoodModal: React.FC<CreateFoodModalProps> = ({ visible, onClose, onS
               <TextInput
                 value={fat}
                 onChangeText={(text) => handleNumericInput(text, setFat)}
-                placeholder="Grasas (g)"
+                placeholder={t('food.fatsG')}
                 placeholderTextColor="#6c757d"
                 keyboardType="numeric"
                 style={[styles.input, styles.halfInput]}

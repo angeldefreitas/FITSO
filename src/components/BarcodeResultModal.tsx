@@ -134,11 +134,11 @@ export default function BarcodeResultModal({
                         </View>
                         <View style={styles.nutritionItem}>
                           <Text style={styles.nutritionValue}>{product.nutrition.carbs}g</Text>
-                          <Text style={styles.nutritionLabel}>Carbohidratos</Text>
+                          <Text style={styles.nutritionLabel}>{t('food.carbs')}</Text>
                         </View>
                         <View style={styles.nutritionItem}>
                           <Text style={styles.nutritionValue}>{product.nutrition.fat}g</Text>
-                          <Text style={styles.nutritionLabel}>Grasas</Text>
+                          <Text style={styles.nutritionLabel}>{t('food.fat')}</Text>
                         </View>
                       </View>
                     </View>
@@ -171,11 +171,11 @@ export default function BarcodeResultModal({
                         </View>
                         <View style={styles.nutritionItem}>
                           <Text style={styles.nutritionValue}>{nutrition.carbs}g</Text>
-                          <Text style={styles.nutritionLabel}>Carbohidratos</Text>
+                          <Text style={styles.nutritionLabel}>{t('food.carbs')}</Text>
                         </View>
                         <View style={styles.nutritionItem}>
                           <Text style={styles.nutritionValue}>{nutrition.fat}g</Text>
-                          <Text style={styles.nutritionLabel}>Grasas</Text>
+                          <Text style={styles.nutritionLabel}>{t('food.fat')}</Text>
                         </View>
                       </View>
                     </View>

@@ -1,6 +1,11 @@
 export interface FoodItem {
   id: string;
   name: string;
+  nameTranslations?: {
+    es: string;
+    en: string;
+    pt: string;
+  };
   calories: number;
   protein: number;
   carbs: number;
@@ -13,7 +18,17 @@ export interface FoodItem {
   brand?: string;
   servingSize: string; // ej: "100g", "1 taza", "1 unidad"
   description?: string;
+  descriptionTranslations?: {
+    es: string;
+    en: string;
+    pt: string;
+  };
   tags?: string[]; // ej: ["sin gluten", "vegano", "orgánico"]
+  tagsTranslations?: {
+    es: string[];
+    en: string[];
+    pt: string[];
+  };
   image?: ImageType;
   barcode?: boolean;
   dataSource?: 'local' | 'usda' | 'openFoodFacts' | 'claude';
@@ -89,79 +104,80 @@ export type FoodCategory =
 
 export type FoodSubcategory = 
   // Carnes
-  | 'pollo'
-  | 'res'
-  | 'cerdo'
-  | 'pavo'
-  | 'cordero'
+  | 'aves'
+  | 'carnes-rojas'
+  | 'carnes-blancas'
   | 'embutidos'
   // Lácteos
   | 'leche'
   | 'yogur'
-  | 'queso'
-  | 'mantequilla'
-  | 'crema'
+  | 'quesos'
+  | 'huevos'
+  | 'grasas-lacteas'
   // Frutos secos
-  | 'almendras'
   | 'nueces'
-  | 'anacardos'
-  | 'pistachos'
-  | 'avellanas'
-  | 'pipas'
+  | 'legumbres'
+  | 'semillas'
   // Frutas
+  | 'frutas-frescas'
+  | 'frutas-tropicales'
   | 'citricos'
-  | 'tropicales'
-  | 'bayas'
-  | 'manzanas'
-  | 'peras'
+  | 'frutos-rojos'
+  | 'frutas-temporada'
+  | 'frutas-exoticas'
+  | 'frutas-hueso'
+  | 'frutas-secas'
+  | 'cucurbitaceas'
   // Verduras
   | 'hojas-verdes'
   | 'raices'
   | 'cruciferas'
   | 'solanaceas'
-  | 'legumbres-verdes'
+  | 'bulbos'
+  | 'tallos'
+  | 'hierbas'
+  | 'tuberculos'
   // Cereales
+  | 'granos-enteros'
+  | 'pseudocereales'
   | 'arroz'
   | 'pasta'
   | 'pan'
-  | 'avena'
-  | 'quinoa'
   | 'trigo'
   // Legumbres
   | 'lentejas'
   | 'garbanzos'
   | 'frijoles'
   | 'soja'
+  | 'guisantes'
   // Bebidas
   | 'agua'
   | 'cafe'
-  | 'te'
+  | 'tes'
   | 'zumos'
-  | 'leches-vegetales'
   | 'alcoholicas'
   // Snacks
+  | 'snacks-salados'
   | 'dulces'
-  | 'salados'
-  | 'chips'
-  | 'galletas'
+  | 'frutos-secos'
+  | 'helados'
   // Condimentos
+  | 'sales'
+  | 'endulzantes'
   | 'especias'
   | 'hierbas'
   | 'salsas'
   | 'vinagres'
   // Aceites
-  | 'aceite-oliva'
-  | 'aceite-coco'
-  | 'aceite-girasol'
+  | 'aceites-vegetales'
+  | 'grasas-animales'
   // Pescados
-  | 'pescado-blanco'
-  | 'pescado-azul'
-  | 'salmón'
+  | 'pescados-grasos'
+  | 'pescados-magros'
+  | 'pescados-planos'
   // Mariscos
-  | 'camarones'
-  | 'langostinos'
-  | 'mejillones'
-  | 'ostras';
+  | 'crustaceos'
+  | 'moluscos';
 
 export interface FoodSearchFilters {
   category?: FoodCategory;

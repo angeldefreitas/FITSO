@@ -22,6 +22,10 @@ import { FoodItem, FoodCategory, FoodSubcategory } from '../types/food';
 import QuantityModal from '../components/QuantityModal';
 import ColoredMacros from '../components/ColoredMacros';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LocalFoodService } from '../services/localFoodService';
+import { useFoodTranslation } from '../hooks/useFoodTranslation';
+import { TranslatedFoodItem } from '../services/foodTranslationService';
+import { useCategoryTranslations } from '../utils/categoryTranslations';
 
 // Nuevo componente extraído
 import CreateFoodModal from '../components/modals/CreateFoodModal';
@@ -32,7 +36,7 @@ import { foodSearchScreenStyles } from '../styles/screens/FoodSearchScreenStyles
 interface FoodSearchScreenProps {
   visible: boolean;
   onClose: () => void;
-  onFoodSelect: (food: FoodItem, quantity: number) => void;
+  onFoodSelect: (food: TranslatedFoodItem, quantity: number) => void;
   selectedMealType: string;
   currentMeals?: Array<{
     calories: number;
@@ -58,9 +62,14 @@ export default function FoodSearchScreen({
   const { t } = useTranslation();
   const { user } = useAuth();
   const { isPremium, dailyScansUsed, canUseAIScan } = usePremium();
+  const { searchFoods: searchFoodsWithTranslation, translateFoods, currentLanguage } = useFoodTranslation();
+  const { translateCategory, translateSubcategory, translateCategoryAndSubcategory } = useCategoryTranslations();
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredFoods, setFilteredFoods] = useState<FoodItem[]>([]);
+  const [filteredFoods, setFilteredFoods] = useState<TranslatedFoodItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+
+  // Debug: Log del idioma actual
+  console.log(`🔍 FoodSearchScreen - Idioma actual: ${currentLanguage}`);
   
   // Forzar re-render cuando cambie el estado premium
   const [refreshKey, setRefreshKey] = useState(0);
@@ -72,14 +81,19 @@ export default function FoodSearchScreen({
   const [selectedSubcategory, setSelectedSubcategory] = useState<FoodSubcategory | ''>('');
   const [availableSubcategories, setAvailableSubcategories] = useState<FoodSubcategory[]>([]);
   const [showQuantityModal, setShowQuantityModal] = useState(false);
-  const [selectedFood, setSelectedFood] = useState<FoodItem | null>(null);
+  const [selectedFood, setSelectedFood] = useState<TranslatedFoodItem | null>(null);
   const [showCreateFoodModal, setShowCreateFoodModal] = useState(false);
   const [customFoods, setCustomFoods] = useState<FoodItem[]>([]);
+  const [localFoods, setLocalFoods] = useState<FoodItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Cargar comidas personalizadas desde AsyncStorage
+  // Cargar comidas personalizadas y base de datos local
   useEffect(() => {
-    const loadCustomFoods = async () => {
+    const loadFoods = async () => {
       try {
+        setIsLoading(true);
+        
+        // Cargar comidas personalizadas
         const storageKey = `@fitso_custom_foods_${user?.id || 'default'}`;
         const stored = await AsyncStorage.getItem(storageKey);
         if (stored) {
@@ -87,12 +101,31 @@ export default function FoodSearchScreen({
           setCustomFoods(parsedFoods);
           console.log('✅ Comidas personalizadas cargadas:', parsedFoods.length);
         }
+
+        // Verificar si la base de datos necesita actualización
+        const needsUpdate = await LocalFoodService.needsUpdate();
+        let localFoodsData;
+        if (needsUpdate) {
+          console.log('🔄 Base de datos necesita actualización, forzando recarga...');
+          localFoodsData = await LocalFoodService.forceReloadDatabase();
+        } else {
+          // Inicializar y cargar base de datos local
+          localFoodsData = await LocalFoodService.initializeLocalDatabase();
+        }
+        
+        setLocalFoods(localFoodsData);
+        console.log('✅ Base de datos local cargada:', localFoodsData.length);
+        console.log('🔍 Primeros 5 alimentos:', localFoodsData.slice(0, 5).map(f => ({ name: f.name, category: f.category })));
+        
       } catch (error) {
-        console.error('❌ Error cargando comidas personalizadas:', error);
+        console.error('❌ Error cargando alimentos:', error);
         setCustomFoods([]);
+        setLocalFoods([]);
+      } finally {
+        setIsLoading(false);
       }
     };
-    loadCustomFoods();
+    loadFoods();
   }, []);
 
   // Guardar comidas personalizadas
@@ -129,15 +162,15 @@ export default function FoodSearchScreen({
 
   useEffect(() => {
     filterFoods();
-  }, [searchQuery, selectedCategory, selectedSubcategory, customFoods]);
+  }, [searchQuery, selectedCategory, selectedSubcategory, customFoods, localFoods]);
 
-  // Ya no cargamos alimentos por categoría del servidor
-
+  // Cargar subcategorías cuando cambie la categoría
   useEffect(() => {
     if (selectedCategory && selectedCategory !== 'Creado' && selectedCategory !== 'Todos') {
-      // Obtener subcategorías únicas de la categoría seleccionada desde customFoods
+      // Combinar alimentos locales y personalizados para obtener subcategorías
+      const allFoods = [...localFoods, ...customFoods];
       const subcategories = [...new Set(
-        customFoods
+        allFoods
           .filter(food => food.category === selectedCategory)
           .map(food => food.subcategory)
           .filter(sub => sub && sub.trim() !== '')
@@ -151,28 +184,35 @@ export default function FoodSearchScreen({
       setAvailableSubcategories([]);
       setSelectedSubcategory('');
     }
-  }, [selectedCategory, customFoods]);
+  }, [selectedCategory, customFoods, localFoods]);
 
   const filterFoods = () => {
     try {
-      let results: FoodItem[] = [];
+      let results: TranslatedFoodItem[] = [];
 
-      // Solo usar comidas personalizadas
+      // Combinar alimentos locales y personalizados
+      const allFoods = [...localFoods, ...customFoods];
+
       if (selectedCategory === 'Creado') {
-        results = [...customFoods];
+        // Solo mostrar comidas personalizadas con traducción
+        results = translateFoods(customFoods);
+      } else if (selectedCategory === 'Todos' || selectedCategory === '') {
+        // Mostrar todos los alimentos con traducción
+        if (searchQuery.trim().length >= 2) {
+          results = searchFoodsWithTranslation(allFoods, searchQuery);
+        } else {
+          // Sin búsqueda, solo traducir todos los alimentos
+          results = translateFoods(allFoods);
+        }
       } else {
-        // Mostrar comidas personalizadas por defecto
-        results = [...customFoods];
-      }
-
-      // Filtrar por búsqueda si hay query
-      if (searchQuery.trim().length >= 2) {
-        const query = searchQuery.toLowerCase();
-        results = results.filter(food => 
-          food.name.toLowerCase().includes(query) ||
-          food.description?.toLowerCase().includes(query) ||
-          food.brand?.toLowerCase().includes(query)
-        );
+        // Filtrar por categoría seleccionada con traducción
+        if (searchQuery.trim().length >= 2) {
+          results = searchFoodsWithTranslation(allFoods, searchQuery, selectedCategory);
+        } else {
+          // Sin búsqueda, filtrar por categoría y traducir
+          const categoryFoods = allFoods.filter(food => food.category === selectedCategory);
+          results = translateFoods(categoryFoods);
+        }
       }
 
       // Filtrar por subcategoría si está seleccionada
@@ -181,19 +221,21 @@ export default function FoodSearchScreen({
       }
 
       setFilteredFoods(results);
-      console.log(`🔍 Filtrados ${results.length} alimentos personalizados`);
+      console.log(`🔍 Filtrados ${results.length} alimentos (${localFoods.length} locales + ${customFoods.length} personalizados) en idioma ${currentLanguage}`);
+      console.log(`📊 Categorías disponibles: ${[...new Set(allFoods.map(f => f.category))].join(', ')}`);
+      console.log(`📊 Subcategorías de ${selectedCategory}: ${[...new Set(allFoods.filter(f => f.category === selectedCategory).map(f => f.subcategory))].join(', ')}`);
     } catch (error) {
       console.error('❌ Error filtrando alimentos:', error);
       setFilteredFoods([]);
     }
   };
 
-  const handleFoodSelect = (food: FoodItem) => {
+  const handleFoodSelect = (food: TranslatedFoodItem) => {
     setSelectedFood(food);
     setShowQuantityModal(true);
   };
 
-  const handleQuantityConfirm = (food: FoodItem, quantity: number) => {
+  const handleQuantityConfirm = (food: TranslatedFoodItem, quantity: number) => {
     onFoodSelect(food, quantity);
     setShowQuantityModal(false);
     setSelectedFood(null);
@@ -249,10 +291,19 @@ export default function FoodSearchScreen({
     onAIScan?.();
   };
 
-  // Categorías reales de los datos
-  const categories = ['Todos', 'Creado', 'frutas', 'verduras', 'carnes', 'pescados', 'lacteos', 'cereales', 'legumbres', 'frutos-secos', 'aceites', 'bebidas', 'snacks', 'condimentos', 'mariscos'];
+  // Categorías dinámicas basadas en los datos disponibles
+  const [availableCategories, setAvailableCategories] = useState<string[]>(['Todos', 'Creado']);
 
-  const renderFoodItem = ({ item }: { item: FoodItem }) => (
+  // Cargar categorías disponibles cuando se carguen los alimentos
+  useEffect(() => {
+    if (localFoods.length > 0) {
+      const localCategories = [...new Set(localFoods.map(food => food.category))];
+      const allCategories = ['Todos', 'Creado', ...localCategories];
+      setAvailableCategories(allCategories);
+    }
+  }, [localFoods]);
+
+  const renderFoodItem = ({ item }: { item: TranslatedFoodItem }) => (
     <TouchableOpacity
       style={foodSearchScreenStyles.foodItem}
       onPress={() => handleFoodSelect(item)}
@@ -284,7 +335,7 @@ export default function FoodSearchScreen({
           )}
         </View>
             <Text style={foodSearchScreenStyles.foodCategory}>
-          {item.category.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())} • {item.subcategory.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+          {item.translatedCategory} • {item.translatedSubcategory}
               {item.isCustom && (
                 <Text style={foodSearchScreenStyles.customLabel}> • {t('food.customCreatedByYou')}</Text>
               )}
@@ -335,7 +386,7 @@ export default function FoodSearchScreen({
         foodSearchScreenStyles.categoryButtonText,
         selectedCategory === category && foodSearchScreenStyles.categoryButtonTextSelected
       ]}>
-        {category === 'Todos' ? t('food.all') : category === 'Creado' ? t('food.addCustom') : category.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+        {translateCategory(category)}
       </Text>
     </TouchableOpacity>
   );
@@ -353,7 +404,7 @@ export default function FoodSearchScreen({
         foodSearchScreenStyles.subcategoryButtonText,
         selectedSubcategory === subcategory && foodSearchScreenStyles.subcategoryButtonTextSelected
       ]}>
-        {subcategory.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+        {translateSubcategory(subcategory)}
       </Text>
     </TouchableOpacity>
   );
@@ -445,7 +496,7 @@ export default function FoodSearchScreen({
 
         <View style={foodSearchScreenStyles.categoriesContainer}>
           <FlatList
-            data={categories}
+            data={availableCategories}
             renderItem={({ item }) => renderCategoryButton(item)}
             keyExtractor={(item) => item}
             horizontal
@@ -469,10 +520,11 @@ export default function FoodSearchScreen({
 
         <View style={foodSearchScreenStyles.resultsContainer}>
           <Text style={foodSearchScreenStyles.resultsTitle}>
-            {isSearching ? t('food.searching') : 
+            {isLoading ? t('common.loading') :
+             isSearching ? t('food.searching') : 
              filteredFoods.length === 0 ? 
-             'No hay comidas personalizadas. Crea una nueva comida o escanea con IA.' :
-             `${filteredFoods.length} comidas personalizadas`}
+             t('food.noResults') + '. ' + t('food.tryDifferentSearch') :
+             `${filteredFoods.length} ${t('food.foodsFound')}`}
           </Text>
           <FlatList
             data={filteredFoods}

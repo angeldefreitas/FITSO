@@ -22,12 +22,21 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const { i18n } = useTranslation();
   const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
 
+  // Sincronizar con i18n cuando cambie
+  useEffect(() => {
+    if (i18n.language !== currentLanguage) {
+      console.log(`🔄 LanguageContext: Sincronizando con i18n de ${currentLanguage} a ${i18n.language}`);
+      setCurrentLanguage(i18n.language);
+    }
+  }, [i18n.language, currentLanguage]);
+
   // Cargar idioma guardado al inicializar
   useEffect(() => {
     const loadSavedLanguage = async () => {
       try {
         const savedLanguage = await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY);
         if (savedLanguage && savedLanguage !== currentLanguage) {
+          console.log(`🔄 LanguageContext: Cargando idioma guardado: ${savedLanguage}`);
           await changeLanguage(savedLanguage);
         }
       } catch (error) {

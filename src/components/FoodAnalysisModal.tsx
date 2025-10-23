@@ -1065,7 +1065,7 @@ function ManualIngredientModal({ visible, onClose, onConfirm }: ManualIngredient
               placeholderTextColor="rgba(255, 255, 255, 0.4)"
             />
 
-            <Text style={manualStyles.label}>Carbohidratos (g)</Text>
+            <Text style={manualStyles.label}>{t('food.carbohydratesG')}</Text>
             <TextInput
               style={manualStyles.input}
               value={carbs}
@@ -1075,7 +1075,7 @@ function ManualIngredientModal({ visible, onClose, onConfirm }: ManualIngredient
               placeholderTextColor="rgba(255, 255, 255, 0.4)"
             />
 
-            <Text style={manualStyles.label}>Grasas (g)</Text>
+            <Text style={manualStyles.label}>{t('food.fatsG')}</Text>
             <TextInput
               style={manualStyles.input}
               value={fats}

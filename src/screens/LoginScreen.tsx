@@ -11,6 +11,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Image,
+  Linking,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
@@ -118,6 +119,29 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             <Text style={styles.footerText}>{t('auth.alreadyHaveAccount')} </Text>
             <TouchableOpacity onPress={() => navigation.navigate('Register')}>
               <Text style={styles.footerLink}>{t('auth.createAccount')}</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Legal Links */}
+          <View style={styles.legalLinksContainer}>
+            <TouchableOpacity 
+              style={styles.legalLink}
+              onPress={() => Linking.openURL('https://www.fitso.fitness/privacy.html')}
+            >
+              <Text style={styles.legalLinkText}>
+                {t('auth.privacyPolicy')}
+              </Text>
+            </TouchableOpacity>
+            
+            <Text style={styles.legalSeparator}>•</Text>
+            
+            <TouchableOpacity 
+              style={styles.legalLink}
+              onPress={() => Linking.openURL('https://www.fitso.fitness/terms.html')}
+            >
+              <Text style={styles.legalLinkText}>
+                {t('auth.termsOfService')}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -232,6 +256,27 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontSize: 14,
     fontWeight: '600',
+  },
+  legalLinksContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+    paddingHorizontal: 20,
+  },
+  legalLink: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  legalLinkText: {
+    color: Colors.primary,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  legalSeparator: {
+    color: Colors.textSecondary,
+    fontSize: 12,
+    marginHorizontal: 8,
   },
 });
 

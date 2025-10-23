@@ -22,6 +22,8 @@ import HorizontalProgressBar from '../components/HorizontalProgressBar';
 import ColoredMacros from '../components/ColoredMacros';
 import BottomNavigation from '../components/BottomNavigation';
 import BannerAd from '../components/BannerAd';
+import OfflineIndicator from '../components/OfflineIndicator';
+import apiService from '../services/apiService';
 import FoodSearchScreen from './FoodSearchScreen';
 import BarcodeScanner from '../components/BarcodeScanner';
 import FoodResultModal from '../components/FoodResultModal';
@@ -145,7 +147,7 @@ export default function DailyScreen({ onTabChange, shouldOpenAddModal, onModalOp
 
   // Nuevos hooks extraídos
   const { selectedDate, currentDate, navigateToPreviousMonth, navigateToNextMonth, navigateToToday, handleDateSelect } = useDateNavigation();
-  const { meals, loading, addMeal, updateMeal, deleteMeal, getMealsByType, getMealTotals, getTotalNutrients } = useMeals(selectedDate, user?.id);
+  const { meals, loading, addMeal, updateMeal, deleteMeal, getMealsByType, getMealTotals, getTotalNutrients, internetStatus, isCheckingConnection } = useMeals(selectedDate, user?.id);
   const { waterGoal, waterConsumed, addWaterGlass, removeWaterGlass, updateWaterGoal } = useWaterTracking(selectedDate, user?.id);
   const { history, addToHistory, removeFromHistory, getRecentMeals } = useMealHistory(user?.id);
   // Sincronización eliminada - todo funciona localmente
@@ -978,6 +980,15 @@ export default function DailyScreen({ onTabChange, shouldOpenAddModal, onModalOp
             />
           )}
         </TouchableOpacity>
+
+        {/* Indicador de modo offline */}
+        <OfflineIndicator 
+          onRetry={() => {
+            // Recargar datos cuando el usuario presione reintentar
+            console.log('🔄 Usuario solicitó reintentar conexión');
+            apiService.resetFailedRequests();
+          }}
+        />
 
         {/* Navegación de fechas */}
         <DateNavigation

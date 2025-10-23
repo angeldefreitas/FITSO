@@ -1,25 +1,5 @@
-// Importación condicional de react-native-purchases para evitar errores
-let Purchases: any = null;
-
-// Función para verificar si estamos en un entorno real (no simulador)
-const isRealDevice = () => {
-  return !__DEV__ || (typeof window !== 'undefined' && window.location?.hostname !== 'localhost');
-};
-
-// Función helper para verificar si Purchases está disponible
-const isPurchasesAvailable = () => {
-  return Purchases && typeof Purchases.configure === 'function';
-};
-
-try {
-  if (isRealDevice()) {
-    Purchases = require('react-native-purchases');
-  } else {
-    console.warn('⚠️ En modo desarrollo/simulador, usando modo simulación para RevenueCat');
-  }
-} catch (error) {
-  console.warn('⚠️ react-native-purchases no disponible, usando modo simulación');
-}
+// Importación de react-native-purchases
+import Purchases from 'react-native-purchases';
 
 // Tipos para RevenueCat
 interface Product {
@@ -57,12 +37,12 @@ import { Platform } from 'react-native';
 
 // IDs de productos de suscripción para RevenueCat
 const SUBSCRIPTION_PRODUCTS = [
-  'fitso_premium_monthly',
-  'fitso_premium_yearly',
+  'Fitso_Premium_Monthly',
+  'Fitso_Premium_Yearly',
 ];
 
-// Entitlement ID (esto lo configurarás en RevenueCat dashboard)
-const PREMIUM_ENTITLEMENT = 'Premium';
+// Entitlement ID (configurado en RevenueCat dashboard)
+const PREMIUM_ENTITLEMENT = 'Fitso Premium';
 
 // Claves de almacenamiento
 const PREMIUM_STATUS_KEY = '@fitso_premium_status';
@@ -93,31 +73,16 @@ class SubscriptionService {
 
       console.log('🔄 Inicializando servicio de suscripciones con RevenueCat...');
       
-      // Verificar si react-native-purchases está disponible
-      if (!Purchases) {
-        console.warn('⚠️ react-native-purchases no disponible, usando modo simulación');
-        this.isInitialized = true;
-        return;
-      }
-
       // Configurar RevenueCat - usar API key de producción
       const apiKey = Platform.OS === 'ios' ? REVENUECAT_API_KEY.ios : REVENUECAT_API_KEY.android;
       
-      if (apiKey === 'your_ios_api_key_here' || apiKey === 'your_android_api_key_here') {
-        console.warn('⚠️ API keys de RevenueCat no configuradas, usando modo simulación');
-        this.isInitialized = true;
-        return;
+      if (apiKey === 'your_android_api_key_here') {
+        throw new Error('API key de Android no configurada');
       }
 
-      // Configurar RevenueCat solo si está disponible
-      if (isPurchasesAvailable()) {
-        await Purchases.configure({ apiKey });
-        console.log('✅ RevenueCat configurado correctamente');
-      } else {
-        console.warn('⚠️ RevenueCat no disponible, usando modo simulación');
-        this.isInitialized = true;
-        return;
-      }
+      // Configurar RevenueCat
+      await Purchases.configure({ apiKey });
+      console.log('✅ RevenueCat configurado correctamente');
 
       // Obtener productos disponibles
       await this.loadProducts();
@@ -126,8 +91,7 @@ class SubscriptionService {
       console.log('✅ Servicio de suscripciones inicializado correctamente');
     } catch (error) {
       console.error('❌ Error inicializando servicio de suscripciones:', error);
-      // En caso de error, marcar como inicializado para evitar bucles
-      this.isInitialized = true;
+      throw error;
     }
   }
 
@@ -135,34 +99,6 @@ class SubscriptionService {
 
   private async loadProducts(): Promise<void> {
     try {
-      if (!Purchases) {
-        console.warn('⚠️ react-native-purchases no disponible, usando productos simulados');
-        this.products = [
-          {
-            identifier: 'fitso_premium_monthly',
-            price: 2.99,
-            priceString: '$2.99',
-            currencyCode: 'USD',
-            title: 'Fitso Premium Mensual',
-            description: 'Suscripción mensual a Fitso Premium'
-          },
-          {
-            identifier: 'fitso_premium_yearly',
-            price: 19.99,
-            priceString: '$19.99',
-            currencyCode: 'USD',
-            title: 'Fitso Premium Anual',
-            description: 'Suscripción anual a Fitso Premium'
-          }
-        ];
-        return;
-      }
-      
-      if (!isPurchasesAvailable()) {
-        console.warn('⚠️ RevenueCat no disponible, usando productos simulados');
-        return;
-      }
-      
       const offerings = await Purchases.getOfferings();
       if (offerings.current) {
         this.products = offerings.current.availablePackages.map(pkg => ({
@@ -179,25 +115,7 @@ class SubscriptionService {
       }
     } catch (error) {
       console.error('❌ Error cargando productos:', error);
-      // En caso de error, usar productos simulados
-      this.products = [
-        {
-          identifier: 'fitso_premium_monthly',
-          price: 2.99,
-          priceString: '$2.99',
-          currencyCode: 'USD',
-          title: 'Fitso Premium Mensual',
-          description: 'Suscripción mensual a Fitso Premium'
-        },
-        {
-          identifier: 'fitso_premium_yearly',
-          price: 19.99,
-          priceString: '$19.99',
-          currencyCode: 'USD',
-          title: 'Fitso Premium Anual',
-          description: 'Suscripción anual a Fitso Premium'
-        }
-      ];
+      throw error;
     }
   }
 
@@ -224,25 +142,7 @@ class SubscriptionService {
         throw new Error('Producto no encontrado');
       }
 
-      if (!Purchases) {
-        console.warn('⚠️ react-native-purchases no disponible, simulando compra');
-        // Simular compra exitosa
-        const mockStatus: PremiumStatus = {
-          isPremium: true,
-          subscriptionType: productId === 'fitso_premium_monthly' ? 'monthly' : 'yearly',
-          expiresAt: new Date(Date.now() + (productId === 'fitso_premium_monthly' ? 30 : 365) * 24 * 60 * 60 * 1000).toISOString(),
-          dailyScansUsed: 0,
-          lastScanDate: null,
-        };
-        await this.savePremiumStatus(mockStatus);
-        return;
-      }
-
       // Obtener ofertas de RevenueCat
-      if (!isPurchasesAvailable()) {
-        throw new Error('RevenueCat no disponible en el simulador');
-      }
-      
       const offerings = await Purchases.getOfferings();
       if (!offerings.current) {
         throw new Error('No hay ofertas disponibles');
@@ -282,11 +182,6 @@ class SubscriptionService {
 
       console.log('🔄 Restaurando compras...');
       
-      if (!Purchases) {
-        console.warn('⚠️ react-native-purchases no disponible, no se pueden restaurar compras');
-        return;
-      }
-
       // Restaurar compras con RevenueCat
       const customerInfo = await Purchases.restorePurchases();
       console.log('📦 Información del cliente restaurada:', customerInfo);
@@ -306,8 +201,8 @@ class SubscriptionService {
 
   async getPremiumStatus(): Promise<PremiumStatus> {
     try {
-      // Si RevenueCat está disponible, usar su información
-      if (Purchases && this.isInitialized) {
+      // Usar información de RevenueCat
+      if (this.isInitialized) {
         try {
           const customerInfo = await Purchases.getCustomerInfo();
           return this.parseCustomerInfoToPremiumStatus(customerInfo);
@@ -452,9 +347,9 @@ class SubscriptionService {
       const activeSubscriptions = customerInfo.activeSubscriptions;
       let subscriptionType: 'monthly' | 'yearly' | null = null;
       
-      if (activeSubscriptions.includes('fitso_premium_monthly')) {
+      if (activeSubscriptions.includes('Fitso_Premium_Monthly')) {
         subscriptionType = 'monthly';
-      } else if (activeSubscriptions.includes('fitso_premium_yearly')) {
+      } else if (activeSubscriptions.includes('Fitso_Premium_Yearly')) {
         subscriptionType = 'yearly';
       }
 
@@ -478,8 +373,6 @@ class SubscriptionService {
 
   private async refreshPremiumStatusFromRevenueCat(): Promise<void> {
     try {
-      if (!Purchases) return;
-      
       const customerInfo = await Purchases.getCustomerInfo();
       const status = this.parseCustomerInfoToPremiumStatus(customerInfo);
       await this.savePremiumStatus(status);
@@ -555,7 +448,7 @@ class SubscriptionService {
 
   async cleanup(): Promise<void> {
     try {
-      // RevenueCat no requiere limpieza manual como react-native-iap
+      // RevenueCat no requiere limpieza manual
       // Se encarga automáticamente de la gestión de conexiones
       
       this.isInitialized = false;

@@ -10,6 +10,7 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
@@ -205,9 +206,19 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
 
           <Text style={styles.termsText}>
             {t('auth.agreeToTerms')}{' '}
-            <Text style={styles.termsLink}>{t('auth.termsOfService')}</Text>
+            <Text 
+              style={styles.termsLink}
+              onPress={() => Linking.openURL('https://www.fitso.fitness/terms.html')}
+            >
+              {t('auth.termsOfService')}
+            </Text>
             {' '}{t('auth.and')}{' '}
-            <Text style={styles.termsLink}>{t('auth.privacyPolicy')}</Text>
+            <Text 
+              style={styles.termsLink}
+              onPress={() => Linking.openURL('https://www.fitso.fitness/privacy.html')}
+            >
+              {t('auth.privacyPolicy')}
+            </Text>
           </Text>
         </View>
       </ScrollView>

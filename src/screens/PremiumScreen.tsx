@@ -8,6 +8,7 @@ import {
   ScrollView,
   Dimensions,
   Alert,
+  Linking,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -185,6 +186,49 @@ export default function PremiumScreen({ onClose }: PremiumScreenProps) {
         <TouchableOpacity style={styles.restoreButton} onPress={handleRestore}>
           <Text style={styles.restoreButtonText}>{t('premium.restorePurchases')}</Text>
         </TouchableOpacity>
+
+        {/* Subscription Information */}
+        <View style={styles.subscriptionInfoContainer}>
+          <Text style={styles.subscriptionInfoTitle}>
+            {t('premium.subscriptionInfo')}
+          </Text>
+          <Text style={styles.subscriptionInfoText}>
+            {t('premium.subscriptionDetails')}
+          </Text>
+          <Text style={styles.subscriptionInfoText}>
+            {t('premium.autoRenewal')}
+          </Text>
+          <Text style={styles.subscriptionInfoText}>
+            {t('premium.cancellation')}
+          </Text>
+        </View>
+
+        {/* Legal Links */}
+        <View style={styles.legalLinksContainer}>
+          <TouchableOpacity 
+            style={styles.legalLink}
+            onPress={() => {
+              // Abrir política de privacidad
+              Linking.openURL('https://www.fitso.fitness/privacy.html');
+            }}
+          >
+            <Text style={styles.legalLinkText}>
+              {t('premium.privacyPolicy')}
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.legalLink}
+            onPress={() => {
+              // Abrir términos de uso
+              Linking.openURL('https://www.fitso.fitness/terms.html');
+            }}
+          >
+            <Text style={styles.legalLinkText}>
+              {t('premium.termsOfUse')}
+            </Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Terms */}
         <Text style={styles.termsText}>
@@ -371,6 +415,41 @@ const styles = StyleSheet.create({
     color: '#DC143C',
     fontSize: 16,
     textAlign: 'center',
+  },
+  subscriptionInfoContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 20,
+    marginBottom: 20,
+  },
+  subscriptionInfoTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  subscriptionInfoText: {
+    fontSize: 14,
+    color: '#ccc',
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  legalLinksContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginHorizontal: 20,
+    marginBottom: 20,
+  },
+  legalLink: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  legalLinkText: {
+    color: '#DC143C',
+    fontSize: 14,
+    textDecorationLine: 'underline',
   },
   termsText: {
     color: '#999',

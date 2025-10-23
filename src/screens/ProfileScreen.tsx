@@ -9,6 +9,7 @@ import {
   ScrollView,
   RefreshControl,
   Modal,
+  Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../contexts/AuthContext';
@@ -471,9 +472,16 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
           
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => Alert.alert(t('alerts.info'), t('profile.privacyComingSoon'))}
+            onPress={() => Linking.openURL('https://www.fitso.fitness/privacy.html')}
           >
             <Text style={styles.actionButtonText}>🛡️ {t('profile.privacy')}</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => Linking.openURL('https://www.fitso.fitness/terms.html')}
+          >
+            <Text style={styles.actionButtonText}>📋 {t('profile.termsOfUse')}</Text>
           </TouchableOpacity>
         </View>
 
