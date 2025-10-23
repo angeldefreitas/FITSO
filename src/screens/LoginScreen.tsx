@@ -48,6 +48,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   };
 
 
+
   return (
     <KeyboardAvoidingView 
       style={styles.container} 
@@ -137,7 +138,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             
             <TouchableOpacity 
               style={styles.legalLink}
-              onPress={() => Linking.openURL('https://www.fitso.fitness/terms.html')}
+              onPress={() => Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')}
             >
               <Text style={styles.legalLinkText}>
                 {t('auth.termsOfService')}

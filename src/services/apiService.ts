@@ -4,11 +4,17 @@ import i18n from '../config/i18n';
 import userAuthService from './userAuthService';
 import NetInfo from '@react-native-community/netinfo';
 
-// Cambiar esta URL por la de tu backend en Render una vez desplegado
-// Cambiar esta URL por la de tu backend en Render una vez desplegado
-const BASE_URL = __DEV__ 
-  ? 'http://localhost:3000/api'  // Desarrollo local
-  : 'https://fitso.onrender.com/api'; // Producción en Render
+// Configuración de URLs para diferentes entornos
+const getBaseURL = () => {
+  if (__DEV__) {
+    // En desarrollo, intentar usar servidor local primero
+    // Si no está disponible, usar Render como fallback
+    return 'http://localhost:3000/api';
+  }
+  return 'https://fitso.onrender.com/api'; // Producción en Render
+};
+
+const BASE_URL = getBaseURL();
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -39,11 +45,36 @@ class ApiService {
   private failedRequests: number = 0;
   private maxRetries: number = 3;
   private retryDelay: number = 30000; // 30 segundos
+  private localServerAvailable: boolean = false;
 
   constructor(baseURL: string = BASE_URL) {
     this.baseURL = baseURL;
     // No inicializar token aquí, se hará cuando se necesite
     this.initializeNetworkListener();
+    this.checkLocalServer();
+  }
+
+  // Verificar si el servidor local está disponible
+  private async checkLocalServer() {
+    if (__DEV__ && this.baseURL.includes('localhost')) {
+      try {
+        // Usar AbortController para implementar timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        
+        const response = await fetch('http://localhost:3000/api/health', {
+          method: 'GET',
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        this.localServerAvailable = response.ok;
+        console.log('🏠 Servidor local:', this.localServerAvailable ? 'Disponible' : 'No disponible');
+      } catch (error) {
+        this.localServerAvailable = false;
+        console.log('🏠 Servidor local: No disponible, usando Render como fallback');
+      }
+    }
   }
 
   // Inicializar listener de red

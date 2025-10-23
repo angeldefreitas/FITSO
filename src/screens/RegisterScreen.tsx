@@ -72,31 +72,6 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
     }
   };
 
-  const handleGoogleRegister = async () => {
-    setLoading(true);
-    try {
-      // TODO: Implementar registro con Google usando backend propio
-      console.log('Google registro pendiente');
-      Alert.alert(t('alerts.info'), t('auth.featureNotAvailable'));
-    } catch (error: any) {
-      Alert.alert(t('alerts.error'), t('auth.signUpError'));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAppleRegister = async () => {
-    setLoading(true);
-    try {
-      // TODO: Implementar registro con Apple usando backend propio
-      console.log('Apple registro pendiente');
-      Alert.alert(t('alerts.info'), t('auth.featureNotAvailable'));
-    } catch (error: any) {
-      Alert.alert(t('alerts.error'), t('auth.signUpError'));
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <KeyboardAvoidingView 
@@ -169,32 +144,6 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
                 <Text style={styles.registerButtonText}>{t('auth.signUpButton')}</Text>
               )}
             </TouchableOpacity>
-
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>{t('auth.or')}</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            <TouchableOpacity
-              style={styles.socialButton}
-              onPress={handleGoogleRegister}
-              disabled={loading}
-            >
-              <Text style={styles.socialButtonText}>{t('auth.continueWithGoogle')}</Text>
-            </TouchableOpacity>
-
-            {Platform.OS === 'ios' && (
-              <TouchableOpacity
-                style={[styles.socialButton, styles.appleButton]}
-                onPress={handleAppleRegister}
-                disabled={loading}
-              >
-                <Text style={[styles.socialButtonText, styles.appleButtonText]}>
-                  {t('auth.continueWithGoogle')}
-                </Text>
-              </TouchableOpacity>
-            )}
           </View>
 
           <View style={styles.footer}>
@@ -208,7 +157,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
             {t('auth.agreeToTerms')}{' '}
             <Text 
               style={styles.termsLink}
-              onPress={() => Linking.openURL('https://www.fitso.fitness/terms.html')}
+              onPress={() => Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')}
             >
               {t('auth.termsOfService')}
             </Text>
@@ -288,41 +237,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 20,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: Colors.border,
-  },
-  dividerText: {
-    marginHorizontal: 16,
-    color: Colors.textSecondary,
-    fontSize: 14,
-  },
-  socialButton: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    marginBottom: 12,
-    backgroundColor: Colors.surface,
-  },
-  socialButtonText: {
-    color: Colors.text,
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  appleButton: {
-    backgroundColor: '#8B0000',
-  },
-  appleButtonText: {
-    color: 'white',
   },
   footer: {
     flexDirection: 'row',

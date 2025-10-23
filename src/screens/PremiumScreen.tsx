@@ -221,7 +221,7 @@ export default function PremiumScreen({ onClose }: PremiumScreenProps) {
             style={styles.legalLink}
             onPress={() => {
               // Abrir términos de uso
-              Linking.openURL('https://www.fitso.fitness/terms.html');
+              Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/');
             }}
           >
             <Text style={styles.legalLinkText}>

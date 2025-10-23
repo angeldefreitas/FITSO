@@ -479,7 +479,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
           
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => Linking.openURL('https://www.fitso.fitness/terms.html')}
+            onPress={() => Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')}
           >
             <Text style={styles.actionButtonText}>📋 {t('profile.termsOfUse')}</Text>
           </TouchableOpacity>

@@ -6,13 +6,19 @@
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "backend": "cd backend && npm run dev",
+    "frontend": "expo start",
+    "dev:local": "concurrently \"npm run backend\" \"expo start --localhost\"",
+    "setup": "cd backend && npm install && npm run init-db",
+    "setup:local": "node setup-local-dev.js",
+    "clean": "rm -rf node_modules backend/node_modules && npm install && cd backend && npm install"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-community/datetimepicker": "8.4.4",
     "@react-native-community/netinfo": "^11.4.1",
-    "@react-native-google-signin/google-signin": "^16.0.0",
     "@react-navigation/native": "^7.1.18",
     "@react-navigation/stack": "^7.4.10",
     "expo": "~54.0.16",
@@ -45,6 +51,7 @@
   "devDependencies": {
     "@types/react": "~19.1.10",
     "@types/react-dom": "~19.1.7",
+    "concurrently": "^9.2.1",
     "typescript": "~5.9.2"
   },
   "private": true,
