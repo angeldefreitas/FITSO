@@ -227,6 +227,24 @@ class User {
 
     return result.rows[0];
   }
+
+  // Actualizar estatus de afiliado del usuario
+  static async updateAffiliateStatus(id, isAffiliate) {
+    const updateQuery = `
+      UPDATE users 
+      SET is_affiliate = $1, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $2
+      RETURNING id, email, name, is_affiliate
+    `;
+
+    const result = await query(updateQuery, [isAffiliate, id]);
+    
+    if (result.rows.length === 0) {
+      throw new Error('Usuario no encontrado');
+    }
+
+    return result.rows[0];
+  }
 }
 
 module.exports = User;

@@ -81,9 +81,9 @@ export const affiliateApiServiceReal = {
     try {
       console.log('🚀 [API] Creando cuenta de afiliado...');
       console.log('📝 [API] Datos:', data);
-      console.log('🌐 [API] URL completa:', `${API_BASE_URL}/api/affiliates/create-account`);
+      console.log('🌐 [API] URL completa:', `${API_BASE_URL}/api/affiliates/admin-create-credential`);
       
-      const response = await authenticatedRequest('/api/affiliates/create-account', {
+      const response = await authenticatedRequest('/api/affiliates/admin-create-credential', {
         method: 'POST',
         body: JSON.stringify(data),
       });

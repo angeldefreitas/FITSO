@@ -20,6 +20,18 @@ const router = express.Router();
 router.post('/create-account', authenticateToken, affiliateController.createAffiliateAccount);
 
 /**
+ * @route POST /api/affiliates/admin-create-credential
+ * @desc Crear credenciales de afiliado directamente (Admin only)
+ * @access Private (Admin)
+ * @body {string} email - Email del afiliado
+ * @body {string} name - Nombre del afiliado
+ * @body {string} password - Contraseña del afiliado
+ * @body {string} referralCode - Código de referido único
+ * @body {number} commissionPercentage - Porcentaje de comisión (opcional, default 30)
+ */
+router.post('/admin-create-credential', authenticateToken, affiliateController.adminCreateCredential);
+
+/**
  * @route POST /api/affiliates/change-password
  * @desc Cambiar contraseña del afiliado
  * @access Private

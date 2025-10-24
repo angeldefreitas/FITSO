@@ -342,6 +342,88 @@ class AffiliateController {
   }
 
   /**
+   * Crear credenciales de afiliado directamente (Admin only)
+   * POST /api/affiliates/admin-create-credential
+   */
+  async adminCreateCredential(req, res) {
+    try {
+      console.log('🔍 [AFFILIATE] Admin creando credenciales de afiliado...');
+      console.log('📝 [AFFILIATE] Headers:', req.headers);
+      console.log('📝 [AFFILIATE] Body:', req.body);
+      
+      const { email, name, password, referralCode, commissionPercentage = 30.0 } = req.body;
+
+      // Validaciones
+      if (!email || !name || !password || !referralCode) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email, nombre, contraseña y código de referido son requeridos'
+        });
+      }
+
+      // Verificar si el email ya existe
+      const existingUser = await User.findByEmail(email);
+      if (existingUser) {
+        console.log('⚠️ [AFFILIATE] Usuario ya existe, actualizando...');
+        // Actualizar el usuario existente para marcarlo como afiliado
+        await User.updateAffiliateStatus(existingUser.id, true);
+        console.log('✅ [AFFILIATE] Usuario actualizado como afiliado');
+      } else {
+        console.log('👤 [AFFILIATE] Creando nuevo usuario...');
+        // Crear el usuario
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const user = new User({
+          email,
+          name,
+          password: hashedPassword,
+          is_verified: true,
+          is_affiliate: true
+        });
+        const createdUser = await user.save();
+        console.log('✅ [AFFILIATE] Usuario creado:', createdUser.id);
+      }
+
+      // Verificar si el código de referido ya existe
+      const existingCode = await AffiliateCode.findByCode(referralCode);
+      if (existingCode) {
+        console.log('⚠️ [AFFILIATE] Código ya existe:', existingCode.id);
+      } else {
+        console.log('🎫 [AFFILIATE] Creando código de afiliado...');
+        // Obtener el usuario (creado o existente)
+        const user = await User.findByEmail(email);
+        
+        // Crear el código de afiliado
+        const affiliateCode = new AffiliateCode({
+          code: referralCode,
+          affiliate_id: user.id,
+          commission_percentage: parseFloat(commissionPercentage)
+        });
+        const createdCode = await affiliateCode.save();
+        console.log('✅ [AFFILIATE] Código de afiliado creado:', createdCode.id);
+      }
+
+      res.status(201).json({
+        success: true,
+        message: 'Credenciales de afiliado creadas exitosamente',
+        data: {
+          email,
+          name,
+          referralCode,
+          commissionPercentage: parseFloat(commissionPercentage)
+        }
+      });
+
+    } catch (error) {
+      console.error('❌ [AFFILIATE] Error creando credenciales:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor',
+        error: error.message
+      });
+    }
+  }
+
+  /**
    * Cambiar contraseña de afiliado
    * POST /api/affiliates/change-password
    */
