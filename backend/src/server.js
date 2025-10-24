@@ -21,10 +21,33 @@ const PORT = process.env.PORT || 3000;
 // Middleware de seguridad
 app.use(helmet());
 
+// Middleware para manejar preflight requests
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    return res.status(200).end();
+  }
+  next();
+});
+
 // Configuración de CORS
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:8081',
-  credentials: true
+  origin: [
+    process.env.FRONTEND_URL || 'http://localhost:8081',
+    'http://localhost:8081',
+    'http://192.168.1.100:8081', // IP local común
+    'http://192.168.0.100:8081', // IP local común
+    'exp://192.168.1.100:8081',  // Expo URL
+    'exp://192.168.0.100:8081',  // Expo URL
+    /^exp:\/\/.*\.tunnel\.expo\.dev$/, // Expo tunnels
+    /^https:\/\/.*\.expo\.dev$/ // Expo web
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
 }));
 
 // Rate limiting - DESHABILITADO PARA TESTING

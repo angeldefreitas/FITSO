@@ -11,6 +11,10 @@ class AffiliateController {
    */
   async createAffiliateAccount(req, res) {
     try {
+      console.log('🔍 [AFFILIATE] Creando cuenta de afiliado...');
+      console.log('📝 [AFFILIATE] Headers:', req.headers);
+      console.log('📝 [AFFILIATE] Body:', req.body);
+      
       const { email, name, password, referralCode, commissionPercentage = 30.0 } = req.body;
 
       // Validaciones
