@@ -111,6 +111,16 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
+// Middleware de logging para todas las requests
+app.use((req, res, next) => {
+  console.log(`📥 [${req.method}] ${req.path} - ${new Date().toISOString()}`);
+  console.log('📝 Headers:', req.headers);
+  if (req.body && Object.keys(req.body).length > 0) {
+    console.log('📦 Body:', req.body);
+  }
+  next();
+});
+
 // Ruta raíz
 app.get('/', (req, res) => {
   res.json({
@@ -133,6 +143,18 @@ app.get('/', (req, res) => {
         water: '/api/progress/water',
         caloriesBurned: '/api/progress/calories-burned'
       }
+  });
+});
+
+// Endpoint de prueba para verificar que las requests llegan
+app.post('/api/test', (req, res) => {
+  console.log('🧪 [TEST] Endpoint de prueba llamado');
+  console.log('📦 [TEST] Body recibido:', req.body);
+  res.json({
+    success: true,
+    message: 'Endpoint de prueba funcionando',
+    receivedData: req.body,
+    timestamp: new Date().toISOString()
   });
 });
 
