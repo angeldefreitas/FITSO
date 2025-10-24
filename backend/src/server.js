@@ -302,12 +302,16 @@ app.post('/api/create-affiliate-simple', async (req, res) => {
       console.log('🎫 [SIMPLE] Creando código de afiliado...');
       const user = await User.findByEmail(email);
       
-      const affiliateCode = await AffiliateCode.create({
-        code: referralCode,
-        affiliate_id: user.id,
-        commission_percentage: parseFloat(commissionPercentage)
-      });
-      console.log('✅ [SIMPLE] Código de afiliado creado:', affiliateCode.id);
+      // Crear código de afiliado directamente sin usar la función generate_affiliate_code
+      const insertQuery = `
+        INSERT INTO affiliate_codes (code, affiliate_name, email, commission_percentage, created_by)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING *
+      `;
+      
+      const values = [referralCode, name, email, parseFloat(commissionPercentage), user.id];
+      const result = await query(insertQuery, values);
+      console.log('✅ [SIMPLE] Código de afiliado creado:', result.rows[0].id);
     }
 
     res.status(201).json({
