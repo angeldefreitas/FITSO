@@ -111,12 +111,15 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// Middleware de logging para todas las requests
+// Middleware de logging para todas las requests (solo para debugging)
 app.use((req, res, next) => {
   console.log(`📥 [${req.method}] ${req.path} - ${new Date().toISOString()}`);
-  console.log('📝 Headers:', req.headers);
-  if (req.body && Object.keys(req.body).length > 0) {
-    console.log('📦 Body:', req.body);
+  // Solo loggear headers y body para requests importantes
+  if (req.path.includes('/api/affiliates') || req.path.includes('/api/test')) {
+    console.log('📝 Headers:', req.headers);
+    if (req.body && Object.keys(req.body).length > 0) {
+      console.log('📦 Body:', req.body);
+    }
   }
   next();
 });
