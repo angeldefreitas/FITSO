@@ -58,14 +58,12 @@ class AffiliateController {
       const createdUser = await user.save();
       console.log('✅ Usuario afiliado creado:', createdUser.id);
 
-      // Crear código de afiliado
-      const affiliateCode = new AffiliateCode({
+      // Crear código de afiliado usando el método create
+      const createdCode = await AffiliateCode.create({
         code: referralCode,
         affiliate_id: createdUser.id,
         commission_percentage: parseFloat(commissionPercentage)
       });
-
-      const createdCode = await affiliateCode.save();
       console.log('✅ Código de afiliado creado:', createdCode.id);
 
       res.status(201).json({

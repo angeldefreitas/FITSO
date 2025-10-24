@@ -5,31 +5,38 @@ class AffiliateCode {
   constructor(data) {
     this.id = data.id;
     this.code = data.code;
-    this.affiliate_name = data.affiliate_name;
-    this.email = data.email;
+    this.affiliate_id = data.affiliate_id;
     this.commission_percentage = data.commission_percentage;
     this.is_active = data.is_active;
-    this.created_by = data.created_by;
     this.created_at = data.created_at;
     this.updated_at = data.updated_at;
   }
 
   // Crear un nuevo código de afiliado
   static async create(affiliateData) {
-    const { affiliate_name, email, commission_percentage = 30, created_by } = affiliateData;
+    const { code, affiliate_id, commission_percentage = 30 } = affiliateData;
     
-    // Generar código único
-    const generateCodeQuery = 'SELECT generate_affiliate_code($1) as code';
-    const codeResult = await query(generateCodeQuery, [affiliate_name]);
-    const code = codeResult.rows[0].code;
+    // Si no se proporciona código, generar uno único
+    let finalCode = code;
+    if (!finalCode) {
+      finalCode = `AFF_${Date.now()}_${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+    }
 
     const insertQuery = `
-      INSERT INTO affiliate_codes (code, affiliate_name, email, commission_percentage, created_by)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO affiliate_codes (id, code, affiliate_id, commission_percentage, is_active, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *
     `;
 
-    const values = [code, affiliate_name, email, commission_percentage, created_by];
+    const values = [
+      uuidv4(),
+      finalCode, 
+      affiliate_id, 
+      commission_percentage, 
+      true, 
+      new Date(), 
+      new Date()
+    ];
     const result = await query(insertQuery, values);
     
     return new AffiliateCode(result.rows[0]);
