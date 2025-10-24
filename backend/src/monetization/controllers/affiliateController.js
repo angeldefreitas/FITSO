@@ -348,12 +348,11 @@ class AffiliateController {
   async adminCreateCredential(req, res) {
     try {
       console.log('🔍 [AFFILIATE] Admin creando credenciales de afiliado...');
-      console.log('📝 [AFFILIATE] Headers:', req.headers);
       console.log('📝 [AFFILIATE] Body:', req.body);
       
       const { email, name, password, referralCode, commissionPercentage = 30.0 } = req.body;
 
-      // Validaciones
+      // Validaciones usando la misma lógica que el auth
       if (!email || !name || !password || !referralCode) {
         return res.status(400).json({
           success: false,
@@ -369,18 +368,18 @@ class AffiliateController {
         await User.updateAffiliateStatus(existingUser.id, true);
         console.log('✅ [AFFILIATE] Usuario actualizado como afiliado');
       } else {
-        console.log('👤 [AFFILIATE] Creando nuevo usuario...');
-        // Crear el usuario
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const user = new User({
+        console.log('👤 [AFFILIATE] Creando nuevo usuario usando User.create...');
+        // Usar el método User.create que ya funciona
+        const user = await User.create({
           email,
           name,
-          password: hashedPassword,
-          is_verified: true,
-          is_affiliate: true
+          password
         });
-        const createdUser = await user.save();
-        console.log('✅ [AFFILIATE] Usuario creado:', createdUser.id);
+        console.log('✅ [AFFILIATE] Usuario creado:', user.id);
+        
+        // Marcar como afiliado
+        await User.updateAffiliateStatus(user.id, true);
+        console.log('✅ [AFFILIATE] Usuario marcado como afiliado');
       }
 
       // Verificar si el código de referido ya existe
@@ -392,14 +391,13 @@ class AffiliateController {
         // Obtener el usuario (creado o existente)
         const user = await User.findByEmail(email);
         
-        // Crear el código de afiliado
-        const affiliateCode = new AffiliateCode({
+        // Crear el código de afiliado usando el método que ya funciona
+        const affiliateCode = await AffiliateCode.create({
           code: referralCode,
           affiliate_id: user.id,
           commission_percentage: parseFloat(commissionPercentage)
         });
-        const createdCode = await affiliateCode.save();
-        console.log('✅ [AFFILIATE] Código de afiliado creado:', createdCode.id);
+        console.log('✅ [AFFILIATE] Código de afiliado creado:', affiliateCode.id);
       }
 
       res.status(201).json({
@@ -415,6 +413,14 @@ class AffiliateController {
 
     } catch (error) {
       console.error('❌ [AFFILIATE] Error creando credenciales:', error);
+      
+      if (error.message === 'El usuario ya existe') {
+        return res.status(409).json({
+          success: false,
+          message: 'Ya existe una cuenta con este email'
+        });
+      }
+      
       res.status(500).json({
         success: false,
         message: 'Error interno del servidor',
