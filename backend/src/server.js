@@ -144,35 +144,78 @@ app.get('/', (req, res) => {
   });
 });
 
-// Endpoint de prueba para verificar autenticación
-app.get('/api/test-auth', (req, res) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-  
-  if (!token) {
-    return res.status(401).json({
-      success: false,
-      message: 'Token de acceso requerido'
-    });
-  }
-  
+// Endpoint simple para crear afiliados (sin autenticación para testing)
+app.post('/api/create-affiliate-simple', async (req, res) => {
   try {
-    const jwt = require('jsonwebtoken');
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log('🔍 [SIMPLE] Creando afiliado...');
+    console.log('📝 [SIMPLE] Body:', req.body);
     
-    res.json({
+    const { email, name, password, referralCode, commissionPercentage = 30.0 } = req.body;
+
+    // Validaciones
+    if (!email || !name || !password || !referralCode) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email, nombre, contraseña y código de referido son requeridos'
+      });
+    }
+
+    // Usar el modelo User que ya funciona
+    const User = require('./src/models/User');
+    const AffiliateCode = require('./src/monetization/models/AffiliateCode');
+
+    // Verificar si el email ya existe
+    const existingUser = await User.findByEmail(email);
+    if (existingUser) {
+      console.log('⚠️ [SIMPLE] Usuario ya existe, actualizando...');
+      await User.updateAffiliateStatus(existingUser.id, true);
+      console.log('✅ [SIMPLE] Usuario actualizado como afiliado');
+    } else {
+      console.log('👤 [SIMPLE] Creando nuevo usuario...');
+      const user = await User.create({
+        email,
+        name,
+        password
+      });
+      console.log('✅ [SIMPLE] Usuario creado:', user.id);
+      
+      // Marcar como afiliado
+      await User.updateAffiliateStatus(user.id, true);
+      console.log('✅ [SIMPLE] Usuario marcado como afiliado');
+    }
+
+    // Verificar si el código ya existe
+    const existingCode = await AffiliateCode.findByCode(referralCode);
+    if (existingCode) {
+      console.log('⚠️ [SIMPLE] Código ya existe:', existingCode.id);
+    } else {
+      console.log('🎫 [SIMPLE] Creando código de afiliado...');
+      const user = await User.findByEmail(email);
+      
+      const affiliateCode = await AffiliateCode.create({
+        code: referralCode,
+        affiliate_id: user.id,
+        commission_percentage: parseFloat(commissionPercentage)
+      });
+      console.log('✅ [SIMPLE] Código de afiliado creado:', affiliateCode.id);
+    }
+
+    res.status(201).json({
       success: true,
-      message: 'Token válido',
-      decoded: {
-        userId: decoded.userId,
-        exp: decoded.exp,
-        iat: decoded.iat
+      message: 'Afiliado creado exitosamente',
+      data: {
+        email,
+        name,
+        referralCode,
+        commissionPercentage: parseFloat(commissionPercentage)
       }
     });
+
   } catch (error) {
-    res.status(401).json({
+    console.error('❌ [SIMPLE] Error creando afiliado:', error);
+    res.status(500).json({
       success: false,
-      message: 'Token inválido',
+      message: 'Error interno del servidor',
       error: error.message
     });
   }

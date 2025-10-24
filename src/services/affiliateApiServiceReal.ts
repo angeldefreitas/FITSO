@@ -81,15 +81,25 @@ export const affiliateApiServiceReal = {
     try {
       console.log('🚀 [API] Creando cuenta de afiliado...');
       console.log('📝 [API] Datos:', data);
-      console.log('🌐 [API] URL completa:', `${API_BASE_URL}/api/affiliates/admin-create-credential`);
+      console.log('🌐 [API] URL completa:', `${API_BASE_URL}/api/create-affiliate-simple`);
       
-      const response = await authenticatedRequest('/api/affiliates/admin-create-credential', {
+      // Usar endpoint simple sin autenticación
+      const response = await fetch(`${API_BASE_URL}/api/create-affiliate-simple`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(data),
       });
 
-      console.log('✅ [API] Respuesta recibida:', response);
-      return response;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ [API] Respuesta recibida:', result);
+      return result;
     } catch (error) {
       console.error('❌ [API] Error creating affiliate account:', error);
       console.error('❌ [API] Error details:', {
