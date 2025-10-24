@@ -21,19 +21,25 @@ import GoalsModal, { GoalsData } from '../components/modals/GoalsModal';
 import BottomNavigation from '../components/BottomNavigation';
 import ChangePasswordScreen from './ChangePasswordScreen';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+import { ProfileAdminButtonSettings } from '../components/affiliates/ProfileAdminButtonSettings';
+import AffiliateDashboardButton from '../components/affiliates/AffiliateDashboardButton';
 
 interface ProfileScreenProps {
   navigation?: any;
   onTabChange?: (tab: 'diario' | 'perfil') => void;
   onAddFromProfile?: () => void;
   onProgressPress?: () => void;
+  onAdminPress?: () => void;
+  onAffiliatePress?: () => void;
 }
 
 const ProfileScreen: React.FC<ProfileScreenProps> = ({ 
   navigation, 
   onTabChange, 
   onAddFromProfile, 
-  onProgressPress 
+  onProgressPress,
+  onAdminPress,
+  onAffiliatePress
 }) => {
   const { user, logout, updateProfile, deleteAccount, loading: authLoading, profileData, getProfileData, updateBiometricData, updateGoalsData } = useAuth();
   const { profile, updateProfileData } = useProfile();
@@ -145,6 +151,26 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
       navigation.navigate('EditProfile');
     } else {
       Alert.alert(t('alerts.info'), t('profile.editProfileComingSoon'));
+    }
+  };
+
+  const handleAdminPress = () => {
+    if (onAdminPress) {
+      onAdminPress();
+    } else if (navigation) {
+      navigation.navigate('AdminAffiliates');
+    } else {
+      Alert.alert(t('alerts.info'), 'Panel de administración disponible solo en navegación completa');
+    }
+  };
+
+  const handleAffiliatePress = () => {
+    if (onAffiliatePress) {
+      onAffiliatePress();
+    } else if (navigation) {
+      navigation.navigate('AffiliateDashboard');
+    } else {
+      Alert.alert(t('alerts.info'), 'Dashboard de afiliados disponible solo en navegación completa');
     }
   };
 
@@ -483,6 +509,19 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
           >
             <Text style={styles.actionButtonText}>📋 {t('profile.termsOfUse')}</Text>
           </TouchableOpacity>
+
+          {/* Botón de Admin - Solo para angelfritas@gmail.com */}
+          <ProfileAdminButtonSettings 
+            onPress={handleAdminPress}
+            userEmail={user?.email}
+          />
+
+          {/* Botón de Afiliado - Solo para afiliados */}
+          <AffiliateDashboardButton 
+            onPress={handleAffiliatePress}
+            userEmail={user?.email}
+            isAffiliate={user?.is_affiliate}
+          />
         </View>
 
         {/* Danger Zone */}

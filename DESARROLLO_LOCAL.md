@@ -181,3 +181,4 @@ fit-mvp/
 
 **Nota**: Este setup está optimizado para desarrollo local. Para producción, usa la configuración de Render.
 
+

@@ -1,5 +1,6 @@
-const { query } = require('../config/database');
-const appleReceiptService = require('../services/appleReceiptService');
+const { query } = require('../../config/database');
+const appleReceiptService = require('../../services/appleReceiptService');
+const AffiliateService = require('../services/affiliateService');
 
 class SubscriptionController {
   /**
@@ -33,6 +34,33 @@ class SubscriptionController {
         // Crear nueva suscripción
         await this.createSubscription(userId, subscriptionInfo);
         console.log('✅ Nueva suscripción creada para usuario:', userId);
+      }
+
+      // Procesar comisión de afiliado si aplica
+      try {
+        const subscriptionAmount = this.calculateSubscriptionAmount(subscriptionInfo.productId);
+        const subscriptionType = subscriptionInfo.productId.includes('monthly') ? 'monthly' : 'yearly';
+        
+        if (existingSubscription) {
+          // Es una renovación - procesar comisión recurrente
+          await AffiliateService.processSubscriptionRenewal(
+            userId, 
+            subscriptionInfo.transactionId, 
+            subscriptionAmount, 
+            subscriptionType
+          );
+        } else {
+          // Es una nueva suscripción - procesar conversión
+          await AffiliateService.processPremiumConversion(
+            userId, 
+            subscriptionInfo.transactionId, 
+            subscriptionAmount, 
+            subscriptionType
+          );
+        }
+      } catch (affiliateError) {
+        console.error('❌ Error procesando comisión de afiliado:', affiliateError.message);
+        // No fallar la verificación de suscripción por error de afiliados
       }
 
       // Obtener estado actual de la suscripción
@@ -215,6 +243,21 @@ class SubscriptionController {
       console.error('❌ Error actualizando suscripción:', error.message);
       throw error;
     }
+  }
+
+  /**
+   * Calcula el monto de suscripción basado en el product ID
+   * @param {string} productId - ID del producto de suscripción
+   * @returns {number} - Monto de la suscripción
+   */
+  calculateSubscriptionAmount(productId) {
+    // Estos valores deben coincidir con los precios configurados en Apple Store
+    const prices = {
+      'fitso_premium_monthly': 9.99,  // Ajustar según tu precio real
+      'fitso_premium_yearly': 99.99   // Ajustar según tu precio real
+    };
+
+    return prices[productId] || 0;
   }
 
   /**

@@ -13,7 +13,7 @@ const progressRoutes = require('./routes/progress');
 const foodRoutes = require('./routes/foods');
 const fitsoFoodRoutes = require('./routes/fitsoFoods');
 const mealRoutes = require('./routes/meals');
-const subscriptionRoutes = require('./routes/subscriptions');
+const { routes } = require('./monetization');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -65,7 +65,8 @@ app.use('/api/progress', progressRoutes);
 app.use('/api/foods', foodRoutes);
 app.use('/api/fitso-foods', fitsoFoodRoutes);
 app.use('/api/meals', mealRoutes);
-app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/subscriptions', routes.subscriptionRoutes);
+app.use('/api/affiliates', routes.affiliateRoutes);
 
 // Ruta de salud
 app.get('/api/health', async (req, res) => {
@@ -101,7 +102,8 @@ app.get('/', (req, res) => {
         foods: '/api/foods',
         fitsoFoods: '/api/fitso-foods',
         meals: '/api/meals',
-        subscriptions: '/api/subscriptions'
+        subscriptions: '/api/subscriptions',
+        affiliates: '/api/affiliates'
       },
       progressEndpoints: {
         weight: '/api/progress/weight',

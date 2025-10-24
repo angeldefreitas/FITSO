@@ -1,18 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity, Platform } from 'react-native';
+import { isExpoGo, getExpoGoConfig } from '../config/expoGoConfig';
 
 // Import condicional de Google Mobile Ads
 let BannerAd: any = null;
 let BannerAdSize: any = null;
 let TestIds: any = null;
 
+const expoConfig = getExpoGoConfig();
+
 try {
-  const adsModule = require('react-native-google-mobile-ads');
-  BannerAd = adsModule.BannerAd;
-  BannerAdSize = adsModule.BannerAdSize;
-  TestIds = adsModule.TestIds;
+  if (!expoConfig.isExpoGo) {
+    const adsModule = require('react-native-google-mobile-ads');
+    BannerAd = adsModule.BannerAd;
+    BannerAdSize = adsModule.BannerAdSize;
+    TestIds = adsModule.TestIds;
+  }
 } catch (error) {
-  console.log('Google Mobile Ads no disponible en Expo Go');
+  console.log('Google Mobile Ads no disponible');
 }
 
 interface BannerAdComponentProps {
@@ -52,10 +57,12 @@ export default function BannerAdComponent({ style, size }: BannerAdComponentProp
   };
 
   // Si Google Mobile Ads no está disponible (Expo Go), mostrar placeholder
-  if (!BannerAd) {
+  if (!BannerAd || expoConfig.isExpoGo) {
     return (
       <View style={[styles.container, styles.placeholder, style]}>
-        <Text style={styles.placeholderText}>📱 Ad Space (Expo Go)</Text>
+        <Text style={styles.placeholderText}>
+          {expoConfig.messages.adsNotAvailable}
+        </Text>
       </View>
     );
   }

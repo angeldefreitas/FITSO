@@ -7,8 +7,10 @@ class User {
     this.id = data.id;
     this.email = data.email;
     this.password_hash = data.password_hash;
+    this.password = data.password; // Para compatibilidad con el controlador
     this.name = data.name;
     this.is_verified = data.is_verified;
+    this.is_affiliate = data.is_affiliate;
     this.verification_token = data.verification_token;
     this.reset_password_token = data.reset_password_token;
     this.reset_password_expires = data.reset_password_expires;
@@ -186,6 +188,44 @@ class User {
       created_at: this.created_at,
       updated_at: this.updated_at
     };
+  }
+
+  // Guardar usuario (crear nuevo)
+  async save() {
+    const insertQuery = `
+      INSERT INTO users (email, password_hash, name, is_verified, is_affiliate)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING *
+    `;
+
+    const values = [
+      this.email, 
+      this.password_hash, 
+      this.name, 
+      this.is_verified || false, 
+      this.is_affiliate || false
+    ];
+    
+    const result = await query(insertQuery, values);
+    return new User(result.rows[0]);
+  }
+
+  // Actualizar contraseña del usuario
+  static async updatePassword(id, newPasswordHash) {
+    const updateQuery = `
+      UPDATE users 
+      SET password_hash = $1, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $2
+      RETURNING id, email, name
+    `;
+
+    const result = await query(updateQuery, [newPasswordHash, id]);
+    
+    if (result.rows.length === 0) {
+      throw new Error('Usuario no encontrado');
+    }
+
+    return result.rows[0];
   }
 }
 

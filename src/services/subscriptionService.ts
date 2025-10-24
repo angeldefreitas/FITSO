@@ -34,26 +34,33 @@ interface PurchaseError {
 }
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import { isExpoGo } from '../config/expoGoConfig';
 
 // IDs de productos de suscripción para RevenueCat
+// Estos son los IDs que configuraste en RevenueCat dashboard
 const SUBSCRIPTION_PRODUCTS = [
-  'Fitso_Premium_Monthly',
-  'Fitso_Premium_Yearly',
+  'Fitso_Premium_Monthly',  // Producto mensual
+  'Fitso_Premium_Yearly',   // Producto anual
 ];
 
 // Entitlement ID (configurado en RevenueCat dashboard)
-const PREMIUM_ENTITLEMENT = 'Fitso Premium';
+const PREMIUM_ENTITLEMENT = 'entl0b12b2e363'; // ID real del entitlement "Fitso Premium"
 
 // Claves de almacenamiento
 const PREMIUM_STATUS_KEY = '@fitso_premium_status';
 const DAILY_SCANS_KEY = '@fitso_daily_scans';
 
-// API Keys de RevenueCat (las obtendrás del dashboard)
+// API Keys de RevenueCat (obtenidas del dashboard de RevenueCat)
 const REVENUECAT_API_KEY = {
   ios: 'sk_ORwbKeMvzBapPnHcbzlxbGeulgeAi', // API key de RevenueCat para iOS (producción)
   ios_sandbox: 'test_oHHhNQjFIioQxDmtSBjCJzqpRRT', // Sandbox API key para testing
-  android: 'your_android_api_key_here', // Reemplazar con tu API key real cuando esté listo
+  android: 'sk_ORwbKeMvzBapPnHcbzlxbGeulgeAi', // API key de RevenueCat para Android (producción)
+  // Para Expo Go, usar la API key de sandbox
+  expo_go: 'test_oHHhNQjFIioQxDmtSBjCJzqpRRT', // API key para Expo Go
 };
+
+// NOTA: Verifica que estas API keys sean correctas en tu dashboard de RevenueCat
+// Deberías tener API keys diferentes para iOS y Android si los configuraste por separado
 
 export interface PremiumStatus {
   isPremium: boolean;
@@ -73,12 +80,22 @@ class SubscriptionService {
 
       console.log('🔄 Inicializando servicio de suscripciones con RevenueCat...');
       
-      // Configurar RevenueCat - usar API key de producción
+      // Verificar si estamos en Expo Go
+      if (isExpoGo()) {
+        console.log('📱 Expo Go detectado - RevenueCat no disponible');
+        console.log('⚠️ Las compras in-app no están disponibles en Expo Go');
+        this.isInitialized = false;
+        return;
+      }
+      
+      // Configurar RevenueCat - usar API key apropiada
       const apiKey = Platform.OS === 'ios' ? REVENUECAT_API_KEY.ios : REVENUECAT_API_KEY.android;
       
-      if (apiKey === 'your_android_api_key_here') {
-        throw new Error('API key de Android no configurada');
+      if (!apiKey || apiKey === 'your_android_api_key_here') {
+        throw new Error('API key de RevenueCat no configurada correctamente');
       }
+
+      console.log(`📱 Build nativo ${Platform.OS} - usando API key de producción`);
 
       // Configurar RevenueCat
       await Purchases.configure({ apiKey });
@@ -91,7 +108,9 @@ class SubscriptionService {
       console.log('✅ Servicio de suscripciones inicializado correctamente');
     } catch (error) {
       console.error('❌ Error inicializando servicio de suscripciones:', error);
-      throw error;
+      // En lugar de lanzar error, continuar sin RevenueCat
+      console.log('⚠️ Continuando sin RevenueCat - funcionalidad premium limitada');
+      this.isInitialized = false;
     }
   }
 
@@ -99,6 +118,11 @@ class SubscriptionService {
 
   private async loadProducts(): Promise<void> {
     try {
+      if (!this.isInitialized) {
+        console.log('⚠️ RevenueCat no inicializado, saltando carga de productos');
+        return;
+      }
+
       const offerings = await Purchases.getOfferings();
       if (offerings.current) {
         this.products = offerings.current.availablePackages.map(pkg => ({
@@ -111,11 +135,13 @@ class SubscriptionService {
         }));
         console.log('📦 Productos cargados desde RevenueCat:', this.products);
       } else {
-        throw new Error('No hay ofertas disponibles');
+        console.log('⚠️ No hay ofertas disponibles en RevenueCat');
+        this.products = []; // Inicializar como array vacío
       }
     } catch (error) {
       console.error('❌ Error cargando productos:', error);
-      throw error;
+      this.products = []; // En caso de error, usar array vacío
+      // No lanzar error para evitar romper la inicialización
     }
   }
 
@@ -123,15 +149,24 @@ class SubscriptionService {
 
   async getProducts(): Promise<Product[]> {
     if (!this.isInitialized) {
-      await this.initialize();
+      try {
+        await this.initialize();
+      } catch (error) {
+        console.log('⚠️ No se pudo inicializar RevenueCat, retornando productos vacíos');
+        return [];
+      }
     }
-    return this.products;
+    return this.products || [];
   }
 
   async purchaseSubscription(productId: string): Promise<void> {
     try {
       if (!this.isInitialized) {
-        await this.initialize();
+        try {
+          await this.initialize();
+        } catch (error) {
+          throw new Error('RevenueCat no está disponible. Por favor, usa la versión nativa de la app para realizar compras.');
+        }
       }
 
       console.log('🛒 Iniciando compra de suscripción:', productId);
@@ -177,7 +212,11 @@ class SubscriptionService {
   async restorePurchases(): Promise<void> {
     try {
       if (!this.isInitialized) {
-        await this.initialize();
+        try {
+          await this.initialize();
+        } catch (error) {
+          throw new Error('RevenueCat no está disponible. Por favor, usa la versión nativa de la app para restaurar compras.');
+        }
       }
 
       console.log('🔄 Restaurando compras...');
@@ -201,7 +240,7 @@ class SubscriptionService {
 
   async getPremiumStatus(): Promise<PremiumStatus> {
     try {
-      // Usar información de RevenueCat
+      // Usar información de RevenueCat solo si está inicializado
       if (this.isInitialized) {
         try {
           const customerInfo = await Purchases.getCustomerInfo();
@@ -209,6 +248,8 @@ class SubscriptionService {
         } catch (error) {
           console.log('⚠️ Error obteniendo información de RevenueCat, usando estado local:', error.message);
         }
+      } else {
+        console.log('⚠️ RevenueCat no inicializado, usando estado local');
       }
 
       // Fallback al estado local
@@ -373,6 +414,11 @@ class SubscriptionService {
 
   private async refreshPremiumStatusFromRevenueCat(): Promise<void> {
     try {
+      if (!this.isInitialized) {
+        console.log('⚠️ RevenueCat no inicializado, saltando actualización desde RevenueCat');
+        return;
+      }
+
       const customerInfo = await Purchases.getCustomerInfo();
       const status = this.parseCustomerInfoToPremiumStatus(customerInfo);
       await this.savePremiumStatus(status);

@@ -139,6 +139,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (!token) {
         console.log('ℹ️ No hay token almacenado');
         setUser(null);
+        setLoading(false);
         return;
       }
 

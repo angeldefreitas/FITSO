@@ -17,6 +17,8 @@ import SimpleOnboardingScreen from './src/screens/SimpleOnboardingScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import DailyScreen from './src/screens/DailyScreen';
 import ProgressTrackingScreen from './src/screens/ProgressTrackingScreen';
+import { AdminAffiliatesScreen } from './src/screens/AdminAffiliatesScreen';
+import { AffiliateDashboardScreen } from './src/screens/AffiliateDashboardScreen';
 import SplashScreen from './src/components/SplashScreen';
 import CircularLoadingWheel from './src/components/CircularLoadingWheel';
 import LoadingScreen from './src/components/LoadingScreen';
@@ -38,6 +40,8 @@ const AppContent = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [shouldOpenAddModal, setShouldOpenAddModal] = useState(false);
   const [showProgressTracking, setShowProgressTracking] = useState(false);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [showAffiliateDashboard, setShowAffiliateDashboard] = useState(false);
   
   // useAuth debe ejecutarse siempre, sin importar las condiciones de render
   const { user, loading: authLoading, isNewUser, resetIsNewUser } = useAuth();
@@ -106,6 +110,22 @@ const AppContent = () => {
 
   const handleProgressPress = useCallback(() => {
     setShowProgressTracking(true);
+  }, []);
+
+  const handleAdminPress = useCallback(() => {
+    setShowAdminPanel(true);
+  }, []);
+
+  const handleAdminPanelClose = useCallback(() => {
+    setShowAdminPanel(false);
+  }, []);
+
+  const handleAffiliatePress = useCallback(() => {
+    setShowAffiliateDashboard(true);
+  }, []);
+
+  const handleAffiliateDashboardClose = useCallback(() => {
+    setShowAffiliateDashboard(false);
   }, []);
 
   useEffect(() => {
@@ -208,6 +228,8 @@ const AppContent = () => {
             onTabChange={handleTabChange}
             onAddFromProfile={handleAddFromProfile}
             onProgressPress={handleProgressPress}
+            onAdminPress={handleAdminPress}
+            onAffiliatePress={handleAffiliatePress}
           />
         ) : (
           <DailyScreen 
@@ -227,6 +249,24 @@ const AppContent = () => {
             onTabChange={handleTabChange}
             onAddPress={handleAddFromProfile}
             currentTab={step === 'profile' ? 'perfil' : 'diario'}
+          />
+        )}
+
+        {/* Panel de Administración - Renderizado globalmente */}
+        {showAdminPanel && (
+          <AdminAffiliatesScreen
+            navigation={{
+              goBack: handleAdminPanelClose
+            }}
+          />
+        )}
+
+        {/* Dashboard de Afiliados - Renderizado globalmente */}
+        {showAffiliateDashboard && (
+          <AffiliateDashboardScreen
+            navigation={{
+              goBack: handleAffiliateDashboardClose
+            }}
           />
         )}
       </SafeAreaView>

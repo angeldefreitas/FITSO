@@ -3,13 +3,19 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import i18n from '../config/i18n';
 import userAuthService from './userAuthService';
 import NetInfo from '@react-native-community/netinfo';
+import { isExpoGo } from '../config/expoGoConfig';
 
 // Configuración de URLs para diferentes entornos
 const getBaseURL = () => {
   if (__DEV__) {
-    // En desarrollo, intentar usar servidor local primero
-    // Si no está disponible, usar Render como fallback
-    return 'http://localhost:3000/api';
+    if (isExpoGo()) {
+      // En Expo Go, usar directamente la URL de producción
+      console.log('📱 Expo Go detectado - usando URL de producción');
+      return 'https://fitso.onrender.com/api';
+    } else {
+      // En desarrollo nativo, intentar usar servidor local primero
+      return 'http://localhost:3000/api';
+    }
   }
   return 'https://fitso.onrender.com/api'; // Producción en Render
 };
@@ -28,6 +34,7 @@ export interface User {
   email: string;
   name: string;
   is_verified: boolean;
+  is_affiliate?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -56,15 +63,20 @@ class ApiService {
 
   // Verificar si el servidor local está disponible
   private async checkLocalServer() {
-    if (__DEV__ && this.baseURL.includes('localhost')) {
+    // Solo verificar servidor local si no estamos en Expo Go
+    if (__DEV__ && this.baseURL.includes('localhost') && !isExpoGo()) {
       try {
         // Usar AbortController para implementar timeout
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        const timeoutId = setTimeout(() => controller.abort(), 2000); // Reducir timeout a 2 segundos
         
         const response = await fetch('http://localhost:3000/api/health', {
           method: 'GET',
-          signal: controller.signal
+          signal: controller.signal,
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          }
         });
         
         clearTimeout(timeoutId);
@@ -73,7 +85,12 @@ class ApiService {
       } catch (error) {
         this.localServerAvailable = false;
         console.log('🏠 Servidor local: No disponible, usando Render como fallback');
+        // Cambiar a URL de producción si el servidor local no está disponible
+        this.baseURL = 'https://fitso.onrender.com/api';
       }
+    } else if (isExpoGo()) {
+      console.log('📱 Expo Go - saltando verificación de servidor local');
+      this.localServerAvailable = false;
     }
   }
 
@@ -277,10 +294,11 @@ class ApiService {
       await this.ensureTokenLoaded();
       
       const url = `${this.baseURL}${endpoint}`;
+      console.log('🌐 Haciendo request a:', url);
       
-      // Timeout de 10 segundos
+      // Timeout de 15 segundos para dar más tiempo
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
       
       const response = await fetch(url, {
         ...options,
@@ -293,10 +311,16 @@ class ApiService {
 
       clearTimeout(timeoutId);
 
+      // Verificar si la respuesta es JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Respuesta no es JSON válido');
+      }
+
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Error en la petición');
+        throw new Error(data.message || `Error ${response.status}: ${response.statusText}`);
       }
 
       // Guardar datos para uso offline
@@ -322,7 +346,9 @@ class ApiService {
       // Si es un error de red, usar datos offline
       if (error.message?.includes('Network request failed') || 
           error.message?.includes('timeout') ||
-          error.name === 'AbortError') {
+          error.message?.includes('Failed to fetch') ||
+          error.name === 'AbortError' ||
+          error.name === 'TypeError') {
         console.log('🌐 Error de red - usando datos offline');
         return await this.loadOfflineData(endpoint);
       }

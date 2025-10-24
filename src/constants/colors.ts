@@ -35,6 +35,16 @@ export const Colors = {
   black: '#000000',
   transparent: 'transparent',
   
+  // Colores adicionales para afiliados
+  gray: '#6c757d',
+  grayLight: '#f8f9fa',
+  blue: '#007bff',
+  blueLight: '#e3f2fd',
+  green: '#28a745',
+  orange: '#fd7e14',
+  purple: '#6f42c1',
+  red: '#dc3545',
+  
   // Bordes y divisores
   border: '#dee2e6',
   divider: '#3a3a3a',
