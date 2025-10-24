@@ -144,6 +144,34 @@ app.get('/', (req, res) => {
   });
 });
 
+// Endpoint temporal para agregar columna is_affiliate
+app.post('/api/migrate-add-affiliate-column', async (req, res) => {
+  try {
+    console.log('🔄 Ejecutando migración para agregar columna is_affiliate...');
+    
+    // Agregar columna is_affiliate
+    await query('ALTER TABLE users ADD COLUMN IF NOT EXISTS is_affiliate BOOLEAN DEFAULT FALSE');
+    console.log('✅ Columna is_affiliate agregada');
+    
+    // Crear índice
+    await query('CREATE INDEX IF NOT EXISTS idx_users_is_affiliate ON users(is_affiliate)');
+    console.log('✅ Índice creado');
+    
+    res.json({
+      success: true,
+      message: 'Migración completada exitosamente',
+      changes: ['Columna is_affiliate agregada', 'Índice creado']
+    });
+  } catch (error) {
+    console.error('❌ Error en migración:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error en migración',
+      error: error.message
+    });
+  }
+});
+
 // Endpoint simple para crear afiliados (sin autenticación para testing)
 app.post('/api/create-affiliate-simple', async (req, res) => {
   try {
