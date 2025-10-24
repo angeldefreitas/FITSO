@@ -59,6 +59,17 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const [savingGoals, setSavingGoals] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(false);
   
+  // Debug: Log de datos del usuario
+  useEffect(() => {
+    if (user) {
+      console.log('🔍 Debug - User data:', { 
+        email: user?.email, 
+        is_affiliate: user?.is_affiliate,
+        user: user 
+      });
+    }
+  }, [user]);
+  
   // Estados para los datos biométricos y metas
   const [biometricData, setBiometricData] = useState<BiometricData>({
     age: 25,
@@ -522,11 +533,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
           />
 
           {/* Botón de Afiliado - Solo para afiliados */}
-          {console.log('🔍 Debug - User data:', { 
-            email: user?.email, 
-            is_affiliate: user?.is_affiliate,
-            user: user 
-          })}
           <AffiliateDashboardButton 
             onPress={handleAffiliatePress}
             userEmail={user?.email}

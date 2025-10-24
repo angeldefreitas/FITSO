@@ -45,8 +45,7 @@ const getAuthToken = async (): Promise<string | null> => {
   try {
     // Importar el servicio de autenticación existente
     const userAuthService = await import('./userAuthService');
-    const service = userAuthService.default.getInstance();
-    return service.getCurrentToken();
+    return userAuthService.default.getCurrentToken();
   } catch (error) {
     console.error('Error obteniendo token:', error);
     return null;
