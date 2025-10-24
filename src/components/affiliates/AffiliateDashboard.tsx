@@ -35,10 +35,12 @@ export const AffiliateDashboard: React.FC<AffiliateDashboardProps> = ({ onClose 
 
   const fetchStats = async () => {
     try {
+      console.log('🔄 [DASHBOARD] Obteniendo estadísticas...');
       const response = await affiliateApiService.getAffiliateDashboard();
+      console.log('✅ [DASHBOARD] Respuesta recibida:', response);
       setStats(response);
     } catch (error) {
-      console.error('Error obteniendo estadísticas:', error);
+      console.error('❌ [DASHBOARD] Error obteniendo estadísticas:', error);
       Alert.alert('Error', 'No se pudieron cargar las estadísticas');
     } finally {
       setLoading(false);
@@ -78,6 +80,7 @@ export const AffiliateDashboard: React.FC<AffiliateDashboardProps> = ({ onClose 
   }
 
   if (!stats) {
+    console.log('❌ [DASHBOARD] Stats es null, mostrando error');
     return (
       <View style={styles.errorContainer}>
         <Text style={styles.errorText}>No se pudieron cargar las estadísticas</Text>
@@ -87,6 +90,8 @@ export const AffiliateDashboard: React.FC<AffiliateDashboardProps> = ({ onClose 
       </View>
     );
   }
+
+  console.log('✅ [DASHBOARD] Renderizando con stats:', stats);
 
   return (
     <View style={styles.container}>
