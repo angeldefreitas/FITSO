@@ -128,8 +128,16 @@ export const affiliateApiService = {
   // Obtener dashboard de afiliado
   async getAffiliateDashboard(): Promise<AffiliateStats> {
     try {
-      const response = await authenticatedRequest<{ data: AffiliateStats }>('/affiliates/dashboard');
-      return response.data!.data;
+      // Intentar primero el endpoint simplificado
+      try {
+        const response = await authenticatedRequest<{ data: AffiliateStats }>('/affiliates/simple-dashboard');
+        return response.data!.data;
+      } catch (simpleError) {
+        console.log('⚠️ Endpoint simplificado falló, intentando endpoint original...');
+        // Fallback al endpoint original
+        const response = await authenticatedRequest<{ data: AffiliateStats }>('/affiliates/dashboard');
+        return response.data!.data;
+      }
     } catch (error) {
       console.error('Error getting affiliate dashboard:', error);
       throw error;
@@ -169,6 +177,17 @@ export const affiliateApiService = {
       return response.data;
     } catch (error) {
       console.error('Error getting my referral:', error);
+      throw error;
+    }
+  },
+
+  // Obtener información básica del afiliado
+  async getMyAffiliateInfo() {
+    try {
+      const response = await authenticatedRequest('/affiliates/my-info');
+      return response.data;
+    } catch (error) {
+      console.error('Error getting my affiliate info:', error);
       throw error;
     }
   },

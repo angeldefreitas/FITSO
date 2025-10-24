@@ -1,5 +1,6 @@
 const express = require('express');
 const affiliateController = require('../controllers/affiliateController');
+const simpleAffiliateController = require('../controllers/simpleAffiliateController');
 const { authenticateToken } = require('../../middleware/auth');
 
 const router = express.Router();
@@ -138,5 +139,19 @@ router.post('/payments', authenticateToken, affiliateController.processCommissio
  * @query {string} affiliate_code - Código del afiliado (opcional)
  */
 router.get('/pending-payments', authenticateToken, affiliateController.getPendingPayments);
+
+/**
+ * @route GET /api/affiliates/simple-dashboard
+ * @desc Obtener dashboard simplificado de afiliado
+ * @access Private (Affiliate)
+ */
+router.get('/simple-dashboard', authenticateToken, simpleAffiliateController.getSimpleAffiliateDashboard);
+
+/**
+ * @route GET /api/affiliates/my-info
+ * @desc Obtener información básica del afiliado
+ * @access Private (Affiliate)
+ */
+router.get('/my-info', authenticateToken, simpleAffiliateController.getMyAffiliateInfo);
 
 module.exports = router;
