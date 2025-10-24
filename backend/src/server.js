@@ -161,8 +161,8 @@ app.post('/api/create-affiliate-simple', async (req, res) => {
     }
 
     // Usar el modelo User que ya funciona
-    const User = require('./src/models/User');
-    const AffiliateCode = require('./src/monetization/models/AffiliateCode');
+    const User = require('./models/User');
+    const AffiliateCode = require('./monetization/models/AffiliateCode');
 
     // Verificar si el email ya existe
     const existingUser = await User.findByEmail(email);
