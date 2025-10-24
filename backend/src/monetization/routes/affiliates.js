@@ -81,6 +81,13 @@ router.post('/referral', authenticateToken, affiliateController.registerReferral
 router.get('/my-referral', authenticateToken, affiliateController.getMyReferral);
 
 /**
+ * @route GET /api/affiliates/dashboard
+ * @desc Obtener dashboard de afiliado para el usuario autenticado
+ * @access Private (Affiliate)
+ */
+router.get('/dashboard', authenticateToken, affiliateController.getAffiliateDashboard);
+
+/**
  * @route GET /api/affiliates/stats/:code
  * @desc Obtener estadísticas de un afiliado
  * @access Private (Admin)

@@ -233,6 +233,63 @@ class AffiliateController {
   }
 
   /**
+   * Obtener dashboard de afiliado para el usuario autenticado
+   * GET /api/affiliates/dashboard
+   */
+  async getAffiliateDashboard(req, res) {
+    try {
+      const user_id = req.user.id;
+      
+      // Verificar si el usuario es afiliado
+      const user = await User.findById(user_id);
+      if (!user || !user.is_affiliate) {
+        return res.status(403).json({
+          success: false,
+          message: 'Solo los afiliados pueden acceder al dashboard'
+        });
+      }
+
+      // Obtener el código de afiliado del usuario
+      const affiliateCode = await AffiliateCode.findByAffiliateId(user_id);
+      if (!affiliateCode) {
+        return res.status(404).json({
+          success: false,
+          message: 'No se encontró código de afiliado para este usuario'
+        });
+      }
+
+      // Obtener estadísticas del afiliado
+      const [stats, commissionStats] = await Promise.all([
+        affiliateCode.getStats(),
+        AffiliateCommission.getStatsByAffiliate(affiliateCode.code)
+      ]);
+
+      // Calcular estadísticas del dashboard
+      const dashboardStats = {
+        total_referrals: stats.total_referrals || 0,
+        premium_referrals: 0, // Por ahora no tenemos tracking de premium
+        total_commissions: commissionStats.total_commission_amount || 0,
+        pending_commissions: commissionStats.pending_commission_amount || 0,
+        paid_commissions: commissionStats.paid_commission_amount || 0,
+        conversion_rate: 0, // Por ahora no tenemos tracking de conversión
+        affiliate_code: affiliateCode.code
+      };
+
+      res.json({
+        success: true,
+        data: dashboardStats
+      });
+
+    } catch (error) {
+      console.error('❌ Error obteniendo dashboard de afiliado:', error.message);
+      res.status(500).json({
+        success: false,
+        message: 'Error obteniendo dashboard de afiliado'
+      });
+    }
+  }
+
+  /**
    * Obtener estadísticas de un afiliado
    * GET /api/affiliates/stats/:code
    */

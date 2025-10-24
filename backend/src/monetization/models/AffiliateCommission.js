@@ -9,7 +9,7 @@ class AffiliateCommission {
     this.commission_amount = data.commission_amount;
     this.commission_percentage = data.commission_percentage;
     this.subscription_amount = data.subscription_amount;
-    this.payment_period_start = data.payment_periodsub_start;
+    this.payment_period_start = data.payment_period_start;
     this.payment_period_end = data.payment_period_end;
     this.is_paid = data.is_paid;
     this.paid_date = data.paid_date;
@@ -155,33 +155,50 @@ class AffiliateCommission {
 
   // Obtener estadísticas de comisiones por afiliado
   static async getStatsByAffiliate(affiliateCode, dateFrom = null, dateTo = null) {
-    let whereClause = 'WHERE ac.affiliate_code = $1';
-    const params = [affiliateCode];
+    // Primero obtener el affiliate_id del código
+    const affiliateQuery = 'SELECT affiliate_id FROM affiliate_codes WHERE code = $1';
+    const affiliateResult = await query(affiliateQuery, [affiliateCode]);
+    
+    if (affiliateResult.rows.length === 0) {
+      return {
+        total_commissions: 0,
+        total_commission_amount: 0,
+        paid_commission_amount: 0,
+        pending_commission_amount: 0,
+        avg_commission_percentage: 0,
+        paid_commissions_count: 0,
+        pending_commissions_count: 0
+      };
+    }
+
+    const affiliateId = affiliateResult.rows[0].affiliate_id;
+    let whereClause = 'WHERE ac.affiliate_id = $1';
+    const params = [affiliateId];
 
     if (dateFrom) {
-      whereClause += ' AND ac.payment_period_start >= $' + (params.length + 1);
+      whereClause += ' AND ac.created_at >= $' + (params.length + 1);
       params.push(dateFrom);
     }
 
     if (dateTo) {
-      whereClause += ' AND ac.payment_period_end <= $' + (params.length + 1);
+      whereClause += ' AND ac.created_at <= $' + (params.length + 1);
       params.push(dateTo);
     }
 
     const statsQuery = `
       SELECT 
         COUNT(*) as total_commissions,
-        SUM(ac.commission_amount) as total_commission_amount,
-        SUM(CASE WHEN ac.is_paid = true THEN ac.commission_amount ELSE 0 END) as paid_commission_amount,
-        SUM(CASE WHEN ac.is_paid = false THEN ac.commission_amount ELSE 0 END) as pending_commission_amount,
-        AVG(ac.commission_percentage) as avg_commission_percentage,
-        COUNT(CASE WHEN ac.is_paid = true THEN 1 END) as paid_commissions_count,
-        COUNT(CASE WHEN ac.is_paid = false THEN 1 END) as pending_commissions_count
+        COALESCE(SUM(ac.commission_amount), 0) as total_commission_amount,
+        COALESCE(SUM(CASE WHEN ac.status = 'paid' THEN ac.commission_amount ELSE 0 END), 0) as paid_commission_amount,
+        COALESCE(SUM(CASE WHEN ac.status = 'pending' THEN ac.commission_amount ELSE 0 END), 0) as pending_commission_amount,
+        COALESCE(AVG(ac.commission_percentage), 0) as avg_commission_percentage,
+        COUNT(CASE WHEN ac.status = 'paid' THEN 1 END) as paid_commissions_count,
+        COUNT(CASE WHEN ac.status = 'pending' THEN 1 END) as pending_commissions_count
       FROM affiliate_commissions ac
       ${whereClause}
     `;
 
-    const result = await query(statsQuery, invoice);
+    const result = await query(statsQuery, params);
     return result.rows[0];
   }
 

@@ -59,6 +59,18 @@ class AffiliateCode {
     return new AffiliateCode(result.rows[0]);
   }
 
+  // Buscar código por ID de afiliado (usuario que es afiliado)
+  static async findByAffiliateId(affiliateId) {
+    const selectQuery = 'SELECT * FROM affiliate_codes WHERE affiliate_id = $1 AND is_active = true';
+    const result = await query(selectQuery, [affiliateId]);
+    
+    if (result.rows.length === 0) {
+      return null;
+    }
+    
+    return new AffiliateCode(result.rows[0]);
+  }
+
   // Obtener todos los códigos activos
   static async findAllActive() {
     const selectQuery = `
@@ -125,17 +137,16 @@ class AffiliateCode {
     const statsQuery = `
       SELECT 
         COUNT(ur.id) as total_referrals,
-        COUNT(CASE WHEN ur.is_premium = true THEN 1 END) as premium_referrals,
-        COALESCE(SUM(afc.commission_amount), 0) as total_commissions,
-        COALESCE(SUM(CASE WHEN afc.is_paid = true THEN afc.commission_amount ELSE 0 END), 0) as paid_commissions,
-        COALESCE(SUM(CASE WHEN afc.is_paid = false THEN afc.commission_amount ELSE 0 END), 0) as pending_commissions
-      FROM user_referrals ur
-      LEFT JOIN affiliate_commissions afc ON ur.affiliate_code = afc.affiliate_code AND ur.user_id = afc.user_id
-      WHERE ur.affiliate_code = $1
+        COALESCE(SUM(afc.commission_amount), 0) as total_commissions
+      FROM affiliate_codes ac
+      LEFT JOIN user_referrals ur ON ac.id = ur.affiliate_code_id
+      LEFT JOIN affiliate_commissions afc ON ac.affiliate_id = afc.affiliate_id
+      WHERE ac.code = $1
+      GROUP BY ac.id
     `;
     
     const result = await query(statsQuery, [this.code]);
-    return result.rows[0];
+    return result.rows[0] || { total_referrals: 0, total_commissions: 0 };
   }
 
   // Convertir a objeto público
