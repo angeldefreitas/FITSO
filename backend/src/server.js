@@ -174,20 +174,47 @@ app.post('/api/migrate-create-affiliate-tables', async (req, res) => {
   try {
     console.log('🔄 Creando tablas de afiliados...');
     
-    // Leer y ejecutar el esquema de afiliados
-    const fs = require('fs');
-    const path = require('path');
-    const schemaPath = path.join(__dirname, 'monetization/config/affiliate_schema.sql');
-    const schema = fs.readFileSync(schemaPath, 'utf8');
+    // Crear tabla affiliate_codes (simplificada)
+    await query(`
+      CREATE TABLE IF NOT EXISTS affiliate_codes (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          code VARCHAR(50) UNIQUE NOT NULL,
+          affiliate_name VARCHAR(255) NOT NULL,
+          email VARCHAR(255),
+          commission_percentage DECIMAL(5,2) NOT NULL DEFAULT 30.00,
+          is_active BOOLEAN DEFAULT TRUE,
+          created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✅ Tabla affiliate_codes creada');
     
-    // Ejecutar el esquema
-    await query(schema);
-    console.log('✅ Tablas de afiliados creadas');
+    // Crear tabla user_referrals (simplificada)
+    await query(`
+      CREATE TABLE IF NOT EXISTS user_referrals (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+          affiliate_code VARCHAR(50) REFERENCES affiliate_codes(code) ON DELETE SET NULL,
+          referral_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          is_premium BOOLEAN DEFAULT FALSE,
+          premium_conversion_date TIMESTAMP,
+          UNIQUE(user_id)
+      )
+    `);
+    console.log('✅ Tabla user_referrals creada');
+    
+    // Crear índices
+    await query('CREATE INDEX IF NOT EXISTS idx_affiliate_codes_code ON affiliate_codes(code)');
+    await query('CREATE INDEX IF NOT EXISTS idx_affiliate_codes_active ON affiliate_codes(is_active)');
+    await query('CREATE INDEX IF NOT EXISTS idx_user_referrals_user_id ON user_referrals(user_id)');
+    await query('CREATE INDEX IF NOT EXISTS idx_user_referrals_affiliate_code ON user_referrals(affiliate_code)');
+    console.log('✅ Índices creados');
     
     res.json({
       success: true,
       message: 'Tablas de afiliados creadas exitosamente',
-      tables: ['affiliate_codes', 'user_referrals', 'affiliate_commissions', 'affiliate_payments']
+      tables: ['affiliate_codes', 'user_referrals']
     });
   } catch (error) {
     console.error('❌ Error creando tablas de afiliados:', error);
