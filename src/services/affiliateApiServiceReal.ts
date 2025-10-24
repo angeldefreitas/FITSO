@@ -1,8 +1,9 @@
 // Servicio de API de afiliados conectado al backend real
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fitso-backend.onrender.com';
+// Temporalmente usando localhost para testing
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
 
-// Para testing local, cambiar a:
-// const API_BASE_URL = 'http://localhost:3000';
+// Para producción, cambiar a:
+// const API_BASE_URL = 'https://fitso-backend.onrender.com';
 
 console.log('🌐 [API] Usando URL:', API_BASE_URL);
 
