@@ -1,9 +1,6 @@
 // Servicio de API de afiliados conectado al backend real
-// Temporalmente usando localhost para testing
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
-
-// Para producción, cambiar a:
-// const API_BASE_URL = 'https://fitso-backend.onrender.com';
+// Usando servidor de producción de Render
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fitso-backend.onrender.com';
 
 console.log('🌐 [API] Usando URL:', API_BASE_URL);
 
@@ -44,15 +41,20 @@ interface ChangePasswordRequest {
 }
 
 // Función para obtener el token de autenticación
-const getAuthToken = (): string | null => {
-  // Aquí obtendrías el token del AsyncStorage o tu sistema de autenticación
-  // Por ahora retornamos null, pero deberías implementar esto
-  return null;
+const getAuthToken = async (): Promise<string | null> => {
+  try {
+    // Importar el servicio de autenticación existente
+    const userAuthService = await import('./userAuthService');
+    return userAuthService.default.getCurrentToken();
+  } catch (error) {
+    console.error('Error obteniendo token:', error);
+    return null;
+  }
 };
 
 // Función para hacer requests autenticados
 const authenticatedRequest = async (url: string, options: RequestInit = {}) => {
-  const token = getAuthToken();
+  const token = await getAuthToken();
   
   const headers = {
     'Content-Type': 'application/json',

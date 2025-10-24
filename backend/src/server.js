@@ -144,6 +144,40 @@ app.get('/', (req, res) => {
   });
 });
 
+// Endpoint de prueba para verificar autenticación
+app.get('/api/test-auth', (req, res) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  
+  if (!token) {
+    return res.status(401).json({
+      success: false,
+      message: 'Token de acceso requerido'
+    });
+  }
+  
+  try {
+    const jwt = require('jsonwebtoken');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    res.json({
+      success: true,
+      message: 'Token válido',
+      decoded: {
+        userId: decoded.userId,
+        exp: decoded.exp,
+        iat: decoded.iat
+      }
+    });
+  } catch (error) {
+    res.status(401).json({
+      success: false,
+      message: 'Token inválido',
+      error: error.message
+    });
+  }
+});
+
 
 // Middleware de manejo de errores
 app.use((err, req, res, next) => {

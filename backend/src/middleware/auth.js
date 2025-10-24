@@ -21,16 +21,21 @@ const authenticateToken = async (req, res, next) => {
     }
 
     // Verificar el token
+    console.log('🔍 [AUTH] Verificando token con JWT_SECRET...');
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log('✅ [AUTH] Token decodificado:', { userId: decoded.userId, exp: decoded.exp });
     
     // Buscar el usuario en la base de datos
     const user = await User.findById(decoded.userId);
     if (!user) {
+      console.log('❌ [AUTH] Usuario no encontrado en BD:', decoded.userId);
       return res.status(401).json({
         success: false,
         message: 'Token inválido - usuario no encontrado'
       });
     }
+    
+    console.log('✅ [AUTH] Usuario encontrado:', { id: user.id, email: user.email });
 
     // Agregar el usuario al request
     req.user = user;
