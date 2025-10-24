@@ -131,12 +131,12 @@ export const affiliateApiService = {
       // Intentar primero el endpoint simplificado
       try {
         const response = await authenticatedRequest<{ data: AffiliateStats }>('/affiliates/simple-dashboard');
-        return response.data!.data;
+        return response.data!;
       } catch (simpleError) {
         console.log('⚠️ Endpoint simplificado falló, intentando endpoint original...');
         // Fallback al endpoint original
         const response = await authenticatedRequest<{ data: AffiliateStats }>('/affiliates/dashboard');
-        return response.data!.data;
+        return response.data!;
       }
     } catch (error) {
       console.error('Error getting affiliate dashboard:', error);
@@ -210,7 +210,7 @@ export const affiliateApiService = {
   async getAffiliateCodes(): Promise<AffiliateCode[]> {
     try {
       const response = await authenticatedRequest<{ data: AffiliateCode[] }>('/affiliates/codes');
-      return response.data!.data;
+      return response.data!;
     } catch (error) {
       console.error('Error getting affiliate codes:', error);
       throw error;

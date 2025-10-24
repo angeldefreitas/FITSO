@@ -1,4 +1,5 @@
 const User = require('../../models/User');
+const AffiliateCode = require('../models/AffiliateCode');
 
 class SimpleAffiliateController {
   /**
@@ -20,6 +21,20 @@ class SimpleAffiliateController {
         });
       }
 
+      // Buscar el código de afiliado real del usuario
+      let affiliateCode = `AFF_${user.name.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 8)}`;
+      try {
+        const realCode = await AffiliateCode.findByAffiliateId(user_id);
+        if (realCode) {
+          affiliateCode = realCode.code;
+          console.log('✅ [SIMPLE AFFILIATE] Código real encontrado:', affiliateCode);
+        } else {
+          console.log('⚠️ [SIMPLE AFFILIATE] No se encontró código real, usando generado:', affiliateCode);
+        }
+      } catch (codeError) {
+        console.log('⚠️ [SIMPLE AFFILIATE] Error buscando código real:', codeError.message);
+      }
+
       // Crear estadísticas básicas para el dashboard
       const dashboardStats = {
         total_referrals: 0, // Por ahora 0, se puede implementar después
@@ -28,7 +43,7 @@ class SimpleAffiliateController {
         pending_commissions: 0.00,
         paid_commissions: 0.00,
         conversion_rate: 0.00,
-        affiliate_code: `AFF_${user.name.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 8)}`,
+        affiliate_code: affiliateCode,
         user_info: {
           name: user.name,
           email: user.email,
@@ -69,10 +84,21 @@ class SimpleAffiliateController {
         });
       }
 
+      // Buscar el código de afiliado real del usuario
+      let affiliateCode = `AFF_${user.name.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 8)}`;
+      try {
+        const realCode = await AffiliateCode.findByAffiliateId(user_id);
+        if (realCode) {
+          affiliateCode = realCode.code;
+        }
+      } catch (codeError) {
+        console.log('⚠️ [SIMPLE AFFILIATE] Error buscando código real:', codeError.message);
+      }
+
       const affiliateInfo = {
         name: user.name,
         email: user.email,
-        affiliate_code: `AFF_${user.name.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 8)}`,
+        affiliate_code: affiliateCode,
         member_since: user.created_at,
         is_active: true
       };
