@@ -1,5 +1,7 @@
 // Servicio de API de afiliados conectado al backend real
 // Usando servidor de producción de Render
+import userAuthService from './userAuthService';
+
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fitso.onrender.com';
 
 console.log('🌐 [API] Usando URL:', API_BASE_URL);
@@ -41,11 +43,9 @@ interface ChangePasswordRequest {
 }
 
 // Función para obtener el token de autenticación
-const getAuthToken = async (): Promise<string | null> => {
+const getAuthToken = (): string | null => {
   try {
-    // Importar el servicio de autenticación existente
-    const userAuthService = await import('./userAuthService');
-    return userAuthService.default.getCurrentToken();
+    return userAuthService.getCurrentToken();
   } catch (error) {
     console.error('Error obteniendo token:', error);
     return null;
@@ -54,7 +54,7 @@ const getAuthToken = async (): Promise<string | null> => {
 
 // Función para hacer requests autenticados
 const authenticatedRequest = async (url: string, options: RequestInit = {}) => {
-  const token = await getAuthToken();
+  const token = getAuthToken();
   
   console.log('🔑 Token obtenido para affiliateApiService:', token ? 'Sí' : 'No');
   console.log('🌐 URL de la petición:', `${API_BASE_URL}${url}`);
