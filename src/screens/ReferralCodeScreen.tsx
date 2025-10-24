@@ -32,7 +32,7 @@ export const ReferralCodeScreen: React.FC<ReferralCodeScreenProps> = ({
     try {
       if (referralCode) {
         // Registrar el código de referencia
-        await affiliateApiServiceReal.registerReferralCode(referralCode);
+        await affiliateApiService.registerReferralCode(referralCode);
         
         Alert.alert(
           '¡Código registrado!',
