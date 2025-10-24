@@ -4,6 +4,8 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fitso-backend.o
 // Para testing local, cambiar a:
 // const API_BASE_URL = 'http://localhost:3000';
 
+console.log('🌐 [API] Usando URL:', API_BASE_URL);
+
 interface AffiliateCode {
   id: string;
   code: string;
@@ -74,14 +76,24 @@ export const affiliateApiServiceReal = {
   // Crear cuenta de afiliado completa
   async createAffiliateAccount(data: CreateAffiliateAccountRequest) {
     try {
+      console.log('🚀 [API] Creando cuenta de afiliado...');
+      console.log('📝 [API] Datos:', data);
+      console.log('🌐 [API] URL completa:', `${API_BASE_URL}/api/affiliates/create-account`);
+      
       const response = await authenticatedRequest('/api/affiliates/create-account', {
         method: 'POST',
         body: JSON.stringify(data),
       });
 
+      console.log('✅ [API] Respuesta recibida:', response);
       return response;
     } catch (error) {
-      console.error('Error creating affiliate account:', error);
+      console.error('❌ [API] Error creating affiliate account:', error);
+      console.error('❌ [API] Error details:', {
+        message: error.message,
+        name: error.name,
+        stack: error.stack
+      });
       throw error;
     }
   },
