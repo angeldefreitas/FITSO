@@ -144,6 +144,36 @@ app.get('/', (req, res) => {
   });
 });
 
+// Endpoint temporal para crear tablas de afiliados
+app.post('/api/migrate-create-affiliate-tables', async (req, res) => {
+  try {
+    console.log('🔄 Creando tablas de afiliados...');
+    
+    // Leer y ejecutar el esquema de afiliados
+    const fs = require('fs');
+    const path = require('path');
+    const schemaPath = path.join(__dirname, 'monetization/config/affiliate_schema.sql');
+    const schema = fs.readFileSync(schemaPath, 'utf8');
+    
+    // Ejecutar el esquema
+    await query(schema);
+    console.log('✅ Tablas de afiliados creadas');
+    
+    res.json({
+      success: true,
+      message: 'Tablas de afiliados creadas exitosamente',
+      tables: ['affiliate_codes', 'user_referrals', 'affiliate_commissions', 'affiliate_payments']
+    });
+  } catch (error) {
+    console.error('❌ Error creando tablas de afiliados:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error creando tablas de afiliados',
+      error: error.message
+    });
+  }
+});
+
 // Endpoint temporal para agregar columna is_affiliate
 app.post('/api/migrate-add-affiliate-column', async (req, res) => {
   try {
