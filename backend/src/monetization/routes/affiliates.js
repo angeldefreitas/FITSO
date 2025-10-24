@@ -4,8 +4,8 @@ const { authenticateToken } = require('../../middleware/auth');
 
 const router = express.Router();
 
-// Middleware de autenticación para todas las rutas
-router.use(authenticateToken);
+// Middleware de autenticación para todas las rutas EXCEPTO create-account
+// router.use(authenticateToken);
 
 /**
  * @route POST /api/affiliates/create-account
@@ -17,7 +17,7 @@ router.use(authenticateToken);
  * @body {string} referralCode - Código de referido único
  * @body {number} commissionPercentage - Porcentaje de comisión (opcional, default 30)
  */
-router.post('/create-account', affiliateController.createAffiliateAccount);
+router.post('/create-account', authenticateToken, affiliateController.createAffiliateAccount);
 
 /**
  * @route POST /api/affiliates/change-password
@@ -26,7 +26,7 @@ router.post('/create-account', affiliateController.createAffiliateAccount);
  * @body {string} currentPassword - Contraseña actual
  * @body {string} newPassword - Nueva contraseña
  */
-router.post('/change-password', affiliateController.changeAffiliatePassword);
+router.post('/change-password', authenticateToken, affiliateController.changeAffiliatePassword);
 
 /**
  * @route POST /api/affiliates/codes
@@ -36,14 +36,14 @@ router.post('/change-password', affiliateController.changeAffiliatePassword);
  * @body {string} email - Email del afiliado (opcional)
  * @body {number} commission_percentage - Porcentaje de comisión (opcional, default 30)
  */
-router.post('/codes', affiliateController.createAffiliateCode);
+router.post('/codes', authenticateToken, affiliateController.createAffiliateCode);
 
 /**
  * @route GET /api/affiliates/codes
  * @desc Obtener todos los códigos de afiliado activos
  * @access Private (Admin)
  */
-router.get('/codes', affiliateController.getAllAffiliateCodes);
+router.get('/codes', authenticateToken, affiliateController.getAllAffiliateCodes);
 
 /**
  * @route DELETE /api/affiliates/codes/:id
@@ -51,7 +51,7 @@ router.get('/codes', affiliateController.getAllAffiliateCodes);
  * @access Private (Admin)
  * @param {string} id - ID del código de afiliado
  */
-router.delete('/codes/:id', affiliateController.deactivateAffiliateCode);
+router.delete('/codes/:id', authenticateToken, affiliateController.deactivateAffiliateCode);
 
 /**
  * @route POST /api/affiliates/referral
@@ -59,14 +59,14 @@ router.delete('/codes/:id', affiliateController.deactivateAffiliateCode);
  * @access Private
  * @body {string} referral_code - Código de referencia del afiliado
  */
-router.post('/referral', affiliateController.registerReferralCode);
+router.post('/referral', authenticateToken, affiliateController.registerReferralCode);
 
 /**
  * @route GET /api/affiliates/my-referral
  * @desc Obtener información de referencia del usuario autenticado
  * @access Private
  */
-router.get('/my-referral', affiliateController.getMyReferral);
+router.get('/my-referral', authenticateToken, affiliateController.getMyReferral);
 
 /**
  * @route GET /api/affiliates/stats/:code
@@ -74,7 +74,7 @@ router.get('/my-referral', affiliateController.getMyReferral);
  * @access Private (Admin)
  * @param {string} code - Código del afiliado
  */
-router.get('/stats/:code', affiliateController.getAffiliateStats);
+router.get('/stats/:code', authenticateToken, affiliateController.getAffiliateStats);
 
 /**
  * @route GET /api/affiliates/referrals/:code
@@ -85,7 +85,7 @@ router.get('/stats/:code', affiliateController.getAffiliateStats);
  * @query {number} offset - Offset para paginación (default 0)
  * @query {boolean} premium_only - Solo usuarios premium (default false)
  */
-router.get('/referrals/:code', affiliateController.getAffiliateReferrals);
+router.get('/referrals/:code', authenticateToken, affiliateController.getAffiliateReferrals);
 
 /**
  * @route GET /api/affiliates/commissions/:code
@@ -99,7 +99,7 @@ router.get('/referrals/:code', affiliateController.getAffiliateReferrals);
  * @query {string} date_from - Fecha de inicio (YYYY-MM-DD)
  * @query {string} date_to - Fecha de fin (YYYY-MM-DD)
  */
-router.get('/commissions/:code', affiliateController.getAffiliateCommissions);
+router.get('/commissions/:code', authenticateToken, affiliateController.getAffiliateCommissions);
 
 /**
  * @route POST /api/affiliates/payments
@@ -110,7 +110,7 @@ router.get('/commissions/:code', affiliateController.getAffiliateCommissions);
  * @body {string} payment_method - Método de pago (paypal, transferencia, etc.)
  * @body {string} payment_reference - Referencia del pago
  */
-router.post('/payments', affiliateController.processCommissionPayment);
+router.post('/payments', authenticateToken, affiliateController.processCommissionPayment);
 
 /**
  * @route GET /api/affiliates/pending-payments
@@ -118,6 +118,6 @@ router.post('/payments', affiliateController.processCommissionPayment);
  * @access Private (Admin)
  * @query {string} affiliate_code - Código del afiliado (opcional)
  */
-router.get('/pending-payments', affiliateController.getPendingPayments);
+router.get('/pending-payments', authenticateToken, affiliateController.getPendingPayments);
 
 module.exports = router;
