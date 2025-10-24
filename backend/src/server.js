@@ -144,6 +144,31 @@ app.get('/', (req, res) => {
   });
 });
 
+// Endpoint temporal para verificar tablas existentes
+app.get('/api/check-tables', async (req, res) => {
+  try {
+    const result = await query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' 
+      ORDER BY table_name
+    `);
+    
+    const tables = result.rows.map(row => row.table_name);
+    
+    res.json({
+      success: true,
+      tables: tables,
+      count: tables.length
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Endpoint temporal para crear tablas de afiliados
 app.post('/api/migrate-create-affiliate-tables', async (req, res) => {
   try {
