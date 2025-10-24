@@ -2,7 +2,7 @@ const AffiliateCode = require('../models/AffiliateCode');
 const UserReferral = require('../models/UserReferral');
 const AffiliateCommission = require('../models/AffiliateCommission');
 const User = require('../../models/User');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 class AffiliateController {
   /**
