@@ -4,10 +4,16 @@ const User = require('../models/User');
 // Middleware para verificar JWT
 const authenticateToken = async (req, res, next) => {
   try {
+    console.log('🔐 [AUTH] Verificando token...');
+    console.log('📝 [AUTH] Headers:', req.headers);
+    
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
+    console.log('🔑 [AUTH] Token recibido:', token ? 'Sí' : 'No');
+
     if (!token) {
+      console.log('❌ [AUTH] No se encontró token');
       return res.status(401).json({
         success: false,
         message: 'Token de acceso requerido'
