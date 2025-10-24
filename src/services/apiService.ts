@@ -279,7 +279,7 @@ class ApiService {
   }
 
   // Método base para hacer requests
-  private async request<T>(
+  async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {

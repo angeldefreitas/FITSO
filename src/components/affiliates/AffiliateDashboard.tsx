@@ -10,7 +10,7 @@ import {
   RefreshControl
 } from 'react-native';
 import { Colors } from '../../constants/colors';
-import { affiliateApiService } from '../../services/affiliateApiService';
+import { affiliateApiService } from './services/affiliateApiService';
 
 const colors = Colors;
 
@@ -62,7 +62,7 @@ export const AffiliateDashboard: React.FC<AffiliateDashboardProps> = ({ onClose 
     color = colors.primary 
   }) => (
     <View style={styles.statCard}>
-      <Text style={styles.statValue} style={{ color }}>{value}</Text>
+      <Text style={[styles.statValue, { color }]}>{value}</Text>
       <Text style={styles.statTitle}>{title}</Text>
       {subtitle && <Text style={styles.statSubtitle}>{subtitle}</Text>}
     </View>

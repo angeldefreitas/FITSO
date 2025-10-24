@@ -1,7 +1,7 @@
 import React from 'react';
 import { AdminButton } from './AdminButton';
 import { AffiliateButton } from './AffiliateButton';
-import { useUserTypeReal } from '../../hooks/useUserTypeReal';
+import { useUserTypeReal } from './hooks/useUserTypeReal';
 
 interface User {
   id: string;

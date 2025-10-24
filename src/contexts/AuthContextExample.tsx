@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useUserType } from '../hooks/useUserType';
+import { useUserType } from '../components/affiliates/hooks/useUserType';
 
 // Ejemplo de cómo integrar el sistema de afiliados en tu AuthContext existente
 

@@ -7,8 +7,8 @@ import {
   TouchableOpacity,
   Text
 } from 'react-native';
-import { AdminPanel } from '../components/affiliates/AdminPanel';
-import { Colors } from '../constants/colors';
+import { AdminPanel } from '../AdminPanel';
+import { Colors } from '../../../constants/colors';
 
 const colors = Colors;
 

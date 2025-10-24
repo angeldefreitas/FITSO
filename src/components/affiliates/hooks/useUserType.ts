@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { affiliateApiService } from '../services/affiliateApiService';
-import { isAdminEmail } from '../config/adminConfig';
+import { isAdminEmail } from '../../../config/adminConfig';
 
 export type UserType = 'admin' | 'affiliate' | 'user';
 
-interface UserTypeInfo {
+export interface UserTypeInfo {
   type: UserType;
   affiliateCode?: string;
   isAdmin?: boolean;

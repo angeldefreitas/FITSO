@@ -21,10 +21,12 @@ import GoalsModal, { GoalsData } from '../components/modals/GoalsModal';
 import BottomNavigation from '../components/BottomNavigation';
 import ChangePasswordScreen from './ChangePasswordScreen';
 import LanguageSwitcher from '../components/LanguageSwitcher';
-import { ProfileAdminButtonSettings } from '../components/affiliates/ProfileAdminButtonSettings';
-import AffiliateDashboardButton from '../components/affiliates/AffiliateDashboardButton';
-import { AffiliateDashboard } from '../components/affiliates/AffiliateDashboard';
-import { UserReferralInfo } from '../components/affiliates/UserReferralInfo';
+import { 
+  ProfileAdminButtonSettings,
+  AffiliateDashboardButton,
+  AffiliateDashboard,
+  UserReferralInfo
+} from '../components/affiliates';
 
 interface ProfileScreenProps {
   navigation?: any;

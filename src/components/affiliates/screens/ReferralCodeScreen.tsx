@@ -8,11 +8,11 @@ import {
   SafeAreaView,
   StatusBar
 } from 'react-native';
-import { ReferralCodeInput } from '../components/affiliates/ReferralCodeInput';
-import { Colors } from '../constants/colors';
+import { ReferralCodeInput } from '../ReferralCodeInput';
+import { Colors } from '../../../constants/colors';
+import { affiliateApiService } from '../services/affiliateApiService';
 
 const colors = Colors;
-import { affiliateApiService } from '../services/affiliateApiService';
 
 interface ReferralCodeScreenProps {
   navigation: any;

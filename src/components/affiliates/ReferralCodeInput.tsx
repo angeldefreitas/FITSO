@@ -35,7 +35,7 @@ export const ReferralCodeInput: React.FC<ReferralCodeInputProps> = ({
     setIsValidating(true);
     try {
       // Importar el servicio de afiliados
-      const { affiliateApiService } = await import('../../services/affiliateApiService');
+      const { affiliateApiService } = await import('./services/affiliateApiService');
       
       // Validar el código de referencia
       const response = await affiliateApiService.getAffiliateStats(referralCode.trim().toUpperCase());

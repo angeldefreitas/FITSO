@@ -7,8 +7,8 @@ import {
   TouchableOpacity,
   Text
 } from 'react-native';
-import { AffiliateDashboard } from '../components/affiliates/AffiliateDashboard';
-import { Colors } from '../constants/colors';
+import { AffiliateDashboard } from '../AffiliateDashboard';
+import { Colors } from '../../../constants/colors';
 
 const colors = Colors;
 
@@ -18,15 +18,8 @@ interface AffiliateDashboardScreenProps {
 }
 
 export const AffiliateDashboardScreen: React.FC<AffiliateDashboardScreenProps> = ({
-  navigation,
-  route
+  navigation
 }) => {
-  const { affiliateCode } = route?.params || { affiliateCode: 'FITNESS_GURU' };
-
-  const handleRefresh = () => {
-    // Aquí podrías actualizar datos o refrescar la pantalla
-    console.log('Refrescando dashboard...');
-  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -45,8 +38,7 @@ export const AffiliateDashboardScreen: React.FC<AffiliateDashboardScreenProps> =
       </View>
 
       <AffiliateDashboard 
-        affiliateCode={affiliateCode}
-        onRefresh={handleRefresh}
+        onClose={() => navigation?.goBack()}
       />
     </SafeAreaView>
   );

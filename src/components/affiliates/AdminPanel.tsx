@@ -12,7 +12,7 @@ import {
   RefreshControl
 } from 'react-native';
 import { Colors } from '../../constants/colors';
-import { affiliateApiService } from '../../services/affiliateApiService';
+import { affiliateApiService } from './services/affiliateApiService';
 
 const colors = Colors;
 

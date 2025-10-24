@@ -1,6 +1,7 @@
 // Servicio de API de afiliados conectado al backend real
 // Usando servidor de producción de Render
-import userAuthService from './userAuthService';
+import userAuthService from '../../../services/userAuthService';
+import apiService, { ApiResponse } from '../../../services/apiService';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fitso.onrender.com';
 
@@ -42,45 +43,20 @@ interface ChangePasswordRequest {
   newPassword: string;
 }
 
-// Función para obtener el token de autenticación
-const getAuthToken = (): string | null => {
+// Función para hacer requests autenticados usando apiService
+const authenticatedRequest = async <T = any>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> => {
   try {
-    return userAuthService.getCurrentToken();
+    console.log('🔑 [AFFILIATE API] Haciendo request autenticado a:', endpoint);
+    
+    // Usar apiService para manejar la autenticación automáticamente
+    const response = await apiService.request<T>(endpoint, options);
+    
+    console.log('✅ [AFFILIATE API] Respuesta exitosa:', response);
+    return response;
   } catch (error) {
-    console.error('Error obteniendo token:', error);
-    return null;
+    console.error('❌ [AFFILIATE API] Error en request:', error);
+    throw error;
   }
-};
-
-// Función para hacer requests autenticados
-const authenticatedRequest = async (url: string, options: RequestInit = {}) => {
-  const token = getAuthToken();
-  
-  console.log('🔑 Token obtenido para affiliateApiService:', token ? 'Sí' : 'No');
-  console.log('🌐 URL de la petición:', `${API_BASE_URL}${url}`);
-  
-  const headers = {
-    'Content-Type': 'application/json',
-    ...(token && { Authorization: `Bearer ${token}` }),
-    ...options.headers,
-  };
-
-  console.log('📤 Headers de la petición:', headers);
-
-  const response = await fetch(`${API_BASE_URL}${url}`, {
-    ...options,
-    headers,
-  });
-
-  console.log('📥 Respuesta del servidor:', response.status, response.statusText);
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    console.error('❌ Error en la respuesta:', errorData);
-    throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-  }
-
-  return response.json();
 };
 
 export const affiliateApiService = {
@@ -122,7 +98,7 @@ export const affiliateApiService = {
   // Cambiar contraseña de afiliado
   async changeAffiliatePassword(data: ChangePasswordRequest) {
     try {
-      const response = await authenticatedRequest('/api/affiliates/change-password', {
+      const response = await authenticatedRequest('/affiliates/change-password', {
         method: 'POST',
         body: JSON.stringify(data),
       });
@@ -137,7 +113,7 @@ export const affiliateApiService = {
   // Crear código de afiliado
   async createAffiliateCode(data: { affiliate_name: string; email?: string; commission_percentage?: number }) {
     try {
-      const response = await authenticatedRequest('/api/affiliates/codes', {
+      const response = await authenticatedRequest('/affiliates/codes', {
         method: 'POST',
         body: JSON.stringify(data),
       });
@@ -152,8 +128,8 @@ export const affiliateApiService = {
   // Obtener dashboard de afiliado
   async getAffiliateDashboard(): Promise<AffiliateStats> {
     try {
-      const response = await authenticatedRequest('/api/affiliates/dashboard');
-      return response.data;
+      const response = await authenticatedRequest<{ data: AffiliateStats }>('/affiliates/dashboard');
+      return response.data!.data;
     } catch (error) {
       console.error('Error getting affiliate dashboard:', error);
       throw error;
@@ -163,7 +139,7 @@ export const affiliateApiService = {
   // Obtener dashboard de administración
   async getAdminDashboard() {
     try {
-      const response = await authenticatedRequest('/api/affiliates/admin-dashboard');
+      const response = await authenticatedRequest('/affiliates/admin-dashboard');
       return response.data;
     } catch (error) {
       console.error('Error getting admin dashboard:', error);
@@ -174,7 +150,7 @@ export const affiliateApiService = {
   // Registrar código de referencia
   async recordReferral(referralCode: string) {
     try {
-      const response = await authenticatedRequest('/api/affiliates/referral', {
+      const response = await authenticatedRequest('/affiliates/referral', {
         method: 'POST',
         body: JSON.stringify({ referral_code: referralCode }),
       });
@@ -189,7 +165,7 @@ export const affiliateApiService = {
   // Obtener mi referencia
   async getMyReferral() {
     try {
-      const response = await authenticatedRequest('/api/affiliates/my-referral');
+      const response = await authenticatedRequest('/affiliates/my-referral');
       return response.data;
     } catch (error) {
       console.error('Error getting my referral:', error);
@@ -200,7 +176,7 @@ export const affiliateApiService = {
   // Registrar código de referencia
   async registerReferralCode(referralCode: string) {
     try {
-      const response = await authenticatedRequest('/api/affiliates/referral', {
+      const response = await authenticatedRequest('/affiliates/referral', {
         method: 'POST',
         body: JSON.stringify({ referral_code: referralCode }),
       });
@@ -214,8 +190,8 @@ export const affiliateApiService = {
   // Obtener códigos de afiliado
   async getAffiliateCodes(): Promise<AffiliateCode[]> {
     try {
-      const response = await authenticatedRequest('/api/affiliates/codes');
-      return response.data;
+      const response = await authenticatedRequest<{ data: AffiliateCode[] }>('/affiliates/codes');
+      return response.data!.data;
     } catch (error) {
       console.error('Error getting affiliate codes:', error);
       throw error;
@@ -225,7 +201,7 @@ export const affiliateApiService = {
   // Obtener estadísticas de afiliado
   async getAffiliateStats(code: string) {
     try {
-      const response = await authenticatedRequest(`/api/affiliates/stats/${code}`);
+      const response = await authenticatedRequest(`/affiliates/stats/${code}`);
       return response.data;
     } catch (error) {
       console.error('Error getting affiliate stats:', error);
@@ -241,7 +217,7 @@ export const affiliateApiService = {
     payment_reference: string;
   }) {
     try {
-      const response = await authenticatedRequest('/api/affiliates/payments', {
+      const response = await authenticatedRequest('/affiliates/payments', {
         method: 'POST',
         body: JSON.stringify(data),
       });

@@ -23,7 +23,7 @@ class AffiliateCode {
     }
 
     const insertQuery = `
-      INSERT INTO affiliate_codes (id, code, affiliate_id, commission_percentage, is_active, created_at, updated_at)
+      INSERT INTO affiliate_codes (id, code, created_by, commission_percentage, is_active, created_at, updated_at)
       VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *
     `;
@@ -68,7 +68,7 @@ class AffiliateCode {
 
   // Buscar código por ID de afiliado (usuario que es afiliado)
   static async findByAffiliateId(affiliateId) {
-    const selectQuery = 'SELECT * FROM affiliate_codes WHERE affiliate_id = $1 AND is_active = true';
+    const selectQuery = 'SELECT * FROM affiliate_codes WHERE created_by = $1 AND is_active = true';
     const result = await query(selectQuery, [affiliateId]);
     
     if (result.rows.length === 0) {

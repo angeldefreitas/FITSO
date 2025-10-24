@@ -1,7 +1,7 @@
 import React from 'react';
 import { AdminButton } from './AdminButton';
 import { AffiliateButton } from './AffiliateButton';
-import { useUserType } from '../../hooks/useUserType';
+import { useUserType } from './hooks/useUserType';
 
 interface UserAccessButtonsProps {
   navigation: any;
