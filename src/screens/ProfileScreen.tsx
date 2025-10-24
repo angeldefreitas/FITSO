@@ -23,6 +23,8 @@ import ChangePasswordScreen from './ChangePasswordScreen';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import { ProfileAdminButtonSettings } from '../components/affiliates/ProfileAdminButtonSettings';
 import AffiliateDashboardButton from '../components/affiliates/AffiliateDashboardButton';
+import { AffiliateDashboard } from '../components/affiliates/AffiliateDashboard';
+import { UserReferralInfo } from '../components/affiliates/UserReferralInfo';
 
 interface ProfileScreenProps {
   navigation?: any;
@@ -51,6 +53,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const [biometricModalVisible, setBiometricModalVisible] = useState(false);
   const [goalsModalVisible, setGoalsModalVisible] = useState(false);
   const [changePasswordModalVisible, setChangePasswordModalVisible] = useState(false);
+  const [affiliateDashboardVisible, setAffiliateDashboardVisible] = useState(false);
+  const [userReferralInfoVisible, setUserReferralInfoVisible] = useState(false);
   const [savingBiometric, setSavingBiometric] = useState(false);
   const [savingGoals, setSavingGoals] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(false);
@@ -165,13 +169,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
   };
 
   const handleAffiliatePress = () => {
-    if (onAffiliatePress) {
-      onAffiliatePress();
-    } else if (navigation) {
-      navigation.navigate('AffiliateDashboard');
-    } else {
-      Alert.alert(t('alerts.info'), 'Dashboard de afiliados disponible solo en navegación completa');
-    }
+    setAffiliateDashboardVisible(true);
   };
 
   const handleDeleteAccount = () => {
@@ -491,6 +489,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
           
           <TouchableOpacity
             style={styles.actionButton}
+            onPress={() => setUserReferralInfoVisible(true)}
+          >
+            <Text style={styles.actionButtonText}>🎯 Mi Referencia</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={styles.actionButton}
             onPress={() => Alert.alert(t('alerts.info'), t('profile.notificationsComingSoon'))}
           >
             <Text style={styles.actionButtonText}>🔔 {t('profile.notifications')}</Text>
@@ -517,10 +522,15 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
           />
 
           {/* Botón de Afiliado - Solo para afiliados */}
+          {console.log('🔍 Debug - User data:', { 
+            email: user?.email, 
+            is_affiliate: user?.is_affiliate,
+            user: user 
+          })}
           <AffiliateDashboardButton 
             onPress={handleAffiliatePress}
             userEmail={user?.email}
-            isAffiliate={user?.is_affiliate}
+            isAffiliate={user?.is_affiliate || false}
           />
         </View>
 
@@ -588,6 +598,30 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
           navigation={{
             goBack: () => setChangePasswordModalVisible(false)
           }}
+        />
+      </Modal>
+
+      {/* Modal de Dashboard de Afiliados */}
+      <Modal
+        animationType="slide"
+        transparent={false}
+        visible={affiliateDashboardVisible}
+        onRequestClose={() => setAffiliateDashboardVisible(false)}
+      >
+        <AffiliateDashboard
+          onClose={() => setAffiliateDashboardVisible(false)}
+        />
+      </Modal>
+
+      {/* Modal de Información de Referencia del Usuario */}
+      <Modal
+        animationType="slide"
+        transparent={false}
+        visible={userReferralInfoVisible}
+        onRequestClose={() => setUserReferralInfoVisible(false)}
+      >
+        <UserReferralInfo
+          onClose={() => setUserReferralInfoVisible(false)}
         />
       </Modal>
       </ScrollView>

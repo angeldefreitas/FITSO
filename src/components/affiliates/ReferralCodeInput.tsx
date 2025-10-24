@@ -34,18 +34,38 @@ export const ReferralCodeInput: React.FC<ReferralCodeInputProps> = ({
 
     setIsValidating(true);
     try {
-      // Aquí harías la llamada a la API para validar el código
-      // const response = await apiService.validateReferralCode(referralCode.trim());
+      // Importar el servicio de afiliados
+      const { affiliateApiService } = await import('../../services/affiliateApiService');
       
-      // Por ahora simulamos la validación
-      setTimeout(() => {
+      // Validar el código de referencia
+      const response = await affiliateApiService.getAffiliateStats(referralCode.trim().toUpperCase());
+      
+      if (response && response.affiliate) {
         setIsValidating(false);
-        onCodeSubmitted(referralCode.trim().toUpperCase());
-      }, 1000);
+        Alert.alert(
+          '¡Código válido!',
+          `Código de referencia válido para: ${response.affiliate.affiliate_name}`,
+          [
+            {
+              text: 'Continuar',
+              onPress: () => onCodeSubmitted(referralCode.trim().toUpperCase())
+            }
+          ]
+        );
+      } else {
+        throw new Error('Código no encontrado');
+      }
       
     } catch (error) {
       setIsValidating(false);
-      Alert.alert('Error', 'Código de referencia inválido');
+      Alert.alert(
+        'Código inválido',
+        'El código de referencia no existe o está inactivo. ¿Quieres continuar sin él?',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Continuar sin código', onPress: () => onCodeSubmitted('') }
+        ]
+      );
     }
   };
 

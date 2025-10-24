@@ -5,11 +5,12 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  RefreshControl,
   ActivityIndicator,
-  Alert
+  Alert,
+  RefreshControl
 } from 'react-native';
 import { Colors } from '../../constants/colors';
+import { affiliateApiService } from '../../services/affiliateApiService';
 
 const colors = Colors;
 
@@ -17,83 +18,52 @@ interface AffiliateStats {
   total_referrals: number;
   premium_referrals: number;
   total_commissions: number;
-  paid_commissions: number;
   pending_commissions: number;
-}
-
-interface ConversionStats {
-  total_referrals: number;
-  premium_conversions: number;
+  paid_commissions: number;
   conversion_rate: number;
-  avg_days_to_conversion: number;
+  affiliate_code: string;
 }
 
 interface AffiliateDashboardProps {
-  affiliateCode: string;
-  onRefresh?: () => void;
+  onClose: () => void;
 }
 
-export const AffiliateDashboard: React.FC<AffiliateDashboardProps> = ({
-  affiliateCode,
-  onRefresh
-}) => {
+export const AffiliateDashboard: React.FC<AffiliateDashboardProps> = ({ onClose }) => {
   const [stats, setStats] = useState<AffiliateStats | null>(null);
-  const [conversionStats, setConversionStats] = useState<ConversionStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchStats = async () => {
     try {
-      // Aquí harías la llamada real a la API
-      // const response = await apiService.getAffiliateStats(affiliateCode);
-      
-      // Simulamos datos de ejemplo
-      setTimeout(() => {
-        setStats({
-          total_referrals: 45,
-          premium_referrals: 12,
-          total_commissions: 1250.50,
-          paid_commissions: 850.25,
-          pending_commissions: 400.25
-        });
-        
-        setConversionStats({
-          total_referrals: 45,
-          premium_conversions: 12,
-          conversion_rate: 26.67,
-          avg_days_to_conversion: 7.5
-        });
-        
-        setLoading(false);
-        setRefreshing(false);
-      }, 1000);
-      
+      const response = await affiliateApiService.getAffiliateDashboard();
+      setStats(response);
     } catch (error) {
+      console.error('Error obteniendo estadísticas:', error);
+      Alert.alert('Error', 'No se pudieron cargar las estadísticas');
+    } finally {
       setLoading(false);
       setRefreshing(false);
-      Alert.alert('Error', 'No se pudieron cargar las estadísticas');
     }
   };
 
   useEffect(() => {
     fetchStats();
-  }, [affiliateCode]);
+  }, []);
 
   const handleRefresh = () => {
     setRefreshing(true);
     fetchStats();
-    onRefresh?.();
   };
 
-  const StatCard: React.FC<{
-    title: string;
-    value: string | number;
-    subtitle?: string;
-    color?: string;
-  }> = ({ title, value, subtitle, color = colors.primary }) => (
-    <View style={[styles.statCard, { borderLeftColor: color }]}>
+  const StatCard: React.FC<{ title: string; value: string | number; subtitle?: string; color?: string }> = ({ 
+    title, 
+    value, 
+    subtitle, 
+    color = colors.primary 
+  }) => (
+    <View style={styles.statCard}>
+      <Text style={styles.statValue} style={{ color }}>{value}</Text>
       <Text style={styles.statTitle}>{title}</Text>
-      <Text style={[styles.statValue, { color }]}>{value}</Text>
       {subtitle && <Text style={styles.statSubtitle}>{subtitle}</Text>}
     </View>
   );
@@ -107,116 +77,126 @@ export const AffiliateDashboard: React.FC<AffiliateDashboardProps> = ({
     );
   }
 
+  if (!stats) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>No se pudieron cargar las estadísticas</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={fetchStats}>
+          <Text style={styles.retryButtonText}>Reintentar</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
-    <ScrollView
-      style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-      }
-    >
+    <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Dashboard de Afiliado</Text>
-        <Text style={styles.headerSubtitle}>Código: {affiliateCode}</Text>
+        <Text style={styles.headerTitle}>Mi Dashboard de Afiliado</Text>
+        <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+          <Text style={styles.closeButtonText}>✕</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Estadísticas Generales */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>📊 Estadísticas Generales</Text>
-        <View style={styles.statsGrid}>
-          <StatCard
-            title="Total Referidos"
-            value={stats?.total_referrals || 0}
-            subtitle="usuarios registrados"
-            color={colors.blue}
-          />
-          <StatCard
-            title="Conversiones Premium"
-            value={stats?.premium_referrals || 0}
-            subtitle="usuarios premium"
-            color={colors.green}
-          />
-          <StatCard
-            title="Tasa de Conversión"
-            value={`${conversionStats?.conversion_rate || 0}%`}
-            subtitle="conversión promedio"
-            color={colors.orange}
-          />
-          <StatCard
-            title="Días Promedio"
-            value={`${conversionStats?.avg_days_to_conversion || 0} días`}
-            subtitle="hasta conversión"
-            color={colors.purple}
-          />
-        </View>
-      </View>
-
-      {/* Comisiones */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>💰 Comisiones</Text>
-        <View style={styles.statsGrid}>
-          <StatCard
-            title="Total Ganado"
-            value={`$${stats?.total_commissions || 0}`}
-            subtitle="comisiones totales"
-            color={colors.green}
-          />
-          <StatCard
-            title="Pagado"
-            value={`$${stats?.paid_commissions || 0}`}
-            subtitle="ya recibido"
-            color={colors.blue}
-          />
-          <StatCard
-            title="Pendiente"
-            value={`$${stats?.pending_commissions || 0}`}
-            subtitle="por recibir"
-            color={colors.orange}
-          />
-        </View>
-      </View>
-
-      {/* Acciones */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>⚡ Acciones Rápidas</Text>
-        <View style={styles.actionsContainer}>
-          <TouchableOpacity style={styles.actionButton}>
-            <Text style={styles.actionButtonText}>Ver Referidos</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
-            <Text style={styles.actionButtonText}>Ver Comisiones</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
-            <Text style={styles.actionButtonText}>Compartir Código</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Información del Código */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>📋 Información del Código</Text>
-        <View style={styles.codeInfo}>
-          <View style={styles.codeInfoRow}>
-            <Text style={styles.codeInfoLabel}>Tu código:</Text>
-            <Text style={styles.codeInfoValue}>{affiliateCode}</Text>
+      <ScrollView
+        style={styles.content}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+      >
+        {/* Código de afiliado */}
+        <View style={styles.codeSection}>
+          <Text style={styles.sectionTitle}>Mi Código de Referencia</Text>
+          <View style={styles.codeContainer}>
+            <Text style={styles.codeText}>{stats.affiliate_code}</Text>
+            <TouchableOpacity 
+              style={styles.copyButton}
+              onPress={() => {
+                // Aquí implementarías la funcionalidad de copiar
+                Alert.alert('Copiado', 'Código copiado al portapapeles');
+              }}
+            >
+              <Text style={styles.copyButtonText}>Copiar</Text>
+            </TouchableOpacity>
           </View>
-          <View style={styles.codeInfoRow}>
-            <Text style={styles.codeInfoLabel}>Link de referencia:</Text>
-            <Text style={styles.codeInfoValue}>fitso.app/referral/{affiliateCode}</Text>
+          <Text style={styles.codeHelpText}>
+            Comparte este código con tus seguidores para ganar comisiones
+          </Text>
+        </View>
+
+        {/* Estadísticas principales */}
+        <View style={styles.statsSection}>
+          <Text style={styles.sectionTitle}>Estadísticas Generales</Text>
+          <View style={styles.statsGrid}>
+            <StatCard
+              title="Total Referidos"
+              value={stats.total_referrals}
+              subtitle="Personas que usaron tu código"
+            />
+            <StatCard
+              title="Conversiones Premium"
+              value={stats.premium_referrals}
+              subtitle="Referidos que se suscribieron"
+              color={colors.green}
+            />
+            <StatCard
+              title="Tasa de Conversión"
+              value={`${stats.conversion_rate}%`}
+              subtitle="% de referidos que se suscribieron"
+              color={colors.blue}
+            />
           </View>
         </View>
-      </View>
 
-      {/* Consejos */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>💡 Consejos para Mejorar</Text>
-        <View style={styles.tipsContainer}>
-          <Text style={styles.tipText}>• Comparte tu código en redes sociales</Text>
-          <Text style={styles.tipText}>• Crea contenido sobre fitness y nutrición</Text>
-          <Text style={styles.tipText}>• Ayuda a tus seguidores con consejos personalizados</Text>
-          <Text style={styles.tipText}>• Muestra resultados reales de usar Fitso</Text>
+        {/* Comisiones */}
+        <View style={styles.commissionsSection}>
+          <Text style={styles.sectionTitle}>Comisiones</Text>
+          <View style={styles.commissionsGrid}>
+            <StatCard
+              title="Total Generadas"
+              value={`$${stats.total_commissions.toFixed(2)}`}
+              subtitle="Comisiones totales ganadas"
+              color={colors.green}
+            />
+            <StatCard
+              title="Pendientes"
+              value={`$${stats.pending_commissions.toFixed(2)}`}
+              subtitle="Comisiones por pagar"
+              color={colors.orange}
+            />
+            <StatCard
+              title="Pagadas"
+              value={`$${stats.paid_commissions.toFixed(2)}`}
+              subtitle="Comisiones ya pagadas"
+              color={colors.blue}
+            />
+          </View>
         </View>
-      </View>
-    </ScrollView>
+
+        {/* Información adicional */}
+        <View style={styles.infoSection}>
+          <Text style={styles.sectionTitle}>¿Cómo funciona?</Text>
+          <View style={styles.infoList}>
+            <Text style={styles.infoItem}>• Comparte tu código con tus seguidores</Text>
+            <Text style={styles.infoItem}>• Cuando se registren con tu código, quedan vinculados a ti</Text>
+            <Text style={styles.infoItem}>• Si se suscriben a premium, ganas una comisión</Text>
+            <Text style={styles.infoItem}>• Las comisiones se pagan mensualmente</Text>
+            <Text style={styles.infoItem}>• Puedes ganar comisiones recurrentes por renovaciones</Text>
+          </View>
+        </View>
+
+        {/* Botones de acción */}
+        <View style={styles.actionsSection}>
+          <TouchableOpacity style={styles.actionButton}>
+            <Text style={styles.actionButtonText}>Ver Referidos Detallados</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.actionButton, styles.secondaryButton]}>
+            <Text style={[styles.actionButtonText, styles.secondaryButtonText]}>
+              Historial de Comisiones
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </View>
   );
 };
 
@@ -236,27 +216,63 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.textSecondary,
   },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+    padding: 20,
+  },
+  errorText: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: colors.white,
+    fontWeight: '600',
+  },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     padding: 20,
     backgroundColor: colors.white,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: colors.text,
   },
-  headerSubtitle: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginTop: 4,
+  closeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.grayLight,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  section: {
+  closeButtonText: {
+    fontSize: 18,
+    color: colors.text,
+  },
+  content: {
+    flex: 1,
+  },
+  codeSection: {
     margin: 16,
     backgroundColor: colors.white,
     borderRadius: 12,
-    padding: 16,
+    padding: 20,
     shadowColor: colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -269,6 +285,41 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: 16,
   },
+  codeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.blueLight,
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 8,
+  },
+  codeText: {
+    flex: 1,
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: colors.blue,
+    letterSpacing: 2,
+  },
+  copyButton: {
+    backgroundColor: colors.blue,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  copyButtonText: {
+    color: colors.white,
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  codeHelpText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
+  },
+  statsSection: {
+    margin: 16,
+    marginTop: 0,
+  },
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -276,72 +327,84 @@ const styles = StyleSheet.create({
   },
   statCard: {
     width: '48%',
-    backgroundColor: colors.grayLight,
+    backgroundColor: colors.white,
+    borderRadius: 12,
     padding: 16,
-    borderRadius: 8,
-    borderLeftWidth: 4,
     marginBottom: 12,
-  },
-  statTitle: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginBottom: 4,
+    alignItems: 'center',
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   statValue: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 4,
   },
-  statSubtitle: {
-    fontSize: 10,
-    color: colors.textSecondary,
+  statTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+    textAlign: 'center',
   },
-  actionsContainer: {
+  statSubtitle: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  commissionsSection: {
+    margin: 16,
+    marginTop: 0,
+  },
+  commissionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
+  infoSection: {
+    margin: 16,
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    padding: 20,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  infoList: {
+    gap: 8,
+  },
+  infoItem: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    lineHeight: 20,
+  },
+  actionsSection: {
+    margin: 16,
+    marginTop: 0,
+    gap: 12,
+  },
   actionButton: {
-    width: '48%',
     backgroundColor: colors.primary,
-    padding: 12,
-    borderRadius: 8,
+    padding: 16,
+    borderRadius: 12,
     alignItems: 'center',
-    marginBottom: 8,
   },
   actionButtonText: {
     color: colors.white,
+    fontSize: 16,
     fontWeight: '600',
-    fontSize: 14,
   },
-  codeInfo: {
-    backgroundColor: colors.grayLight,
-    padding: 16,
-    borderRadius: 8,
+  secondaryButton: {
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.primary,
   },
-  codeInfoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  codeInfoLabel: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  codeInfoValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  tipsContainer: {
-    backgroundColor: colors.blueLight,
-    padding: 16,
-    borderRadius: 8,
-  },
-  tipText: {
-    fontSize: 14,
-    color: colors.blue,
-    marginBottom: 8,
-    lineHeight: 20,
+  secondaryButtonText: {
+    color: colors.primary,
   },
 });

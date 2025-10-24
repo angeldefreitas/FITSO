@@ -210,8 +210,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await authService.login(data);
       setUser(response.user);
       setIsNewUser(false); // Marcar como usuario existente
-      // Guardar datos del usuario en caché local
-      await saveCachedUserData(response.user);
+      
+      // Obtener perfil completo del usuario para asegurar que tenemos todos los datos
+      try {
+        const userProfile = await authService.getProfile();
+        setUser(userProfile);
+        await saveCachedUserData(userProfile);
+      } catch (profileError) {
+        console.warn('No se pudo obtener perfil completo, usando datos de login:', profileError);
+        await saveCachedUserData(response.user);
+      }
     } catch (error) {
       console.error('Error en login:', error);
       throw error;

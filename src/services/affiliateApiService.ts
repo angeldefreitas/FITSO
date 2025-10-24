@@ -45,7 +45,8 @@ const getAuthToken = async (): Promise<string | null> => {
   try {
     // Importar el servicio de autenticación existente
     const userAuthService = await import('./userAuthService');
-    return userAuthService.default.getCurrentToken();
+    const service = userAuthService.default.getInstance();
+    return service.getCurrentToken();
   } catch (error) {
     console.error('Error obteniendo token:', error);
     return null;
@@ -56,19 +57,27 @@ const getAuthToken = async (): Promise<string | null> => {
 const authenticatedRequest = async (url: string, options: RequestInit = {}) => {
   const token = await getAuthToken();
   
+  console.log('🔑 Token obtenido para affiliateApiService:', token ? 'Sí' : 'No');
+  console.log('🌐 URL de la petición:', `${API_BASE_URL}${url}`);
+  
   const headers = {
     'Content-Type': 'application/json',
     ...(token && { Authorization: `Bearer ${token}` }),
     ...options.headers,
   };
 
+  console.log('📤 Headers de la petición:', headers);
+
   const response = await fetch(`${API_BASE_URL}${url}`, {
     ...options,
     headers,
   });
 
+  console.log('📥 Respuesta del servidor:', response.status, response.statusText);
+
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
+    console.error('❌ Error en la respuesta:', errorData);
     throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
   }
 

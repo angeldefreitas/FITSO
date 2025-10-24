@@ -26,6 +26,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [referralCode, setReferralCode] = useState('');
   const [loading, setLoading] = useState(false);
   const { register, loading: authLoading } = useAuth();
 
@@ -59,6 +60,19 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
     setLoading(true);
     try {
       await register({ name, email, password });
+      
+      // Si hay código de referencia, registrarlo después del registro exitoso
+      if (referralCode.trim()) {
+        try {
+          const { affiliateApiService } = await import('../services/affiliateApiService');
+          await affiliateApiService.registerReferralCode(referralCode.trim().toUpperCase());
+          console.log('✅ Código de referencia registrado:', referralCode);
+        } catch (referralError) {
+          console.error('❌ Error registrando código de referencia:', referralError);
+          // No fallar el registro por error de código de referencia
+        }
+      }
+      
       Alert.alert(
         t('auth.signUpSuccess'),
         t('auth.signUpSuccess'),
@@ -131,6 +145,21 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
                 secureTextEntry
                 autoCapitalize="none"
               />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Código de Referencia (Opcional)</Text>
+              <TextInput
+                style={styles.input}
+                value={referralCode}
+                onChangeText={setReferralCode}
+                placeholder="Ej: FITNESS_GURU"
+                autoCapitalize="characters"
+                autoCorrect={false}
+              />
+              <Text style={styles.helpText}>
+                Si un influencer te recomendó Fitso, ingresa su código para que reciba una comisión
+              </Text>
             </View>
 
             <TouchableOpacity
@@ -262,6 +291,12 @@ const styles = StyleSheet.create({
   termsLink: {
     color: Colors.primary,
     fontWeight: '500',
+  },
+  helpText: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginTop: 4,
+    fontStyle: 'italic',
   },
 });
 

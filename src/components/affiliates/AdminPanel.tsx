@@ -39,6 +39,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCreateAccountModal, setShowCreateAccountModal] = useState(false);
+  const [showCommissionsModal, setShowCommissionsModal] = useState(false);
+  const [commissions, setCommissions] = useState([]);
   const [newAffiliate, setNewAffiliate] = useState({
     affiliate_name: '',
     email: '',
@@ -105,6 +107,36 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
       setLoading(false);
       setRefreshing(false);
       Alert.alert('Error', 'No se pudieron cargar los afiliados');
+    }
+  };
+
+  const fetchCommissions = async () => {
+    try {
+      // Simulamos datos de comisiones
+      setTimeout(() => {
+        setCommissions([
+          {
+            id: '1',
+            affiliate_code: 'FITNESS_GURU',
+            user_id: 'user1',
+            commission_amount: 29.97,
+            subscription_amount: 99.99,
+            is_paid: false,
+            created_at: '2024-01-15T10:30:00Z'
+          },
+          {
+            id: '2',
+            affiliate_code: 'NUTRICIONISTA_PRO',
+            user_id: 'user2',
+            commission_amount: 24.99,
+            subscription_amount: 99.99,
+            is_paid: true,
+            paid_date: '2024-01-20T14:15:00Z'
+          }
+        ]);
+      }, 500);
+    } catch (error) {
+      console.error('Error cargando comisiones:', error);
     }
   };
 
@@ -300,6 +332,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
           >
             <Text style={styles.createButtonText}>+ Crear Cuenta Completa</Text>
           </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.createButton, styles.commissionsButton]}
+            onPress={() => {
+              setShowCommissionsModal(true);
+              fetchCommissions();
+            }}
+          >
+            <Text style={styles.createButtonText}>💰 Gestionar Comisiones</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.affiliatesSection}>
@@ -456,6 +498,57 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
           </View>
         </View>
       </Modal>
+
+      {/* Modal de Gestión de Comisiones */}
+      <Modal
+        visible={showCommissionsModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowCommissionsModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Gestión de Comisiones</Text>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setShowCommissionsModal(false)}
+              >
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.commissionsList}>
+              {commissions.map((commission) => (
+                <View key={commission.id} style={styles.commissionCard}>
+                  <View style={styles.commissionHeader}>
+                    <Text style={styles.commissionCode}>{commission.affiliate_code}</Text>
+                    <View style={[
+                      styles.statusBadge,
+                      { backgroundColor: commission.is_paid ? colors.green : colors.orange }
+                    ]}>
+                      <Text style={styles.statusText}>
+                        {commission.is_paid ? 'Pagada' : 'Pendiente'}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={styles.commissionAmount}>
+                    ${commission.commission_amount.toFixed(2)}
+                  </Text>
+                  <Text style={styles.commissionDetails}>
+                    Suscripción: ${commission.subscription_amount.toFixed(2)}
+                  </Text>
+                  {commission.is_paid && commission.paid_date && (
+                    <Text style={styles.paidDate}>
+                      Pagada: {new Date(commission.paid_date).toLocaleDateString()}
+                    </Text>
+                  )}
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -551,6 +644,9 @@ const styles = StyleSheet.create({
   },
   createAccountButton: {
     backgroundColor: colors.green,
+  },
+  commissionsButton: {
+    backgroundColor: colors.orange,
   },
   modalOverlay: {
     flex: 1,
@@ -731,5 +827,46 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: 16,
     fontWeight: '600',
+  },
+  commissionsList: {
+    maxHeight: 400,
+  },
+  commissionCard: {
+    backgroundColor: colors.white,
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  commissionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  commissionCode: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  commissionAmount: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: colors.primary,
+    marginBottom: 4,
+  },
+  commissionDetails: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: 4,
+  },
+  paidDate: {
+    fontSize: 12,
+    color: colors.green,
+    fontStyle: 'italic',
   },
 });
