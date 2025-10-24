@@ -50,7 +50,7 @@ class AffiliateController {
       const user = new User({
         email,
         name,
-        password: hashedPassword,
+        password_hash: hashedPassword,
         is_verified: true, // Los afiliados creados por admin están verificados
         is_affiliate: true // Marcar como afiliado
       });
