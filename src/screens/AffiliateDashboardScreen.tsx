@@ -13,15 +13,15 @@ import { Colors } from '../constants/colors';
 const colors = Colors;
 
 interface AffiliateDashboardScreenProps {
-  navigation: any;
-  route: any;
+  navigation?: any;
+  route?: any;
 }
 
 export const AffiliateDashboardScreen: React.FC<AffiliateDashboardScreenProps> = ({
   navigation,
   route
 }) => {
-  const { affiliateCode } = route.params || { affiliateCode: 'FITNESS_GURU' };
+  const { affiliateCode } = route?.params || { affiliateCode: 'FITNESS_GURU' };
 
   const handleRefresh = () => {
     // Aquí podrías actualizar datos o refrescar la pantalla
@@ -35,7 +35,7 @@ export const AffiliateDashboardScreen: React.FC<AffiliateDashboardScreenProps> =
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton}
-          onPress={() => navigation.goBack()}
+          onPress={() => navigation?.goBack()}
         >
           <Text style={styles.backButtonText}>← Atrás</Text>
         </TouchableOpacity>
