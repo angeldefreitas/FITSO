@@ -111,15 +111,10 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// Middleware de logging para todas las requests (solo para debugging)
+// Middleware de logging simple para debugging
 app.use((req, res, next) => {
-  console.log(`📥 [${req.method}] ${req.path} - ${new Date().toISOString()}`);
-  // Solo loggear headers y body para requests importantes
-  if (req.path.includes('/api/affiliates') || req.path.includes('/api/test')) {
-    console.log('📝 Headers:', req.headers);
-    if (req.body && Object.keys(req.body).length > 0) {
-      console.log('📦 Body:', req.body);
-    }
+  if (req.path.includes('/api/affiliates')) {
+    console.log(`📥 [AFFILIATES] ${req.method} ${req.path} - ${new Date().toISOString()}`);
   }
   next();
 });
@@ -149,17 +144,6 @@ app.get('/', (req, res) => {
   });
 });
 
-// Endpoint de prueba para verificar que las requests llegan
-app.post('/api/test', (req, res) => {
-  console.log('🧪 [TEST] Endpoint de prueba llamado');
-  console.log('📦 [TEST] Body recibido:', req.body);
-  res.json({
-    success: true,
-    message: 'Endpoint de prueba funcionando',
-    receivedData: req.body,
-    timestamp: new Date().toISOString()
-  });
-});
 
 // Middleware de manejo de errores
 app.use((err, req, res, next) => {
