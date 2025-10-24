@@ -30,7 +30,7 @@ export const useUserType = (userId?: string): UserTypeInfo => {
         }
 
         // Verificar si tiene código de afiliado
-        const referral = await affiliateApiService.getMyReferral();
+        const referral = await affiliateApiServiceReal.getMyReferral();
         
         if (referral && referral.affiliate_code) {
           setUserType({ 

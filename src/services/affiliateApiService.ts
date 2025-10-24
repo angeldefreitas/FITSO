@@ -1,4 +1,8 @@
-import { apiService } from './apiService';
+// Servicio de API de afiliados conectado al backend real
+// Usando servidor de producción de Render
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fitso.onrender.com';
+
+console.log('🌐 [API] Usando URL:', API_BASE_URL);
 
 interface AffiliateCode {
   id: string;
@@ -13,238 +17,231 @@ interface AffiliateCode {
   created_at: string;
 }
 
-interface CreateAffiliateRequest {
-  affiliate_name: string;
-  email?: string;
-  commission_percentage?: number;
+interface CreateAffiliateAccountRequest {
+  email: string;
+  name: string;
+  password: string;
+  referralCode: string;
+  commissionPercentage?: number;
 }
 
 interface AffiliateStats {
   total_referrals: number;
   premium_referrals: number;
   total_commissions: number;
-  paid_commissions: number;
   pending_commissions: number;
-}
-
-interface ConversionStats {
-  total_referrals: number;
-  premium_conversions: number;
+  paid_commissions: number;
   conversion_rate: number;
-  avg_days_to_conversion: number;
-}
-
-interface Commission {
-  id: string;
   affiliate_code: string;
-  user_id: string;
-  subscription_id: string;
-  commission_amount: number;
-  commission_percentage: number;
-  subscription_amount: number;
-  payment_period_start: string;
-  payment_period_end: string;
-  is_paid: boolean;
-  paid_date?: string;
-  payment_method?: string;
-  payment_reference?: string;
-  created_at: string;
 }
 
-interface Referral {
-  id: string;
-  user_id: string;
-  affiliate_code: string;
-  referral_date: string;
-  is_premium: boolean;
-  premium_conversion_date?: string;
+interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
 }
 
-export class AffiliateApiService {
-  private baseUrl = '/api/affiliates';
+// Función para obtener el token de autenticación
+const getAuthToken = async (): Promise<string | null> => {
+  try {
+    // Importar el servicio de autenticación existente
+    const userAuthService = await import('./userAuthService');
+    return userAuthService.default.getCurrentToken();
+  } catch (error) {
+    console.error('Error obteniendo token:', error);
+    return null;
+  }
+};
 
-  /**
-   * Crear un nuevo código de afiliado
-   */
-  async createAffiliateCode(data: CreateAffiliateRequest): Promise<AffiliateCode> {
-    const response = await apiService.post(`${this.baseUrl}/codes`, data);
-    return response.data;
+// Función para hacer requests autenticados
+const authenticatedRequest = async (url: string, options: RequestInit = {}) => {
+  const token = await getAuthToken();
+  
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token && { Authorization: `Bearer ${token}` }),
+    ...options.headers,
+  };
+
+  const response = await fetch(`${API_BASE_URL}${url}`, {
+    ...options,
+    headers,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
   }
 
-  /**
-   * Obtener todos los códigos de afiliado activos
-   */
-  async getAllAffiliateCodes(): Promise<AffiliateCode[]> {
-    const response = await apiService.get(`${this.baseUrl}/codes`);
-    return response.data;
-  }
+  return response.json();
+};
 
-  /**
-   * Desactivar un código de afiliado
-   */
-  async deactivateAffiliateCode(id: string): Promise<void> {
-    await apiService.delete(`${this.baseUrl}/codes/${id}`);
-  }
-
-  /**
-   * Registrar código de referencia para el usuario autenticado
-   */
-  async registerReferralCode(referralCode: string): Promise<void> {
-    await apiService.post(`${this.baseUrl}/referral`, {
-      referral_code: referralCode
-    });
-  }
-
-  /**
-   * Obtener información de referencia del usuario autenticado
-   */
-  async getMyReferral(): Promise<Referral | null> {
-    const response = await apiService.get(`${this.baseUrl}/my-referral`);
-    return response.data;
-  }
-
-  /**
-   * Obtener estadísticas de un afiliado
-   */
-  async getAffiliateStats(code: string): Promise<{
-    affiliate: AffiliateCode;
-    referrals: AffiliateStats;
-    conversion: ConversionStats;
-    commissions: any;
-  }> {
-    const response = await apiService.get(`${this.baseUrl}/stats/${code}`);
-    return response.data;
-  }
-
-  /**
-   * Obtener lista de referidos de un afiliado
-   */
-  async getAffiliateReferrals(
-    code: string,
-    options: {
-      limit?: number;
-      offset?: number;
-      premium_only?: boolean;
-    } = {}
-  ): Promise<Referral[]> {
-    const params = new URLSearchParams();
-    if (options.limit) params.append('limit', options.limit.toString());
-    if (options.offset) params.append('offset', options.offset.toString());
-    if (options.premium_only) params.append('premium_only', 'true');
-
-    const response = await apiService.get(
-      `${this.baseUrl}/referrals/${code}?${params.toString()}`
-    );
-    return response.data;
-  }
-
-  /**
-   * Obtener comisiones de un afiliado
-   */
-  async getAffiliateCommissions(
-    code: string,
-    options: {
-      limit?: number;
-      offset?: number;
-      paid_only?: boolean;
-      unpaid_only?: boolean;
-      date_from?: string;
-      date_to?: string;
-    } = {}
-  ): Promise<Commission[]> {
-    const params = new URLSearchParams();
-    if (options.limit) params.append('limit', options.limit.toString());
-    if (options.offset) params.append('offset', options.offset.toString());
-    if (options.paid_only) params.append('paid_only', 'true');
-    if (options.unpaid_only) params.append('unpaid_only', 'true');
-    if (options.date_from) params.append('date_from', options.date_from);
-    if (options.date_to) params.append('date_to', options.date_to);
-
-    const response = await apiService.get(
-      `${this.baseUrl}/commissions/${code}?${params.toString()}`
-    );
-    return response.data;
-  }
-
-  /**
-   * Procesar pago de comisiones
-   */
-  async processCommissionPayment(
-    affiliateCode: string,
-    commissionIds: string[],
-    paymentMethod: string,
-    paymentReference?: string
-  ): Promise<void> {
-    await apiService.post(`${this.baseUrl}/payments`, {
-      affiliate_code: affiliateCode,
-      commission_ids: commissionIds,
-      payment_method: paymentMethod,
-      payment_reference: paymentReference
-    });
-  }
-
-  /**
-   * Obtener comisiones pendientes de pago
-   */
-  async getPendingPayments(affiliateCode?: string): Promise<Commission[]> {
-    const params = affiliateCode ? `?affiliate_code=${affiliateCode}` : '';
-    const response = await apiService.get(`${this.baseUrl}/pending-payments${params}`);
-    return response.data;
-  }
-
-  /**
-   * Validar si un código de referencia es válido
-   */
-  async validateReferralCode(code: string): Promise<boolean> {
+export const affiliateApiService = {
+  // Crear cuenta de afiliado completa
+  async createAffiliateAccount(data: CreateAffiliateAccountRequest) {
     try {
-      const response = await apiService.get(`${this.baseUrl}/validate/${code}`);
-      return response.data.valid;
+      console.log('🚀 [API] Creando cuenta de afiliado...');
+      console.log('📝 [API] Datos:', data);
+      console.log('🌐 [API] URL completa:', `${API_BASE_URL}/api/create-affiliate-simple`);
+      
+      // Usar endpoint simple sin autenticación
+      const response = await fetch(`${API_BASE_URL}/api/create-affiliate-simple`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ [API] Respuesta recibida:', result);
+      return result;
     } catch (error) {
-      return false;
+      console.error('❌ [API] Error creating affiliate account:', error);
+      console.error('❌ [API] Error details:', {
+        message: error.message,
+        name: error.name,
+        stack: error.stack
+      });
+      throw error;
     }
-  }
+  },
 
-  /**
-   * Obtener información de un código de referencia
-   */
-  async getReferralCodeInfo(code: string): Promise<{
-    code: string;
-    affiliate_name: string;
-    commission_percentage: number;
-    is_active: boolean;
-  } | null> {
+  // Cambiar contraseña de afiliado
+  async changeAffiliatePassword(data: ChangePasswordRequest) {
     try {
-      const response = await apiService.get(`${this.baseUrl}/code-info/${code}`);
+      const response = await authenticatedRequest('/api/affiliates/change-password', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+
+      return response;
+    } catch (error) {
+      console.error('Error changing password:', error);
+      throw error;
+    }
+  },
+
+  // Crear código de afiliado
+  async createAffiliateCode(data: { affiliate_name: string; email?: string; commission_percentage?: number }) {
+    try {
+      const response = await authenticatedRequest('/api/affiliates/codes', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+
+      return response;
+    } catch (error) {
+      console.error('Error creating affiliate code:', error);
+      throw error;
+    }
+  },
+
+  // Obtener dashboard de afiliado
+  async getAffiliateDashboard(): Promise<AffiliateStats> {
+    try {
+      const response = await authenticatedRequest('/api/affiliates/dashboard');
       return response.data;
     } catch (error) {
-      return null;
+      console.error('Error getting affiliate dashboard:', error);
+      throw error;
     }
-  }
+  },
 
-  /**
-   * Obtener estadísticas generales del sistema de afiliados
-   */
-  async getSystemStats(): Promise<{
-    total_affiliates: number;
-    total_referrals: number;
-    premium_conversions: number;
-    total_commissions_generated: number;
-    total_commissions_paid: number;
-    total_commissions_pending: number;
-    overall_conversion_rate: number;
-  }> {
-    const response = await apiService.get(`${this.baseUrl}/system-stats`);
-    return response.data;
-  }
+  // Obtener dashboard de administración
+  async getAdminDashboard() {
+    try {
+      const response = await authenticatedRequest('/api/affiliates/admin-dashboard');
+      return response.data;
+    } catch (error) {
+      console.error('Error getting admin dashboard:', error);
+      throw error;
+    }
+  },
 
-  /**
-   * Obtener top afiliados por comisiones generadas
-   */
-  async getTopAffiliates(limit: number = 10): Promise<AffiliateCode[]> {
-    const response = await apiService.get(`${this.baseUrl}/top-affiliates?limit=${limit}`);
-    return response.data;
-  }
-}
+  // Registrar código de referencia
+  async recordReferral(referralCode: string) {
+    try {
+      const response = await authenticatedRequest('/api/affiliates/referral', {
+        method: 'POST',
+        body: JSON.stringify({ referral_code: referralCode }),
+      });
 
-// Exportar instancia singleton
-export const affiliateApiService = new AffiliateApiService();
+      return response;
+    } catch (error) {
+      console.error('Error recording referral:', error);
+      throw error;
+    }
+  },
+
+  // Obtener mi referencia
+  async getMyReferral() {
+    try {
+      const response = await authenticatedRequest('/api/affiliates/my-referral');
+      return response.data;
+    } catch (error) {
+      console.error('Error getting my referral:', error);
+      throw error;
+    }
+  },
+
+  // Registrar código de referencia
+  async registerReferralCode(referralCode: string) {
+    try {
+      const response = await authenticatedRequest('/api/affiliates/referral', {
+        method: 'POST',
+        body: JSON.stringify({ referral_code: referralCode }),
+      });
+      return response;
+    } catch (error) {
+      console.error('Error registering referral code:', error);
+      throw error;
+    }
+  },
+
+  // Obtener códigos de afiliado
+  async getAffiliateCodes(): Promise<AffiliateCode[]> {
+    try {
+      const response = await authenticatedRequest('/api/affiliates/codes');
+      return response.data;
+    } catch (error) {
+      console.error('Error getting affiliate codes:', error);
+      throw error;
+    }
+  },
+
+  // Obtener estadísticas de afiliado
+  async getAffiliateStats(code: string) {
+    try {
+      const response = await authenticatedRequest(`/api/affiliates/stats/${code}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error getting affiliate stats:', error);
+      throw error;
+    }
+  },
+
+  // Procesar pago
+  async processPayment(data: {
+    affiliate_code: string;
+    commission_ids: string[];
+    payment_method: string;
+    payment_reference: string;
+  }) {
+    try {
+      const response = await authenticatedRequest('/api/affiliates/payments', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+
+      return response;
+    } catch (error) {
+      console.error('Error processing payment:', error);
+      throw error;
+    }
+  },
+};

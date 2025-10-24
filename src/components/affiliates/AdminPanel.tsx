@@ -12,7 +12,7 @@ import {
   RefreshControl
 } from 'react-native';
 import { Colors } from '../../constants/colors';
-import { affiliateApiServiceReal } from '../../services/affiliateApiServiceReal';
+import { affiliateApiService } from '../../services/affiliateApiService';
 
 const colors = Colors;
 
@@ -150,7 +150,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
         ...newAffiliateAccount,
         commissionPercentage: parseFloat(newAffiliateAccount.commissionPercentage)
       };
-      const response = await affiliateApiServiceReal.createAffiliateAccount(accountData);
+      const response = await affiliateApiService.createAffiliateAccount(accountData);
       
       // Simular éxito
       Alert.alert('Éxito', 'Cuenta de afiliado creada correctamente');
