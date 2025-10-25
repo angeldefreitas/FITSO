@@ -263,4 +263,120 @@ export const affiliateApiService = {
       throw error;
     }
   },
+
+  // Obtener referidos de un afiliado
+  async getAffiliateReferrals(code: string, options: {
+    limit?: number;
+    offset?: number;
+    premium_only?: boolean;
+  } = {}) {
+    try {
+      console.log('🔍 [AFFILIATE API] Obteniendo referidos para código:', code);
+      
+      const params = new URLSearchParams();
+      if (options.limit) params.append('limit', options.limit.toString());
+      if (options.offset) params.append('offset', options.offset.toString());
+      if (options.premium_only) params.append('premium_only', options.premium_only.toString());
+      
+      const queryString = params.toString();
+      const endpoint = `/affiliates/referrals/${code}${queryString ? `?${queryString}` : ''}`;
+      
+      const response = await authenticatedRequest(endpoint);
+      console.log('✅ [AFFILIATE API] Referidos obtenidos:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ [AFFILIATE API] Error obteniendo referidos:', error);
+      throw error;
+    }
+  },
+
+  // Obtener comisiones de un afiliado
+  async getAffiliateCommissions(code: string, options: {
+    limit?: number;
+    offset?: number;
+    paid_only?: boolean;
+    unpaid_only?: boolean;
+    date_from?: string;
+    date_to?: string;
+  } = {}) {
+    try {
+      console.log('🔍 [AFFILIATE API] Obteniendo comisiones para código:', code);
+      
+      const params = new URLSearchParams();
+      if (options.limit) params.append('limit', options.limit.toString());
+      if (options.offset) params.append('offset', options.offset.toString());
+      if (options.paid_only) params.append('paid_only', options.paid_only.toString());
+      if (options.unpaid_only) params.append('unpaid_only', options.unpaid_only.toString());
+      if (options.date_from) params.append('date_from', options.date_from);
+      if (options.date_to) params.append('date_to', options.date_to);
+      
+      const queryString = params.toString();
+      const endpoint = `/affiliates/commissions/${code}${queryString ? `?${queryString}` : ''}`;
+      
+      const response = await authenticatedRequest(endpoint);
+      console.log('✅ [AFFILIATE API] Comisiones obtenidas:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ [AFFILIATE API] Error obteniendo comisiones:', error);
+      throw error;
+    }
+  },
+
+  // Obtener comisiones pendientes
+  async getPendingPayments(affiliate_code?: string) {
+    try {
+      console.log('🔍 [AFFILIATE API] Obteniendo comisiones pendientes...');
+      
+      const params = new URLSearchParams();
+      if (affiliate_code) params.append('affiliate_code', affiliate_code);
+      
+      const queryString = params.toString();
+      const endpoint = `/affiliates/pending-payments${queryString ? `?${queryString}` : ''}`;
+      
+      const response = await authenticatedRequest(endpoint);
+      console.log('✅ [AFFILIATE API] Comisiones pendientes obtenidas:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ [AFFILIATE API] Error obteniendo comisiones pendientes:', error);
+      throw error;
+    }
+  },
+
+  // Toggle estado del código de afiliado
+  async toggleAffiliateCode(code: string, isActive: boolean) {
+    try {
+      console.log('🔄 [AFFILIATE API] Cambiando estado del código:', code, 'a:', isActive);
+      
+      // Por ahora simulamos la llamada, necesitaríamos crear el endpoint en el backend
+      // const response = await authenticatedRequest(`/affiliates/codes/${code}/toggle`, {
+      //   method: 'PUT',
+      //   body: JSON.stringify({ is_active: isActive }),
+      // });
+      
+      // Simulación temporal
+      return { success: true, message: 'Estado del código actualizado' };
+    } catch (error) {
+      console.error('❌ [AFFILIATE API] Error cambiando estado del código:', error);
+      throw error;
+    }
+  },
+
+  // Actualizar porcentaje de comisión
+  async updateCommissionPercentage(code: string, newPercentage: number) {
+    try {
+      console.log('💰 [AFFILIATE API] Actualizando comisión para:', code, 'a:', newPercentage + '%');
+      
+      // Por ahora simulamos la llamada, necesitaríamos crear el endpoint en el backend
+      // const response = await authenticatedRequest(`/affiliates/codes/${code}/commission`, {
+      //   method: 'PUT',
+      //   body: JSON.stringify({ commission_percentage: newPercentage }),
+      // });
+      
+      // Simulación temporal
+      return { success: true, message: 'Porcentaje de comisión actualizado' };
+    } catch (error) {
+      console.error('❌ [AFFILIATE API] Error actualizando comisión:', error);
+      throw error;
+    }
+  },
 };

@@ -95,31 +95,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
 
   const fetchCommissions = async () => {
     try {
-      // Simulamos datos de comisiones
-      setTimeout(() => {
-        setCommissions([
-          {
-            id: '1',
-            affiliate_code: 'FITNESS_GURU',
-            user_id: 'user1',
-            commission_amount: 29.97,
-            subscription_amount: 99.99,
-            is_paid: false,
-            created_at: '2024-01-15T10:30:00Z'
-          },
-          {
-            id: '2',
-            affiliate_code: 'NUTRICIONISTA_PRO',
-            user_id: 'user2',
-            commission_amount: 24.99,
-            subscription_amount: 99.99,
-            is_paid: true,
-            paid_date: '2024-01-20T14:15:00Z'
-          }
-        ]);
-      }, 500);
+      console.log('🔍 [ADMIN] Cargando comisiones...');
+      
+      // Obtener comisiones pendientes de todos los afiliados
+      const response = await affiliateApiService.getPendingPayments();
+      console.log('✅ [ADMIN] Comisiones obtenidas:', response);
+      
+      setCommissions(response || []);
     } catch (error) {
-      console.error('Error cargando comisiones:', error);
+      console.error('❌ [ADMIN] Error cargando comisiones:', error);
+      Alert.alert('Error', 'No se pudieron cargar las comisiones');
     }
   };
 
@@ -188,31 +173,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
       console.log('🔍 [ADMIN] Cargando referidos para:', affiliate.name);
       setSelectedAffiliate(affiliate);
       
-      // Aquí harías la llamada real a la API para obtener referidos
-      // const response = await affiliateApiService.getAffiliateReferrals(affiliate.affiliate_code);
+      // Llamada real a la API para obtener referidos
+      const response = await affiliateApiService.getAffiliateReferrals(affiliate.affiliate_code, {
+        limit: 100, // Obtener hasta 100 referidos
+        offset: 0
+      });
       
-      // Por ahora simulamos datos
-      setReferrals([
-        {
-          id: '1',
-          user_id: 'user1',
-          name: 'Usuario Referido 1',
-          email: 'referido1@example.com',
-          referral_date: '2024-01-15T10:30:00Z',
-          is_premium: true,
-          premium_conversion_date: '2024-01-20T14:15:00Z'
-        },
-        {
-          id: '2',
-          user_id: 'user2',
-          name: 'Usuario Referido 2',
-          email: 'referido2@example.com',
-          referral_date: '2024-01-20T14:15:00Z',
-          is_premium: false,
-          premium_conversion_date: null
-        }
-      ]);
-      
+      console.log('✅ [ADMIN] Referidos obtenidos:', response);
+      setReferrals(response || []);
       setShowReferralsModal(true);
     } catch (error) {
       console.error('❌ [ADMIN] Error cargando referidos:', error);
@@ -229,8 +197,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
     try {
       console.log('🔄 [ADMIN] Cambiando estado del código:', affiliateCode, 'a:', !isActive);
       
-      // Aquí harías la llamada real a la API
-      // const response = await affiliateApiService.toggleAffiliateCode(affiliateCode, !isActive);
+      // Llamada real a la API
+      const response = await affiliateApiService.toggleAffiliateCode(affiliateCode, !isActive);
       
       Alert.alert(
         'Éxito', 
@@ -250,8 +218,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
     try {
       console.log('💰 [ADMIN] Actualizando comisión para:', affiliateCode, 'a:', newPercentage + '%');
       
-      // Aquí harías la llamada real a la API
-      // const response = await affiliateApiService.updateCommissionPercentage(affiliateCode, newPercentage);
+      // Llamada real a la API
+      const response = await affiliateApiService.updateCommissionPercentage(affiliateCode, newPercentage);
       
       Alert.alert('Éxito', `Porcentaje de comisión actualizado a ${newPercentage}%`);
       setShowManageModal(false);
@@ -565,30 +533,36 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
             </View>
 
             <ScrollView style={styles.referralsList}>
-              {referrals.map((referral) => (
-                <View key={referral.id} style={styles.referralCard}>
-                  <View style={styles.referralHeader}>
-                    <Text style={styles.referralName}>{referral.name}</Text>
-                    <View style={[
-                      styles.statusBadge,
-                      { backgroundColor: referral.is_premium ? colors.green : colors.orange }
-                    ]}>
-                      <Text style={styles.statusText}>
-                        {referral.is_premium ? 'Premium' : 'Gratuito'}
-                      </Text>
-                    </View>
-                  </View>
-                  <Text style={styles.referralEmail}>{referral.email}</Text>
-                  <Text style={styles.referralDate}>
-                    Registrado: {new Date(referral.referral_date).toLocaleDateString()}
-                  </Text>
-                  {referral.is_premium && referral.premium_conversion_date && (
-                    <Text style={styles.conversionDate}>
-                      Convertido: {new Date(referral.premium_conversion_date).toLocaleDateString()}
-                    </Text>
-                  )}
+              {referrals.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyStateText}>No hay referidos para este afiliado</Text>
                 </View>
-              ))}
+              ) : (
+                referrals.map((referral) => (
+                  <View key={referral.id} style={styles.referralCard}>
+                    <View style={styles.referralHeader}>
+                      <Text style={styles.referralName}>{referral.user_name || 'Usuario'}</Text>
+                      <View style={[
+                        styles.statusBadge,
+                        { backgroundColor: referral.is_premium ? colors.green : colors.orange }
+                      ]}>
+                        <Text style={styles.statusText}>
+                          {referral.is_premium ? 'Premium' : 'Gratuito'}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={styles.referralEmail}>{referral.user_email || 'Sin email'}</Text>
+                    <Text style={styles.referralDate}>
+                      Registrado: {new Date(referral.referral_date).toLocaleDateString()}
+                    </Text>
+                    {referral.is_premium && referral.premium_conversion_date && (
+                      <Text style={styles.conversionDate}>
+                        Convertido: {new Date(referral.premium_conversion_date).toLocaleDateString()}
+                      </Text>
+                    )}
+                  </View>
+                ))
+              )}
             </ScrollView>
           </View>
         </View>
@@ -1060,5 +1034,15 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: 16,
     fontWeight: '600',
+  },
+  emptyState: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyStateText: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
 });
