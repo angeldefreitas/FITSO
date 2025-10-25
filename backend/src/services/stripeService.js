@@ -204,6 +204,18 @@ class StripeService {
         case 'transfer.updated':
           return await this.handleTransferUpdated(event.data.object);
         
+        case 'balance.available':
+          const webhookService = require('./stripeWebhookService');
+          return await webhookService.handleBalanceUpdated(event);
+        
+        case 'transfer.paid':
+          const webhookService2 = require('./stripeWebhookService');
+          return await webhookService2.handleTransferCompleted(event);
+        
+        case 'transfer.failed':
+          const webhookService3 = require('./stripeWebhookService');
+          return await webhookService3.handleTransferFailed(event);
+        
         default:
           console.log('⚠️ [STRIPE] Evento no manejado:', event.type);
           return { success: true, message: 'Evento no manejado' };
