@@ -1,14 +1,17 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
-// Configuración de la base de datos
-const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
+// Configuración de la base de datos - SIEMPRE PRODUCCIÓN
+const dbConfig = process.env.DATABASE_URL ? {
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+} : {
+  host: process.env.DB_HOST || 'dpg-d0j8v8h8s0s738f8a8pg-a.oregon-postgres.render.com',
   port: process.env.DB_PORT || 5432,
-  database: process.env.DB_NAME || 'fitso_db',
-  user: process.env.DB_USER || 'fitso_user',
-  password: process.env.DB_PASSWORD || 'fitso_password',
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  database: process.env.DB_NAME || 'fitso_db_8x0j',
+  user: process.env.DB_USER || 'fitso_user_8x0j',
+  password: process.env.DB_PASSWORD || 'YOUR_PRODUCTION_PASSWORD',
+  ssl: { rejectUnauthorized: false }
 };
 
 // Crear pool de conexiones
