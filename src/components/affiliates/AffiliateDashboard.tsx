@@ -106,6 +106,7 @@ export const AffiliateDashboard: React.FC<AffiliateDashboardProps> = ({ onClose 
 
       <ScrollView
         style={styles.content}
+        contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
@@ -290,6 +291,9 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  scrollContent: {
+    paddingTop: 20,
   },
   codeSection: {
     margin: 16,

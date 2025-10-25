@@ -67,7 +67,7 @@ export const UserReferralInfo: React.FC<UserReferralInfoProps> = ({ onClose }) =
           </TouchableOpacity>
         </View>
 
-        <View style={styles.content}>
+        <View style={[styles.content, styles.scrollContent]}>
           <View style={styles.noReferralContainer}>
             <Text style={styles.noReferralIcon}>🎯</Text>
             <Text style={styles.noReferralTitle}>No tienes código de referencia</Text>
@@ -97,7 +97,7 @@ export const UserReferralInfo: React.FC<UserReferralInfoProps> = ({ onClose }) =
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content}>
+      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
         {/* Información del afiliado */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Tu Influencer</Text>
@@ -224,6 +224,9 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  scrollContent: {
+    paddingTop: 20,
   },
   section: {
     margin: 16,
