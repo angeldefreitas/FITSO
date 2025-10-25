@@ -636,6 +636,114 @@ class SimpleAffiliateController {
       });
     }
   }
+
+  /**
+   * Obtener dashboard de administración con datos reales
+   * GET /api/affiliates/admin-dashboard
+   */
+  async getAdminDashboard(req, res) {
+    try {
+      console.log('🔍 [ADMIN] Obteniendo dashboard de administración...');
+      
+      const { query } = require('../../config/database');
+      
+      // Obtener todos los afiliados con sus estadísticas
+      const affiliatesQuery = `
+        SELECT 
+          u.id as user_id,
+          u.name,
+          u.email,
+          u.created_at as member_since,
+          u.is_affiliate,
+          ac.code as affiliate_code,
+          ac.commission_percentage,
+          ac.created_at as code_created_at,
+          COUNT(ur.id) as total_referrals,
+          COUNT(CASE WHEN ur.is_premium = true THEN 1 END) as premium_referrals,
+          COALESCE(SUM(afc.commission_amount), 0) as total_commissions,
+          COALESCE(SUM(CASE WHEN afc.is_paid = false THEN afc.commission_amount ELSE 0 END), 0) as pending_commissions,
+          COALESCE(SUM(CASE WHEN afc.is_paid = true THEN afc.commission_amount ELSE 0 END), 0) as paid_commissions
+        FROM users u
+        LEFT JOIN affiliate_codes ac ON u.id = ac.created_by
+        LEFT JOIN user_referrals ur ON ac.code = ur.affiliate_code
+        LEFT JOIN affiliate_commissions afc ON ac.code = afc.affiliate_code AND ur.user_id = afc.user_id
+        WHERE u.is_affiliate = true
+        GROUP BY u.id, u.name, u.email, u.created_at, u.is_affiliate, ac.code, ac.commission_percentage, ac.created_at
+        ORDER BY u.created_at DESC
+      `;
+      
+      const affiliatesResult = await query(affiliatesQuery);
+      const affiliates = affiliatesResult.rows;
+      
+      console.log('📊 [ADMIN] Afiliados encontrados:', affiliates.length);
+      
+      // Calcular estadísticas generales
+      const totalAffiliates = affiliates.length;
+      const totalReferrals = affiliates.reduce((sum, aff) => sum + parseInt(aff.total_referrals), 0);
+      const totalPremiumReferrals = affiliates.reduce((sum, aff) => sum + parseInt(aff.premium_referrals), 0);
+      const totalCommissions = affiliates.reduce((sum, aff) => sum + parseFloat(aff.total_commissions), 0);
+      const totalPendingCommissions = affiliates.reduce((sum, aff) => sum + parseFloat(aff.pending_commissions), 0);
+      const totalPaidCommissions = affiliates.reduce((sum, aff) => sum + parseFloat(aff.paid_commissions), 0);
+      const overallConversionRate = totalReferrals > 0 ? (totalPremiumReferrals / totalReferrals) * 100 : 0;
+      
+      // Formatear datos de afiliados
+      const formattedAffiliates = affiliates.map(affiliate => {
+        const totalRefs = parseInt(affiliate.total_referrals) || 0;
+        const premiumRefs = parseInt(affiliate.premium_referrals) || 0;
+        const conversionRate = totalRefs > 0 ? (premiumRefs / totalRefs) * 100 : 0;
+        
+        return {
+          user_id: affiliate.user_id,
+          name: affiliate.name,
+          email: affiliate.email,
+          member_since: affiliate.member_since,
+          affiliate_code: affiliate.affiliate_code,
+          commission_percentage: parseFloat(affiliate.commission_percentage) || 0,
+          code_created_at: affiliate.code_created_at,
+          stats: {
+            total_referrals: totalRefs,
+            premium_referrals: premiumRefs,
+            total_commissions: parseFloat(affiliate.total_commissions) || 0,
+            pending_commissions: parseFloat(affiliate.pending_commissions) || 0,
+            paid_commissions: parseFloat(affiliate.paid_commissions) || 0,
+            conversion_rate: Math.round(conversionRate * 100) / 100
+          }
+        };
+      });
+      
+      const adminDashboard = {
+        summary: {
+          total_affiliates: totalAffiliates,
+          total_referrals: totalReferrals,
+          total_premium_referrals: totalPremiumReferrals,
+          total_commissions: Math.round(totalCommissions * 100) / 100,
+          pending_commissions: Math.round(totalPendingCommissions * 100) / 100,
+          paid_commissions: Math.round(totalPaidCommissions * 100) / 100,
+          overall_conversion_rate: Math.round(overallConversionRate * 100) / 100
+        },
+        affiliates: formattedAffiliates
+      };
+      
+      console.log('✅ [ADMIN] Dashboard generado:', {
+        total_affiliates: totalAffiliates,
+        total_referrals: totalReferrals,
+        total_commissions: totalCommissions
+      });
+      
+      res.json({
+        success: true,
+        data: adminDashboard
+      });
+      
+    } catch (error) {
+      console.error('❌ [ADMIN] Error obteniendo dashboard de administración:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error obteniendo dashboard de administración',
+        error: error.message
+      });
+    }
+  }
 }
 
 module.exports = new SimpleAffiliateController();

@@ -204,6 +204,13 @@ router.post('/update-premium-status', authenticateToken, simpleAffiliateControll
  */
 router.post('/simulate-premium-conversion', simpleAffiliateController.simulatePremiumConversion);
 
+/**
+ * @route GET /api/affiliates/admin-dashboard
+ * @desc Obtener dashboard de administración con datos reales
+ * @access Private (Admin)
+ */
+router.get('/admin-dashboard', authenticateToken, simpleAffiliateController.getAdminDashboard);
+
 // Ruta privada eliminada - los códigos de afiliados son públicos
 
 module.exports = router;

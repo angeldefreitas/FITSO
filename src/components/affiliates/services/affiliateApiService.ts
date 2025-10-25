@@ -147,10 +147,12 @@ export const affiliateApiService = {
   // Obtener dashboard de administración
   async getAdminDashboard() {
     try {
+      console.log('🔍 [ADMIN API] Obteniendo dashboard de administración...');
       const response = await authenticatedRequest('/affiliates/admin-dashboard');
+      console.log('✅ [ADMIN API] Dashboard obtenido:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Error getting admin dashboard:', error);
+      console.error('❌ [ADMIN API] Error obteniendo dashboard:', error);
       throw error;
     }
   },
