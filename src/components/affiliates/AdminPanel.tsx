@@ -16,17 +16,35 @@ import { affiliateApiService } from './services/affiliateApiService';
 
 const colors = Colors;
 
-interface AffiliateCode {
-  id: string;
-  code: string;
-  affiliate_name: string;
-  email?: string;
+interface AffiliateData {
+  user_id: string;
+  name: string;
+  email: string;
+  member_since: string;
+  affiliate_code: string;
   commission_percentage: number;
-  is_active: boolean;
-  total_referrals: number;
-  premium_referrals: number;
-  total_commissions: number;
-  created_at: string;
+  code_created_at: string;
+  stats: {
+    total_referrals: number;
+    premium_referrals: number;
+    total_commissions: number;
+    pending_commissions: number;
+    paid_commissions: number;
+    conversion_rate: number;
+  };
+}
+
+interface AdminDashboardData {
+  summary: {
+    total_affiliates: number;
+    total_referrals: number;
+    total_premium_referrals: number;
+    total_commissions: number;
+    pending_commissions: number;
+    paid_commissions: number;
+    overall_conversion_rate: number;
+  };
+  affiliates: AffiliateData[];
 }
 
 interface AdminPanelProps {
@@ -34,7 +52,7 @@ interface AdminPanelProps {
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
-  const [affiliates, setAffiliates] = useState<AffiliateCode[]>([]);
+  const [dashboardData, setDashboardData] = useState<AdminDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -56,54 +74,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
 
   const fetchAffiliates = async () => {
     try {
-      // Aquí harías la llamada real a la API
-      // const response = await apiService.getAllAffiliateCodes();
+      console.log('🔍 [ADMIN] Cargando datos de afiliados...');
+      const response = await affiliateApiService.getAdminDashboard();
+      console.log('✅ [ADMIN] Datos recibidos:', response);
       
-      // Simulamos datos de ejemplo
-      setTimeout(() => {
-        setAffiliates([
-          {
-            id: '1',
-            code: 'FITNESS_GURU',
-            affiliate_name: 'Fitness Guru',
-            email: 'guru@example.com',
-            commission_percentage: 30,
-            is_active: true,
-            total_referrals: 45,
-            premium_referrals: 12,
-            total_commissions: 1250.50,
-            created_at: '2024-01-15T10:30:00Z'
-          },
-          {
-            id: '2',
-            code: 'NUTRICIONISTA_PRO',
-            affiliate_name: 'Nutricionista Pro',
-            email: 'nutri@example.com',
-            commission_percentage: 25,
-            is_active: true,
-            total_referrals: 32,
-            premium_referrals: 8,
-            total_commissions: 890.25,
-            created_at: '2024-01-20T14:15:00Z'
-          },
-          {
-            id: '3',
-            code: 'TRAINER_ELITE',
-            affiliate_name: 'Trainer Elite',
-            email: 'trainer@example.com',
-            commission_percentage: 35,
-            is_active: false,
-            total_referrals: 28,
-            premium_referrals: 6,
-            total_commissions: 650.75,
-            created_at: '2024-01-25T09:45:00Z'
-          }
-        ]);
-        setLoading(false);
-        setRefreshing(false);
-      }, 1000);
+      setDashboardData(response);
+      setLoading(false);
+      setRefreshing(false);
       
     } catch (error) {
+      console.error('❌ [ADMIN] Error cargando afiliados:', error);
       setLoading(false);
       setRefreshing(false);
       Alert.alert('Error', 'No se pudieron cargar los afiliados');
@@ -213,24 +193,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
     }
   };
 
-  const AffiliateCard: React.FC<{ affiliate: AffiliateCode }> = ({ affiliate }) => (
+  const AffiliateCard: React.FC<{ affiliate: AffiliateData }> = ({ affiliate }) => (
     <View style={styles.affiliateCard}>
       <View style={styles.affiliateHeader}>
         <View style={styles.affiliateInfo}>
-          <Text style={styles.affiliateName}>{affiliate.affiliate_name}</Text>
-          <Text style={styles.affiliateCode}>Código: {affiliate.code}</Text>
-          {affiliate.email && (
-            <Text style={styles.affiliateEmail}>{affiliate.email}</Text>
-          )}
+          <Text style={styles.affiliateName}>{affiliate.name}</Text>
+          <Text style={styles.affiliateCode}>Código: {affiliate.affiliate_code}</Text>
+          <Text style={styles.affiliateEmail}>{affiliate.email}</Text>
+          <Text style={styles.memberSince}>
+            Miembro desde: {new Date(affiliate.member_since).toLocaleDateString()}
+          </Text>
         </View>
         <View style={styles.affiliateStatus}>
           <View style={[
             styles.statusBadge,
-            { backgroundColor: affiliate.is_active ? colors.green : colors.red }
+            { backgroundColor: colors.green }
           ]}>
-            <Text style={styles.statusText}>
-              {affiliate.is_active ? 'Activo' : 'Inactivo'}
-            </Text>
+            <Text style={styles.statusText}>Activo</Text>
           </View>
           <Text style={styles.commissionText}>
             {affiliate.commission_percentage}% comisión
@@ -240,33 +219,29 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
 
       <View style={styles.affiliateStats}>
         <View style={styles.statItem}>
-          <Text style={styles.statValue}>{affiliate.total_referrals}</Text>
+          <Text style={styles.statValue}>{affiliate.stats.total_referrals}</Text>
           <Text style={styles.statLabel}>Referidos</Text>
         </View>
         <View style={styles.statItem}>
-          <Text style={styles.statValue}>{affiliate.premium_referrals}</Text>
+          <Text style={styles.statValue}>{affiliate.stats.premium_referrals}</Text>
           <Text style={styles.statLabel}>Premium</Text>
         </View>
         <View style={styles.statItem}>
-          <Text style={styles.statValue}>${affiliate.total_commissions}</Text>
+          <Text style={styles.statValue}>${affiliate.stats.total_commissions.toFixed(2)}</Text>
           <Text style={styles.statLabel}>Comisiones</Text>
+        </View>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>{affiliate.stats.conversion_rate}%</Text>
+          <Text style={styles.statLabel}>Conversión</Text>
         </View>
       </View>
 
       <View style={styles.affiliateActions}>
-        <TouchableOpacity
-          style={[
-            styles.actionButton,
-            { backgroundColor: affiliate.is_active ? colors.red : colors.green }
-          ]}
-          onPress={() => toggleAffiliateStatus(affiliate.id, affiliate.is_active)}
-        >
-          <Text style={styles.actionButtonText}>
-            {affiliate.is_active ? 'Desactivar' : 'Activar'}
-          </Text>
-        </TouchableOpacity>
         <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.blue }]}>
           <Text style={styles.actionButtonText}>Ver Detalles</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.orange }]}>
+          <Text style={styles.actionButtonText}>Gestionar</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -300,20 +275,26 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
           <Text style={styles.sectionTitle}>📊 Resumen General</Text>
           <View style={styles.summaryStats}>
             <View style={styles.summaryItem}>
-              <Text style={styles.summaryValue}>{affiliates.length}</Text>
+              <Text style={styles.summaryValue}>{dashboardData?.summary.total_affiliates || 0}</Text>
               <Text style={styles.summaryLabel}>Total Afiliados</Text>
             </View>
             <View style={styles.summaryItem}>
               <Text style={styles.summaryValue}>
-                {affiliates.filter(a => a.is_active).length}
+                {dashboardData?.summary.total_referrals || 0}
               </Text>
-              <Text style={styles.summaryLabel}>Activos</Text>
+              <Text style={styles.summaryLabel}>Total Referidos</Text>
             </View>
             <View style={styles.summaryItem}>
               <Text style={styles.summaryValue}>
-                ${affiliates.reduce((sum, a) => sum + a.total_commissions, 0).toFixed(2)}
+                ${dashboardData?.summary.total_commissions.toFixed(2) || '0.00'}
               </Text>
               <Text style={styles.summaryLabel}>Total Comisiones</Text>
+            </View>
+            <View style={styles.summaryItem}>
+              <Text style={styles.summaryValue}>
+                {dashboardData?.summary.overall_conversion_rate.toFixed(1) || '0.0'}%
+              </Text>
+              <Text style={styles.summaryLabel}>Conversión</Text>
             </View>
           </View>
         </View>
@@ -346,9 +327,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
 
         <View style={styles.affiliatesSection}>
           <Text style={styles.sectionTitle}>👥 Lista de Afiliados</Text>
-          {affiliates.map((affiliate) => (
-            <AffiliateCard key={affiliate.id} affiliate={affiliate} />
-          ))}
+          {dashboardData?.affiliates.map((affiliate) => (
+            <AffiliateCard key={affiliate.user_id} affiliate={affiliate} />
+          )) || []}
         </View>
       </ScrollView>
 
@@ -739,6 +720,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textSecondary,
     marginTop: 2,
+  },
+  memberSince: {
+    fontSize: 10,
+    color: colors.textSecondary,
+    marginTop: 2,
+    fontStyle: 'italic',
   },
   affiliateStatus: {
     alignItems: 'flex-end',
