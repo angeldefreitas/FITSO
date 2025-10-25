@@ -35,6 +35,7 @@ interface PurchaseError {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { isExpoGo } from '../config/expoGoConfig';
+import { isAdminEmail } from '../config/adminConfig';
 
 // IDs de productos de suscripción para RevenueCat
 // Estos son los IDs que configuraste en RevenueCat dashboard
@@ -240,6 +241,19 @@ class SubscriptionService {
 
   async getPremiumStatus(): Promise<PremiumStatus> {
     try {
+      // Verificar si el usuario es admin o afiliado
+      const isAdminOrAffiliate = await this.isUserAdminOrAffiliate();
+      if (isAdminOrAffiliate) {
+        console.log('✅ Usuario admin/afiliado - estado premium automático');
+        return {
+          isPremium: true,
+          subscriptionType: 'yearly', // Simular suscripción anual
+          expiresAt: null, // Sin expiración
+          dailyScansUsed: 0,
+          lastScanDate: null,
+        };
+      }
+
       // Usar información de RevenueCat solo si está inicializado
       if (this.isInitialized) {
         try {
@@ -305,6 +319,13 @@ class SubscriptionService {
 
   async canUseAIScan(): Promise<boolean> {
     try {
+      // Verificar si el usuario es admin o afiliado
+      const isAdminOrAffiliate = await this.isUserAdminOrAffiliate();
+      if (isAdminOrAffiliate) {
+        console.log('✅ Usuario admin/afiliado - acceso ilimitado a escaneo con IA');
+        return true;
+      }
+
       const status = await this.getPremiumStatus();
       
       // Usuarios premium pueden usar IA ilimitadamente
@@ -337,6 +358,13 @@ class SubscriptionService {
 
   async recordAIScan(): Promise<void> {
     try {
+      // Verificar si el usuario es admin o afiliado
+      const isAdminOrAffiliate = await this.isUserAdminOrAffiliate();
+      if (isAdminOrAffiliate) {
+        console.log('✅ Usuario admin/afiliado - no se registra escaneo');
+        return;
+      }
+
       const status = await this.getPremiumStatus();
       
       // Solo registrar si no es premium
@@ -489,6 +517,55 @@ class SubscriptionService {
     } catch (error) {
       console.error('❌ Error obteniendo ID de usuario:', error);
       throw error;
+    }
+  }
+
+  private async getCurrentUser(): Promise<any> {
+    try {
+      // Obtener los datos del usuario desde AsyncStorage
+      const cachedUserData = await AsyncStorage.getItem('cached_user_data');
+      if (!cachedUserData) {
+        throw new Error('Usuario no autenticado');
+      }
+      
+      const userData = JSON.parse(cachedUserData);
+      if (!userData) {
+        throw new Error('Datos de usuario inválidos');
+      }
+      
+      return userData;
+    } catch (error) {
+      console.error('❌ Error obteniendo datos de usuario:', error);
+      throw error;
+    }
+  }
+
+  private async isUserAdminOrAffiliate(): Promise<boolean> {
+    try {
+      const user = await this.getCurrentUser();
+      
+      // Verificar si es admin por email
+      if (user.email && isAdminEmail(user.email)) {
+        console.log('👑 Usuario es admin por email:', user.email);
+        return true;
+      }
+      
+      // Verificar si es afiliado
+      if (user.is_affiliate) {
+        console.log('🤝 Usuario es afiliado');
+        return true;
+      }
+      
+      // Verificar si el ID contiene 'admin' o 'angelfritas' (para testing)
+      if (user.id && (user.id.includes('admin') || user.id.includes('angelfritas'))) {
+        console.log('👑 Usuario es admin por ID:', user.id);
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('❌ Error verificando rol de usuario:', error);
+      return false;
     }
   }
 

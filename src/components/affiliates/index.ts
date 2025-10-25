@@ -26,3 +26,4 @@ export { UserAccessButtonsReal } from './UserAccessButtonsReal';
 export { UserReferralInfo } from './UserReferralInfo';
 export { PaymentSetup } from './PaymentSetup';
 export { PaymentHistory } from './PaymentHistory';
+export { BalanceDashboard } from './BalanceDashboard';

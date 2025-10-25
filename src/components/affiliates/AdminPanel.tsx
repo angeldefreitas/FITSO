@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Colors } from '../../constants/colors';
 import { affiliateApiService } from './services/affiliateApiService';
+import { BalanceDashboard } from './BalanceDashboard';
 
 const colors = Colors;
 
@@ -60,6 +61,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
   const [showCommissionsModal, setShowCommissionsModal] = useState(false);
   const [showReferralsModal, setShowReferralsModal] = useState(false);
   const [showManageModal, setShowManageModal] = useState(false);
+  const [showBalanceModal, setShowBalanceModal] = useState(false);
   const [selectedAffiliate, setSelectedAffiliate] = useState<AffiliateData | null>(null);
   const [referrals, setReferrals] = useState([]);
   const [commissions, setCommissions] = useState([]);
@@ -437,6 +439,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
           >
             <Text style={styles.createButtonText}>💰 Gestionar Comisiones</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.createButton, { backgroundColor: colors.green }]}
+            onPress={() => setShowBalanceModal(true)}
+          >
+            <Text style={styles.createButtonText}>📊 Ver Balance</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.affiliatesSection}>
@@ -732,6 +740,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
             </View>
           </View>
         </View>
+      </Modal>
+
+      {/* Modal de Balance */}
+      <Modal
+        visible={showBalanceModal}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setShowBalanceModal(false)}
+      >
+        <BalanceDashboard onClose={() => setShowBalanceModal(false)} />
       </Modal>
     </View>
   );

@@ -8,9 +8,11 @@ import {
   ActivityIndicator,
   Dimensions,
   Image,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import Constants from 'expo-constants';
 import { Colors } from '../constants/colors';
 import { useTranslation } from 'react-i18next';
 import { useScan } from '../hooks/useScan';
@@ -44,6 +46,9 @@ export default function FoodScanner({
   const [isCapturing, setIsCapturing] = useState(false);
   const { scanPicture, scanLoading } = useScan();
   const [cameraRef, setCameraRef] = useState<CameraView | null>(null);
+  
+  // Detectar si estamos en simulador real (no Expo Go)
+  const isSimulator = Platform.OS === 'ios' && !Constants.isDevice && Constants.appOwnership !== 'expo';
 
   React.useEffect(() => {
     if (visible && !permission?.granted) {
@@ -133,34 +138,25 @@ export default function FoodScanner({
             </Text>
             <TouchableOpacity 
               style={styles.permissionButton}
-              onPress={onClose}
+              onPress={requestPermission}
             >
-              <Text style={styles.permissionButtonText}>Entendido</Text>
+              <Text style={styles.permissionButtonText}>Permitir Cámara</Text>
             </TouchableOpacity>
-          </View>
-        </LinearGradient>
-      </View>
-    );
-  }
-
-  if (!permission.granted) {
-    return (
-      <View style={styles.container}>
-        <LinearGradient
-          colors={['#DC143C', '#2c2c2c', '#1a1a1a', '#000000']}
-          locations={[0, 0.3, 0.7, 1]}
-          style={styles.gradient}
-        >
-          <View style={styles.permissionContainer}>
-            <Text style={styles.permissionTitle}>Permisos de Cámara</Text>
-            <Text style={styles.permissionText}>
-              Necesitamos acceso a tu cámara para escanear comida
-            </Text>
+            {onGalleryPress && (
+              <TouchableOpacity 
+                style={[styles.permissionButton, { backgroundColor: Colors.textPrimary, marginTop: 10 }]}
+                onPress={onGalleryPress}
+              >
+                <Text style={[styles.permissionButtonText, { color: Colors.primary }]}>
+                  Usar Galería
+                </Text>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity 
-              style={styles.permissionButton}
+              style={[styles.permissionButton, { backgroundColor: 'transparent', marginTop: 10 }]}
               onPress={onClose}
             >
-              <Text style={styles.permissionButtonText}>Entendido</Text>
+              <Text style={[styles.permissionButtonText, { color: Colors.textSecondary }]}>Cancelar</Text>
             </TouchableOpacity>
           </View>
         </LinearGradient>

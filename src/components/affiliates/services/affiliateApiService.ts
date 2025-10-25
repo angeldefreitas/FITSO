@@ -481,4 +481,33 @@ export const affiliateApiService = {
       throw error;
     }
   },
+
+  // Métodos de balance
+  async getBalance() {
+    try {
+      console.log('💰 [AFFILIATE API] Obteniendo balance');
+      
+      const response = await authenticatedRequest('/affiliates/balance');
+      
+      console.log('✅ [AFFILIATE API] Balance obtenido:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ [AFFILIATE API] Error obteniendo balance:', error);
+      throw error;
+    }
+  },
+
+  async getTransferHistory(limit: number = 50, offset: number = 0) {
+    try {
+      console.log('📋 [AFFILIATE API] Obteniendo historial de transferencias');
+      
+      const response = await authenticatedRequest(`/affiliates/transfer-history?limit=${limit}&offset=${offset}`);
+      
+      console.log('✅ [AFFILIATE API] Historial de transferencias obtenido:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ [AFFILIATE API] Error obteniendo historial de transferencias:', error);
+      throw error;
+    }
+  },
 };
