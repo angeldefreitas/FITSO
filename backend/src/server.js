@@ -291,14 +291,13 @@ const startServer = async () => {
     // Verificar e inicializar base de datos si es necesario
     await checkAndInitializeDatabase();
 
-    // Desplegar sistema FITSO Foods en producción
+    // Desplegar sistema FITSO Foods en producción (temporalmente deshabilitado)
     if (process.env.NODE_ENV === 'production') {
       try {
-        console.log('🚀 Ejecutando despliegue de sistema FITSO Foods...');
-        console.log('📅 Timestamp:', new Date().toISOString());
-        const deployFitsoFoods = require('../scripts/deploy-fitso-foods');
-        await deployFitsoFoods();
-        console.log('✅ Sistema FITSO Foods desplegado exitosamente');
+        console.log('🚀 Saltando despliegue de sistema FITSO Foods para debugging...');
+        // const deployFitsoFoods = require('../scripts/deploy-fitso-foods');
+        // await deployFitsoFoods();
+        // console.log('✅ Sistema FITSO Foods desplegado exitosamente');
       } catch (error) {
         console.error('❌ Error desplegando sistema FITSO Foods:', error);
         // No salir del proceso, continuar con el servidor
@@ -306,11 +305,13 @@ const startServer = async () => {
     }
 
     // Iniciar servidor
+    console.log('🔄 Iniciando servidor en puerto:', PORT);
     app.listen(PORT, () => {
-      console.log(`🚀 Servidor iniciado en puerto ${PORT}`);
+      console.log(`🚀 Servidor iniciado exitosamente en puerto ${PORT}`);
       console.log(`📱 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:8081'}`);
       console.log(`🌍 Entorno: ${process.env.NODE_ENV || 'development'}`);
       console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+      console.log(`🔍 Debug codes: http://localhost:${PORT}/api/affiliates/debug-codes`);
     });
   } catch (error) {
     console.error('❌ Error iniciando servidor:', error);
