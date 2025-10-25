@@ -58,11 +58,10 @@ class UserReferral {
     }
     
     const row = result.rows[0];
-    return {
-      ...new UserReferral(row),
-      affiliate_name: row.affiliate_name,
-      commission_percentage: row.commission_percentage
-    };
+    const referral = new UserReferral(row);
+    referral.affiliate_name = row.affiliate_name;
+    referral.commission_percentage = row.commission_percentage;
+    return referral;
   }
 
   // Marcar usuario como premium (conversión)

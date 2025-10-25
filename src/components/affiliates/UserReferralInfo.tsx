@@ -67,7 +67,7 @@ export const UserReferralInfo: React.FC<UserReferralInfoProps> = ({ onClose }) =
           </TouchableOpacity>
         </View>
 
-        <View style={[styles.content, styles.scrollContent]}>
+        <View style={[styles.content, styles.scrollContent, styles.centeredContent]}>
           <View style={styles.noReferralContainer}>
             <Text style={styles.noReferralIcon}>🎯</Text>
             <Text style={styles.noReferralTitle}>No tienes código de referencia</Text>
@@ -227,6 +227,10 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: 20,
+  },
+  centeredContent: {
+    justifyContent: 'center',
+    flex: 1,
   },
   section: {
     margin: 16,
