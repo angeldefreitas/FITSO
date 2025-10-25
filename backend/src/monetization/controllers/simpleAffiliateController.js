@@ -55,15 +55,14 @@ class SimpleAffiliateController {
       };
 
       try {
-        // Obtener estadísticas reales y porcentaje de comisión
-        // Primero obtener la comisión directamente del código de afiliado
+        // Obtener la comisión directamente del código de afiliado
         const commissionQuery = `SELECT commission_percentage FROM affiliate_codes WHERE code = $1`;
         const commissionResult = await query(commissionQuery, [affiliateCode]);
         const commissionPercentage = commissionResult.rows[0]?.commission_percentage || 30;
         
         console.log('🔍 [DEBUG] Comisión obtenida:', commissionPercentage);
-        console.log('🔍 [DEBUG] Resultado de consulta:', commissionResult.rows);
         
+        // Obtener estadísticas básicas
         const statsQuery = `
           SELECT 
             COALESCE(COUNT(ur.id), 0) as total_referrals,
