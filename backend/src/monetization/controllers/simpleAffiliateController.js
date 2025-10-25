@@ -64,18 +64,16 @@ class SimpleAffiliateController {
         console.log('🔍 [DEBUG] Resultado:', commissionResult.rows);
         console.log('🔍 [DEBUG] Comisión obtenida:', commissionPercentage);
         
-        // Obtener estadísticas básicas
+        // SIMPLIFICAR: Solo obtener estadísticas básicas sin JOINs complicados
         const statsQuery = `
           SELECT 
             COALESCE(COUNT(ur.id), 0) as total_referrals,
             0 as premium_referrals,
-            COALESCE(SUM(CASE WHEN ac.status != 'cancelled' THEN ac.commission_amount ELSE 0 END), 0) as total_commissions,
-            COALESCE(SUM(CASE WHEN (ac.status = 'pending' OR ac.status IS NULL) THEN ac.commission_amount ELSE 0 END), 0) as pending_commissions,
-            COALESCE(SUM(CASE WHEN ac.status = 'paid' THEN ac.commission_amount ELSE 0 END), 0) as paid_commissions
-          FROM affiliate_codes ac_affiliate
-          LEFT JOIN user_referrals ur ON ur.affiliate_code_id = ac_affiliate.id
-          LEFT JOIN affiliate_commissions ac ON ac_affiliate.id = ac.affiliate_id AND ur.user_id = ac.user_id
-          WHERE ac_affiliate.code = $1
+            0 as total_commissions,
+            0 as pending_commissions,
+            0 as paid_commissions
+          FROM user_referrals ur
+          WHERE ur.affiliate_code_id = (SELECT id FROM affiliate_codes WHERE code = $1)
         `;
         
         const statsResult = await query(statsQuery, [affiliateCode]);
