@@ -68,7 +68,6 @@ class SimpleAffiliateController {
               LEFT JOIN user_referrals ur ON ur.affiliate_code_id = ac_affiliate.id
               LEFT JOIN affiliate_commissions ac ON ac_affiliate.id = ac.affiliate_id AND ur.user_id = ac.user_id
               WHERE ac_affiliate.code = $1
-              GROUP BY ac_affiliate.commission_percentage
             `;
         
         const statsResult = await query(statsQuery, [affiliateCode]);
