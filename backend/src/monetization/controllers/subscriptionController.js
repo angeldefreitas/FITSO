@@ -119,6 +119,31 @@ class SubscriptionController {
    */
   async getSubscriptionStatus(userId) {
     try {
+      // Verificar si el usuario es afiliado o administrador
+      const { query } = require('../../config/database');
+      const userQuery = 'SELECT is_affiliate, is_admin FROM users WHERE id = $1';
+      const userResult = await query(userQuery, [userId]);
+      
+      if (userResult.rows.length > 0) {
+        const user = userResult.rows[0];
+        
+        // Si es afiliado o administrador, otorgar premium automáticamente
+        if (user.is_affiliate || user.is_admin) {
+          console.log('👑 [PREMIUM] Usuario afiliado/admin detectado, otorgando premium automático');
+          return {
+            isPremium: true,
+            subscriptionType: 'lifetime',
+            expiresAt: null, // Lifetime = sin expiración
+            isTrialPeriod: false,
+            autoRenewStatus: false,
+            purchaseDate: new Date().toISOString(),
+            environment: 'lifetime',
+            reason: user.is_admin ? 'admin' : 'affiliate'
+          };
+        }
+      }
+
+      // Si no es afiliado/admin, verificar suscripción normal
       const subscription = await this.getActiveSubscription(userId);
 
       if (!subscription) {
@@ -147,6 +172,33 @@ class SubscriptionController {
     } catch (error) {
       console.error('❌ Error obteniendo estado de suscripción:', error.message);
       throw error;
+    }
+  }
+
+  /**
+   * Verificar estado premium de usuario (endpoint público)
+   * GET /api/subscriptions/check-premium/:userId
+   */
+  async checkUserPremium(req, res) {
+    try {
+      const { userId } = req.params;
+      
+      console.log('🔍 [PREMIUM] Verificando estado premium para usuario:', userId);
+      
+      const status = await this.getSubscriptionStatus(userId);
+      
+      res.json({
+        success: true,
+        data: status
+      });
+      
+    } catch (error) {
+      console.error('❌ [PREMIUM] Error verificando estado premium:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error verificando estado premium',
+        error: error.message
+      });
     }
   }
 

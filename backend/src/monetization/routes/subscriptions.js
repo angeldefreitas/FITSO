@@ -25,6 +25,14 @@ router.post('/verify-receipt', subscriptionController.verifyReceipt);
 router.get('/status/:userId', subscriptionController.getSubscriptionStatus);
 
 /**
+ * @route GET /api/subscriptions/check-premium/:userId
+ * @desc Verifica el estado premium de un usuario (incluye afiliados/admins)
+ * @access Public
+ * @param {string} userId - ID del usuario
+ */
+router.get('/check-premium/:userId', subscriptionController.checkUserPremium);
+
+/**
  * @route POST /api/subscriptions/cancel
  * @desc Cancela la suscripción de un usuario
  * @access Private

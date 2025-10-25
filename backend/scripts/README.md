@@ -19,6 +19,13 @@
 - Convierte un usuario normal en administrador
 - Útil para configurar el primer admin del sistema
 
+### 🤝 `make-user-affiliate.js`
+**Script para hacer usuario afiliado**
+- Convierte un usuario normal en afiliado
+- Le otorga premium automáticamente
+- Crea código de afiliado único
+- Configura porcentaje de comisión
+
 ### 🏗️ `migrate-to-production.sql`
 **Script de migración del sistema de afiliados**
 - Crea todas las tablas del sistema de afiliados
@@ -107,6 +114,12 @@ node -e "require('./backend/src/config/database').query('SELECT COUNT(*) FROM fi
 
 # Hacer usuario admin
 node backend/scripts/make-user-admin.js
+
+# Hacer usuario afiliado
+node backend/scripts/make-user-affiliate.js usuario@email.com "Nombre Afiliado" 25
+
+# Listar afiliados
+node backend/scripts/make-user-affiliate.js list
 
 # Ejecutar migración de afiliados (en PostgreSQL)
 # Ejecutar: backend/scripts/migrate-to-production.sql
