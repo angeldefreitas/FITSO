@@ -55,9 +55,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
   const [dashboardData, setDashboardData] = useState<AdminDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCreateAccountModal, setShowCreateAccountModal] = useState(false);
   const [showCommissionsModal, setShowCommissionsModal] = useState(false);
+  const [showReferralsModal, setShowReferralsModal] = useState(false);
+  const [showManageModal, setShowManageModal] = useState(false);
+  const [selectedAffiliate, setSelectedAffiliate] = useState<AffiliateData | null>(null);
+  const [referrals, setReferrals] = useState([]);
   const [commissions, setCommissions] = useState([]);
   const [newAffiliate, setNewAffiliate] = useState({
     affiliate_name: '',
@@ -140,7 +143,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
       // const response = await apiService.createAffiliateCode(newAffiliate);
       
       Alert.alert('Éxito', 'Código de afiliado creado exitosamente');
-      setShowCreateModal(false);
+      setShowCreateAccountModal(false);
       setNewAffiliate({ affiliate_name: '', email: '', commission_percentage: '30' });
       fetchAffiliates();
       
@@ -180,16 +183,83 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
     }
   };
 
-  const toggleAffiliateStatus = async (id: string, currentStatus: boolean) => {
+  const handleViewReferrals = async (affiliate: AffiliateData) => {
     try {
-      // Aquí harías la llamada real a la API
-      // const response = await apiService.toggleAffiliateStatus(id, !currentStatus);
+      console.log('🔍 [ADMIN] Cargando referidos para:', affiliate.name);
+      setSelectedAffiliate(affiliate);
       
-      Alert.alert('Éxito', `Afiliado ${!currentStatus ? 'activado' : 'desactivado'} exitosamente`);
+      // Aquí harías la llamada real a la API para obtener referidos
+      // const response = await affiliateApiService.getAffiliateReferrals(affiliate.affiliate_code);
+      
+      // Por ahora simulamos datos
+      setReferrals([
+        {
+          id: '1',
+          user_id: 'user1',
+          name: 'Usuario Referido 1',
+          email: 'referido1@example.com',
+          referral_date: '2024-01-15T10:30:00Z',
+          is_premium: true,
+          premium_conversion_date: '2024-01-20T14:15:00Z'
+        },
+        {
+          id: '2',
+          user_id: 'user2',
+          name: 'Usuario Referido 2',
+          email: 'referido2@example.com',
+          referral_date: '2024-01-20T14:15:00Z',
+          is_premium: false,
+          premium_conversion_date: null
+        }
+      ]);
+      
+      setShowReferralsModal(true);
+    } catch (error) {
+      console.error('❌ [ADMIN] Error cargando referidos:', error);
+      Alert.alert('Error', 'No se pudieron cargar los referidos');
+    }
+  };
+
+  const handleManageAffiliate = (affiliate: AffiliateData) => {
+    setSelectedAffiliate(affiliate);
+    setShowManageModal(true);
+  };
+
+  const toggleAffiliateStatus = async (affiliateCode: string, isActive: boolean) => {
+    try {
+      console.log('🔄 [ADMIN] Cambiando estado del código:', affiliateCode, 'a:', !isActive);
+      
+      // Aquí harías la llamada real a la API
+      // const response = await affiliateApiService.toggleAffiliateCode(affiliateCode, !isActive);
+      
+      Alert.alert(
+        'Éxito', 
+        `Código ${!isActive ? 'activado' : 'desactivado'} exitosamente. ${!isActive ? 'El afiliado volverá a ganar comisiones.' : 'La app ahora gana el 100% de las comisiones de este afiliado.'}`
+      );
+      
+      setShowManageModal(false);
       fetchAffiliates();
       
     } catch (error) {
-      Alert.alert('Error', 'No se pudo cambiar el estado del afiliado');
+      console.error('❌ [ADMIN] Error cambiando estado:', error);
+      Alert.alert('Error', 'No se pudo cambiar el estado del código');
+    }
+  };
+
+  const updateCommissionPercentage = async (affiliateCode: string, newPercentage: number) => {
+    try {
+      console.log('💰 [ADMIN] Actualizando comisión para:', affiliateCode, 'a:', newPercentage + '%');
+      
+      // Aquí harías la llamada real a la API
+      // const response = await affiliateApiService.updateCommissionPercentage(affiliateCode, newPercentage);
+      
+      Alert.alert('Éxito', `Porcentaje de comisión actualizado a ${newPercentage}%`);
+      setShowManageModal(false);
+      fetchAffiliates();
+      
+    } catch (error) {
+      console.error('❌ [ADMIN] Error actualizando comisión:', error);
+      Alert.alert('Error', 'No se pudo actualizar el porcentaje de comisión');
     }
   };
 
@@ -237,10 +307,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
       </View>
 
       <View style={styles.affiliateActions}>
-        <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.blue }]}>
-          <Text style={styles.actionButtonText}>Ver Detalles</Text>
+        <TouchableOpacity 
+          style={[styles.actionButton, { backgroundColor: colors.blue }]}
+          onPress={() => handleViewReferrals(affiliate)}
+        >
+          <Text style={styles.actionButtonText}>Ver Referidos</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.orange }]}>
+        <TouchableOpacity 
+          style={[styles.actionButton, { backgroundColor: colors.orange }]}
+          onPress={() => handleManageAffiliate(affiliate)}
+        >
           <Text style={styles.actionButtonText}>Gestionar</Text>
         </TouchableOpacity>
       </View>
@@ -301,17 +377,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
 
         <View style={styles.actionsSection}>
           <TouchableOpacity
-            style={styles.createButton}
-            onPress={() => setShowCreateModal(true)}
-          >
-            <Text style={styles.createButtonText}>+ Crear Nuevo Afiliado</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
             style={[styles.createButton, styles.createAccountButton]}
             onPress={() => setShowCreateAccountModal(true)}
           >
-            <Text style={styles.createButtonText}>+ Crear Cuenta Completa</Text>
+            <Text style={styles.createButtonText}>+ Crear Cuenta de Afiliado</Text>
           </TouchableOpacity>
           
           <TouchableOpacity
@@ -333,63 +402,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
         </View>
       </ScrollView>
 
-      {/* Modal para crear nuevo afiliado */}
-      <Modal
-        visible={showCreateModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Crear Nuevo Afiliado</Text>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setShowCreateModal(false)}
-            >
-              <Text style={styles.closeButtonText}>✕</Text>
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView style={styles.modalContent}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Nombre del Afiliado *</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Ej: Fitness Influencer"
-                value={newAffiliate.affiliate_name}
-                onChangeText={(text) => setNewAffiliate({ ...newAffiliate, affiliate_name: text })}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Email (opcional)</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="influencer@example.com"
-                value={newAffiliate.email}
-                onChangeText={(text) => setNewAffiliate({ ...newAffiliate, email: text })}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Porcentaje de Comisión (%)</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="30"
-                value={newAffiliate.commission_percentage}
-                onChangeText={(text) => setNewAffiliate({ ...newAffiliate, commission_percentage: text })}
-                keyboardType="numeric"
-              />
-            </View>
-
-            <TouchableOpacity style={styles.saveButton} onPress={createAffiliate}>
-              <Text style={styles.saveButtonText}>Crear Afiliado</Text>
-            </TouchableOpacity>
-          </ScrollView>
-        </View>
-      </Modal>
 
       {/* Modal para Crear Cuenta de Afiliado */}
       <Modal
@@ -527,6 +539,129 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
                 </View>
               ))}
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de Referidos */}
+      <Modal
+        visible={showReferralsModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowReferralsModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                Referidos de {selectedAffiliate?.name}
+              </Text>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setShowReferralsModal(false)}
+              >
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.referralsList}>
+              {referrals.map((referral) => (
+                <View key={referral.id} style={styles.referralCard}>
+                  <View style={styles.referralHeader}>
+                    <Text style={styles.referralName}>{referral.name}</Text>
+                    <View style={[
+                      styles.statusBadge,
+                      { backgroundColor: referral.is_premium ? colors.green : colors.orange }
+                    ]}>
+                      <Text style={styles.statusText}>
+                        {referral.is_premium ? 'Premium' : 'Gratuito'}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={styles.referralEmail}>{referral.email}</Text>
+                  <Text style={styles.referralDate}>
+                    Registrado: {new Date(referral.referral_date).toLocaleDateString()}
+                  </Text>
+                  {referral.is_premium && referral.premium_conversion_date && (
+                    <Text style={styles.conversionDate}>
+                      Convertido: {new Date(referral.premium_conversion_date).toLocaleDateString()}
+                    </Text>
+                  )}
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de Gestión de Afiliado */}
+      <Modal
+        visible={showManageModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowManageModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                Gestionar {selectedAffiliate?.name}
+              </Text>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setShowManageModal(false)}
+              >
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalBody}>
+              <View style={styles.affiliateInfoCard}>
+                <Text style={styles.infoLabel}>Código:</Text>
+                <Text style={styles.infoValue}>{selectedAffiliate?.affiliate_code}</Text>
+                
+                <Text style={styles.infoLabel}>Comisión actual:</Text>
+                <Text style={styles.infoValue}>{selectedAffiliate?.commission_percentage}%</Text>
+                
+                <Text style={styles.infoLabel}>Referidos totales:</Text>
+                <Text style={styles.infoValue}>{selectedAffiliate?.stats.total_referrals}</Text>
+                
+                <Text style={styles.infoLabel}>Referidos premium:</Text>
+                <Text style={styles.infoValue}>{selectedAffiliate?.stats.premium_referrals}</Text>
+              </View>
+
+              <View style={styles.managementActions}>
+                <TouchableOpacity
+                  style={[styles.managementButton, { backgroundColor: colors.blue }]}
+                  onPress={() => {
+                    // Aquí podrías abrir un modal para cambiar el porcentaje
+                    Alert.alert('Info', 'Función de cambio de comisión en desarrollo');
+                  }}
+                >
+                  <Text style={styles.managementButtonText}>Cambiar Comisión</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.managementButton, { backgroundColor: colors.red }]}
+                  onPress={() => {
+                    Alert.alert(
+                      'Desactivar Código',
+                      '¿Estás seguro? La app ganará el 100% de las comisiones de este afiliado.',
+                      [
+                        { text: 'Cancelar', style: 'cancel' },
+                        { 
+                          text: 'Desactivar', 
+                          style: 'destructive',
+                          onPress: () => toggleAffiliateStatus(selectedAffiliate?.affiliate_code || '', true)
+                        }
+                      ]
+                    );
+                  }}
+                >
+                  <Text style={styles.managementButtonText}>Desactivar Código</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
         </View>
       </Modal>
@@ -855,5 +990,75 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.green,
     fontStyle: 'italic',
+  },
+  referralsList: {
+    maxHeight: 400,
+  },
+  referralCard: {
+    backgroundColor: colors.white,
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  referralHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  referralName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  referralEmail: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: 4,
+  },
+  referralDate: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginBottom: 2,
+  },
+  conversionDate: {
+    fontSize: 12,
+    color: colors.green,
+    fontWeight: '600',
+  },
+  affiliateInfoCard: {
+    backgroundColor: colors.grayLight,
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 20,
+  },
+  infoLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  infoValue: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    marginBottom: 12,
+  },
+  managementActions: {
+    gap: 12,
+  },
+  managementButton: {
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  managementButtonText: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
