@@ -64,12 +64,18 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
       // Si hay código de referencia, registrarlo después del registro exitoso
       if (referralCode.trim()) {
         try {
-          const { affiliateApiService } = await import('../services/affiliateApiService');
+          console.log('🔄 Registrando código de referencia:', referralCode);
+          const { affiliateApiService } = await import('../components/affiliates/services/affiliateApiService');
           await affiliateApiService.registerReferralCode(referralCode.trim().toUpperCase());
-          console.log('✅ Código de referencia registrado:', referralCode);
+          console.log('✅ Código de referencia registrado exitosamente:', referralCode);
         } catch (referralError) {
           console.error('❌ Error registrando código de referencia:', referralError);
-          // No fallar el registro por error de código de referencia
+          // Mostrar alerta pero no fallar el registro
+          Alert.alert(
+            'Código de referencia',
+            'No se pudo registrar el código de referencia, pero tu cuenta se creó exitosamente.',
+            [{ text: 'OK' }]
+          );
         }
       }
       

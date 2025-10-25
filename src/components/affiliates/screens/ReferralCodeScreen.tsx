@@ -27,7 +27,7 @@ export const ReferralCodeScreen: React.FC<ReferralCodeScreenProps> = ({
   onSkip
 }) => {
   const [isLoading, setIsLoading] = useState(false);
-  const { userData } = route.params || {};
+  const { userData } = route?.params || {};
 
   const handleCodeSubmitted = async (referralCode: string) => {
     setIsLoading(true);
