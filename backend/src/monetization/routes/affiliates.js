@@ -161,4 +161,11 @@ router.get('/my-info', authenticateToken, simpleAffiliateController.getMyAffilia
  */
 router.get('/stats/:code', simpleAffiliateController.getAffiliateStats);
 
+/**
+ * @route GET /api/affiliates/debug-codes
+ * @desc Debug: Listar todos los códigos de afiliados
+ * @access Public (para debugging)
+ */
+router.get('/debug-codes', simpleAffiliateController.debugListCodes);
+
 module.exports = router;

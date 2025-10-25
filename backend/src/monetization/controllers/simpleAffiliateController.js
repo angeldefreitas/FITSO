@@ -137,6 +137,43 @@ class SimpleAffiliateController {
   }
 
   /**
+   * Debug: Listar todos los códigos de afiliados
+   * GET /api/affiliates/debug-codes
+   */
+  async debugListCodes(req, res) {
+    try {
+      console.log('🔍 [DEBUG] Listando todos los códigos de afiliados...');
+      
+      const allCodes = await AffiliateCode.findAllActive();
+      console.log('📋 [DEBUG] Códigos encontrados:', allCodes.length);
+      
+      const codesInfo = allCodes.map(code => ({
+        id: code.id,
+        code: code.code,
+        created_by: code.created_by,
+        is_active: code.is_active,
+        created_at: code.created_at
+      }));
+      
+      res.json({
+        success: true,
+        data: {
+          total_codes: allCodes.length,
+          codes: codesInfo
+        }
+      });
+      
+    } catch (error) {
+      console.error('❌ [DEBUG] Error listando códigos:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error listando códigos',
+        error: error.message
+      });
+    }
+  },
+
+  /**
    * Obtener información básica del afiliado
    * GET /api/affiliates/my-info
    */
