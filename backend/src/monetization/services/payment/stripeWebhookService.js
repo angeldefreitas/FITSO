@@ -1,5 +1,5 @@
 const stripeService = require('./stripeService');
-const { query } = require('../config/database');
+const { query } = require('../../../config/database');
 
 class StripeWebhookService {
   /**

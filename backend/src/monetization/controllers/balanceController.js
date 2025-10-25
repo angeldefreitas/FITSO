@@ -1,4 +1,4 @@
-const stripeService = require('../../services/stripeService');
+const { stripeService } = require('../services/payment');
 const { query } = require('../../config/database');
 
 class BalanceController {

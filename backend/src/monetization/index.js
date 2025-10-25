@@ -6,11 +6,15 @@
  * - Comisiones automáticas
  * - Gestión de suscripciones premium
  * - Tracking de referidos y conversiones
+ * - Servicios de pago (Stripe, Apple)
+ * - Gestión de balances y pagos
  */
 
 // Exportar todos los controladores
 const affiliateController = require('./controllers/affiliateController');
 const subscriptionController = require('./controllers/subscriptionController');
+const paymentController = require('./controllers/paymentController');
+const balanceController = require('./controllers/balanceController');
 
 // Exportar todos los modelos
 const AffiliateCode = require('./models/AffiliateCode');
@@ -19,16 +23,21 @@ const AffiliateCommission = require('./models/AffiliateCommission');
 
 // Exportar todos los servicios
 const AffiliateService = require('./services/affiliateService');
+const paymentServices = require('./services/payment');
 
 // Exportar todas las rutas
 const affiliateRoutes = require('./routes/affiliates');
 const subscriptionRoutes = require('./routes/subscriptions');
+const paymentRoutes = require('./routes/payments');
+const balanceRoutes = require('./routes/balance');
 
 module.exports = {
   // Controladores
   controllers: {
     affiliateController,
-    subscriptionController
+    subscriptionController,
+    paymentController,
+    balanceController
   },
   
   // Modelos
@@ -40,12 +49,15 @@ module.exports = {
   
   // Servicios
   services: {
-    AffiliateService
+    AffiliateService,
+    ...paymentServices
   },
   
   // Rutas
   routes: {
     affiliateRoutes,
-    subscriptionRoutes
+    subscriptionRoutes,
+    paymentRoutes,
+    balanceRoutes
   }
 };

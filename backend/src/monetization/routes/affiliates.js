@@ -183,12 +183,6 @@ router.post('/init-tables', simpleAffiliateController.initAffiliateTables);
  */
 router.get('/debug-code/:code', simpleAffiliateController.debugCode);
 
-/**
- * @route POST /api/affiliates/fix-codes
- * @desc Debug: Arreglar códigos con affiliate_id en lugar de created_by
- * @access Public (para debugging)
- */
-router.post('/fix-codes', simpleAffiliateController.fixCodes);
 
 /**
  * @route POST /api/affiliates/update-premium-status

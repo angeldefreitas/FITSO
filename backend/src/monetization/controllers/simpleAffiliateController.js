@@ -58,16 +58,16 @@ class SimpleAffiliateController {
         // Obtener estadísticas reales y porcentaje de comisión
             const statsQuery = `
               SELECT 
-                COUNT(ur.id) as total_referrals,
-                COUNT(CASE WHEN ur.is_premium = true THEN 1 END) as premium_referrals,
-                COALESCE(SUM(CASE WHEN ac.is_cancelled = false OR ac.is_cancelled IS NULL THEN ac.commission_amount ELSE 0 END), 0) as total_commissions,
-                COALESCE(SUM(CASE WHEN (ac.is_paid = false AND (ac.is_cancelled = false OR ac.is_cancelled IS NULL)) THEN ac.commission_amount ELSE 0 END), 0) as pending_commissions,
-                COALESCE(SUM(CASE WHEN (ac.is_paid = true AND (ac.is_cancelled = false OR ac.is_cancelled IS NULL)) THEN ac.commission_amount ELSE 0 END), 0) as paid_commissions,
+                COALESCE(COUNT(ur.id), 0) as total_referrals,
+                0 as premium_referrals, -- Por ahora no tenemos tracking de premium en user_referrals
+                COALESCE(SUM(CASE WHEN ac.status != 'cancelled' THEN ac.commission_amount ELSE 0 END), 0) as total_commissions,
+                COALESCE(SUM(CASE WHEN (ac.status = 'pending' OR ac.status IS NULL) THEN ac.commission_amount ELSE 0 END), 0) as pending_commissions,
+                COALESCE(SUM(CASE WHEN ac.status = 'paid' THEN ac.commission_amount ELSE 0 END), 0) as paid_commissions,
                 ac_affiliate.commission_percentage
-              FROM user_referrals ur
-              LEFT JOIN affiliate_commissions ac ON ur.affiliate_code = ac.affiliate_code AND ur.user_id = ac.user_id
-              LEFT JOIN affiliate_codes ac_affiliate ON ur.affiliate_code = ac_affiliate.code
-              WHERE ur.affiliate_code = $1
+              FROM affiliate_codes ac_affiliate
+              LEFT JOIN user_referrals ur ON ur.affiliate_code_id = ac_affiliate.id
+              LEFT JOIN affiliate_commissions ac ON ur.affiliate_code_id = ac.affiliate_id AND ur.user_id = ac.user_id
+              WHERE ac_affiliate.code = $1
               GROUP BY ac_affiliate.commission_percentage
             `;
         
@@ -478,54 +478,6 @@ class SimpleAffiliateController {
     }
   }
 
-  /**
-   * Debug: Arreglar códigos con affiliate_id en lugar de created_by
-   * POST /api/affiliates/fix-codes
-   */
-  async fixCodes(req, res) {
-    try {
-      console.log('🔧 [DEBUG] Arreglando códigos con affiliate_id...');
-      
-      const { query } = require('../../config/database');
-      
-      // Buscar códigos que tienen affiliate_id pero no created_by
-      const result = await query(`
-        SELECT * FROM affiliate_codes 
-        WHERE affiliate_id IS NOT NULL 
-        AND (created_by IS NULL OR created_by = '')
-      `);
-      
-      console.log('🔍 [DEBUG] Códigos encontrados para arreglar:', result.rows.length);
-      
-      let fixed = 0;
-      for (const code of result.rows) {
-        console.log('🔧 [DEBUG] Arreglando código:', code.code, 'affiliate_id:', code.affiliate_id);
-        
-        // Actualizar created_by con el valor de affiliate_id
-        await query(`
-          UPDATE affiliate_codes 
-          SET created_by = $1 
-          WHERE id = $2
-        `, [code.affiliate_id, code.id]);
-        
-        fixed++;
-      }
-      
-      res.json({
-        success: true,
-        message: `Se arreglaron ${fixed} códigos`,
-        fixed: fixed
-      });
-      
-    } catch (error) {
-      console.error('❌ [DEBUG] Error arreglando códigos:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Error arreglando códigos',
-        error: error.message
-      });
-    }
-  }
 
   /**
    * Actualizar referido a premium
@@ -912,7 +864,7 @@ class SimpleAffiliateController {
 
       // Buscar si el usuario tiene un código de referencia
       const referralQuery = `
-        SELECT ur.*, ac.code as affiliate_code, ac.created_by as affiliate_id, ac.commission_percentage
+        SELECT ur.*, ac.code as affiliate_code, ac.created_by, ac.commission_percentage
         FROM user_referrals ur
         LEFT JOIN affiliate_codes ac ON ur.affiliate_code = ac.code
         WHERE ur.user_id = $1
@@ -931,7 +883,7 @@ class SimpleAffiliateController {
 
       const referral = referralResult.rows[0];
       const affiliateCode = referral.affiliate_code;
-      const affiliateId = referral.affiliate_id;
+      const affiliateId = referral.created_by;
       const commissionPercentage = parseFloat(referral.commission_percentage) || 30;
 
       if (is_conversion) {

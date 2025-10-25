@@ -1,5 +1,5 @@
 const { query } = require('../../config/database');
-const appleReceiptService = require('../../services/appleReceiptService');
+const { appleReceiptService } = require('../services/payment');
 const AffiliateService = require('../services/affiliateService');
 
 class SubscriptionController {

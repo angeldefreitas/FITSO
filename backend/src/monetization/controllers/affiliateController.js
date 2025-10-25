@@ -61,7 +61,7 @@ class AffiliateController {
       // Crear código de afiliado usando el método create
       const createdCode = await AffiliateCode.create({
         code: referralCode,
-        affiliate_id: createdUser.id,
+        created_by: createdUser.id,
         commission_percentage: parseFloat(commissionPercentage)
       });
       console.log('✅ Código de afiliado creado:', createdCode.id);
@@ -111,10 +111,9 @@ class AffiliateController {
       }
 
       const affiliateCode = await AffiliateCode.create({
-        affiliate_name,
-        email,
-        commission_percentage,
-        created_by
+        code: affiliate_name, // Usar affiliate_name como código
+        created_by: created_by, // Usar created_by
+        commission_percentage
       });
 
       res.status(201).json({
@@ -449,7 +448,7 @@ class AffiliateController {
         // Crear el código de afiliado usando el método que ya funciona
         const affiliateCode = await AffiliateCode.create({
           code: referralCode,
-          affiliate_id: user.id,
+          created_by: user.id,
           commission_percentage: parseFloat(commissionPercentage)
         });
         console.log('✅ [AFFILIATE] Código de afiliado creado:', affiliateCode.id);
