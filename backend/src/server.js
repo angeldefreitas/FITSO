@@ -276,36 +276,14 @@ const checkAndInitializeDatabase = async () => {
   }
 };
 
-// Iniciar servidor
+// Iniciar servidor (versión simplificada para debugging)
 const startServer = async () => {
   try {
-    // Probar conexión a la base de datos
-    console.log('🔍 Probando conexión a la base de datos...');
-    const dbConnected = await testConnection();
+    console.log('🔄 Iniciando servidor en modo simplificado...');
+    console.log('🌍 Entorno:', process.env.NODE_ENV || 'development');
+    console.log('🔌 Puerto:', PORT);
     
-    if (!dbConnected) {
-      console.error('❌ No se pudo conectar a la base de datos');
-      process.exit(1);
-    }
-
-    // Verificar e inicializar base de datos si es necesario
-    await checkAndInitializeDatabase();
-
-    // Desplegar sistema FITSO Foods en producción (temporalmente deshabilitado)
-    if (process.env.NODE_ENV === 'production') {
-      try {
-        console.log('🚀 Saltando despliegue de sistema FITSO Foods para debugging...');
-        // const deployFitsoFoods = require('../scripts/deploy-fitso-foods');
-        // await deployFitsoFoods();
-        // console.log('✅ Sistema FITSO Foods desplegado exitosamente');
-      } catch (error) {
-        console.error('❌ Error desplegando sistema FITSO Foods:', error);
-        // No salir del proceso, continuar con el servidor
-      }
-    }
-
-    // Iniciar servidor
-    console.log('🔄 Iniciando servidor en puerto:', PORT);
+    // Iniciar servidor directamente sin verificaciones adicionales
     app.listen(PORT, () => {
       console.log(`🚀 Servidor iniciado exitosamente en puerto ${PORT}`);
       console.log(`📱 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:8081'}`);
@@ -315,6 +293,7 @@ const startServer = async () => {
     });
   } catch (error) {
     console.error('❌ Error iniciando servidor:', error);
+    console.error('❌ Stack trace:', error.stack);
     process.exit(1);
   }
 };
