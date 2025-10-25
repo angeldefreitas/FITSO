@@ -266,14 +266,14 @@ class SimpleAffiliateController {
         )
       `);
       
-      // 3. Crear tabla affiliate_commissions
+      // 3. Crear tabla affiliate_commissions (sin referencia a subscriptions por ahora)
       console.log('📝 Creando tabla affiliate_commissions...');
       await query(`
         CREATE TABLE IF NOT EXISTS affiliate_commissions (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
           affiliate_code VARCHAR(50) REFERENCES affiliate_codes(code) ON DELETE CASCADE,
           user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-          subscription_id UUID REFERENCES subscriptions(id) ON DELETE CASCADE,
+          subscription_id UUID, -- Sin referencia por ahora
           commission_amount DECIMAL(10,2) NOT NULL,
           commission_percentage DECIMAL(5,2) NOT NULL,
           subscription_amount DECIMAL(10,2) NOT NULL,
