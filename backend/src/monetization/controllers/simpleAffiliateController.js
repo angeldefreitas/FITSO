@@ -56,19 +56,23 @@ class SimpleAffiliateController {
 
       try {
         // Obtener estadísticas reales y porcentaje de comisión
-            const statsQuery = `
-              SELECT 
-                COALESCE(COUNT(ur.id), 0) as total_referrals,
-                0 as premium_referrals, -- Por ahora no tenemos tracking de premium en user_referrals
-                COALESCE(SUM(CASE WHEN ac.status != 'cancelled' THEN ac.commission_amount ELSE 0 END), 0) as total_commissions,
-                COALESCE(SUM(CASE WHEN (ac.status = 'pending' OR ac.status IS NULL) THEN ac.commission_amount ELSE 0 END), 0) as pending_commissions,
-                COALESCE(SUM(CASE WHEN ac.status = 'paid' THEN ac.commission_amount ELSE 0 END), 0) as paid_commissions,
-                ac_affiliate.commission_percentage
-              FROM affiliate_codes ac_affiliate
-              LEFT JOIN user_referrals ur ON ur.affiliate_code_id = ac_affiliate.id
-              LEFT JOIN affiliate_commissions ac ON ac_affiliate.id = ac.affiliate_id AND ur.user_id = ac.user_id
-              WHERE ac_affiliate.code = $1
-            `;
+        // Primero obtener la comisión directamente del código de afiliado
+        const commissionQuery = `SELECT commission_percentage FROM affiliate_codes WHERE code = $1`;
+        const commissionResult = await query(commissionQuery, [affiliateCode]);
+        const commissionPercentage = commissionResult.rows[0]?.commission_percentage || 30;
+        
+        const statsQuery = `
+          SELECT 
+            COALESCE(COUNT(ur.id), 0) as total_referrals,
+            0 as premium_referrals,
+            COALESCE(SUM(CASE WHEN ac.status != 'cancelled' THEN ac.commission_amount ELSE 0 END), 0) as total_commissions,
+            COALESCE(SUM(CASE WHEN (ac.status = 'pending' OR ac.status IS NULL) THEN ac.commission_amount ELSE 0 END), 0) as pending_commissions,
+            COALESCE(SUM(CASE WHEN ac.status = 'paid' THEN ac.commission_amount ELSE 0 END), 0) as paid_commissions
+          FROM affiliate_codes ac_affiliate
+          LEFT JOIN user_referrals ur ON ur.affiliate_code_id = ac_affiliate.id
+          LEFT JOIN affiliate_commissions ac ON ac_affiliate.id = ac.affiliate_id AND ur.user_id = ac.user_id
+          WHERE ac_affiliate.code = $1
+        `;
         
         const statsResult = await query(statsQuery, [affiliateCode]);
         const stats = statsResult.rows[0];
@@ -84,7 +88,7 @@ class SimpleAffiliateController {
           pending_commissions: parseFloat(stats.pending_commissions) || 0,
           paid_commissions: parseFloat(stats.paid_commissions) || 0,
           conversion_rate: Math.round(conversionRate * 100) / 100,
-          commission_percentage: parseFloat(stats.commission_percentage) || 30,
+          commission_percentage: parseFloat(commissionPercentage),
           affiliate_code: affiliateCode,
           user_info: {
             name: user.name,
