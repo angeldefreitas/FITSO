@@ -104,7 +104,11 @@ class UserReferral {
     params.push(limit, offset);
     const result = await query(selectQuery, params);
     
-    return result.rows.map(row => new UserReferral(row));
+    return result.rows.map(row => ({
+      ...new UserReferral(row),
+      user_name: row.user_name,
+      user_email: row.user_email
+    }));
   }
 
   // Obtener estadísticas de conversión por afiliado
@@ -138,7 +142,9 @@ class UserReferral {
       affiliate_code: this.affiliate_code,
       referral_date: this.referral_date,
       is_premium: this.is_premium,
-      premium_conversion_date: this.premium_conversion_date
+      premium_conversion_date: this.premium_conversion_date,
+      user_name: this.user_name,
+      user_email: this.user_email
     };
   }
 }
