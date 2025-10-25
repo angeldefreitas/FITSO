@@ -61,6 +61,9 @@ class SimpleAffiliateController {
         const commissionResult = await query(commissionQuery, [affiliateCode]);
         const commissionPercentage = commissionResult.rows[0]?.commission_percentage || 30;
         
+        console.log('🔍 [DEBUG] Comisión obtenida:', commissionPercentage);
+        console.log('🔍 [DEBUG] Resultado de consulta:', commissionResult.rows);
+        
         const statsQuery = `
           SELECT 
             COALESCE(COUNT(ur.id), 0) as total_referrals,
