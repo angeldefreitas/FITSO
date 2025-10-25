@@ -65,7 +65,7 @@ class SimpleAffiliateController {
                 COALESCE(SUM(CASE WHEN ac.status = 'paid' THEN ac.commission_amount ELSE 0 END), 0) as paid_commissions,
                 ac_affiliate.commission_percentage
               FROM affiliate_codes ac_affiliate
-              LEFT JOIN user_referrals ur ON ur.affiliate_code_id = ac_affiliate.id
+              LEFT JOIN user_referrals ur ON ur.affiliate_code = ac_affiliate.code
               LEFT JOIN affiliate_commissions ac ON ac_affiliate.created_by = ac.affiliate_id AND ur.user_id = ac.user_id
               WHERE ac_affiliate.code = $1
               GROUP BY ac_affiliate.commission_percentage
