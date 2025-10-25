@@ -26,7 +26,6 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [referralCode, setReferralCode] = useState('');
   const [loading, setLoading] = useState(false);
   const { register, loading: authLoading } = useAuth();
 
@@ -60,24 +59,6 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
     setLoading(true);
     try {
       await register({ name, email, password });
-      
-      // Si hay código de referencia, registrarlo después del registro exitoso
-      if (referralCode.trim()) {
-        try {
-          console.log('🔄 Registrando código de referencia:', referralCode);
-          const { affiliateApiService } = await import('../components/affiliates/services/affiliateApiService');
-          await affiliateApiService.registerReferralCode(referralCode.trim().toUpperCase());
-          console.log('✅ Código de referencia registrado exitosamente:', referralCode);
-        } catch (referralError) {
-          console.error('❌ Error registrando código de referencia:', referralError);
-          // Mostrar alerta pero no fallar el registro
-          Alert.alert(
-            'Código de referencia',
-            'No se pudo registrar el código de referencia, pero tu cuenta se creó exitosamente.',
-            [{ text: 'OK' }]
-          );
-        }
-      }
       
       Alert.alert(
         t('auth.signUpSuccess'),
@@ -153,20 +134,6 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
               />
             </View>
 
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Código de Referencia (Opcional)</Text>
-              <TextInput
-                style={styles.input}
-                value={referralCode}
-                onChangeText={setReferralCode}
-                placeholder="Ej: FITNESS_GURU"
-                autoCapitalize="characters"
-                autoCorrect={false}
-              />
-              <Text style={styles.helpText}>
-                Si un influencer te recomendó Fitso, ingresa su código para que reciba una comisión
-              </Text>
-            </View>
 
             <TouchableOpacity
               style={[styles.registerButton, (loading || authLoading) && styles.disabledButton]}

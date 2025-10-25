@@ -34,11 +34,15 @@ export const ReferralCodeScreen: React.FC<ReferralCodeScreenProps> = ({
     
     try {
       if (referralCode) {
+        console.log('🔄 Registrando código de referencia:', referralCode);
+        
         // Importar el servicio de afiliados dinámicamente
         const { affiliateApiService } = await import('../services/affiliateApiService');
         
         // Registrar el código de referencia
         await affiliateApiService.registerReferralCode(referralCode);
+        
+        console.log('✅ Código de referencia registrado exitosamente');
         
         Alert.alert(
           '¡Código registrado!',
@@ -60,6 +64,7 @@ export const ReferralCodeScreen: React.FC<ReferralCodeScreenProps> = ({
           ]
         );
       } else {
+        console.log('ℹ️ Continuando sin código de referencia');
         // Continuar sin código de referencia
         if (onCodeSubmitted) {
           onCodeSubmitted('');
