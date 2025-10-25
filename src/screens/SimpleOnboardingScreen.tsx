@@ -15,6 +15,7 @@ import WeightPicker from '../components/WeightPicker';
 import HeightPicker from '../components/HeightPicker';
 import LoseWeightPicker from '../components/LoseWeightPicker';
 import GainWeightPicker from '../components/GainWeightPicker';
+import { ReferralCodeScreen } from '../components/affiliates';
 
 const { width } = Dimensions.get('window');
 
@@ -35,6 +36,8 @@ export default function SimpleOnboardingScreen({ onCompleted }: Props) {
   const [goal, setGoal] = useState<'lose_weight' | 'gain_weight' | 'maintain_weight'>('lose_weight');
   const [weightGoalAmount, setWeightGoalAmount] = useState(0.5);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showReferralCode, setShowReferralCode] = useState(false);
+  const [biometricData, setBiometricData] = useState<any>(null);
 
   const handleSubmit = async () => {
     if (!isFormValid || isSubmitting) {
@@ -64,8 +67,11 @@ export default function SimpleOnboardingScreen({ onCompleted }: Props) {
       const { default: profileService } = await import('../services/profileService');
       await profileService.updateBiometricData(biometricData);
       
-      console.log('✅ Datos guardados exitosamente');
-      onCompleted();
+      console.log('✅ Datos biométricos guardados exitosamente');
+      
+      // Guardar datos biométricos y mostrar pantalla de código de referencia
+      setBiometricData(biometricData);
+      setShowReferralCode(true);
       
     } catch (error) {
       console.error('❌ Error guardando datos:', error);
@@ -75,12 +81,30 @@ export default function SimpleOnboardingScreen({ onCompleted }: Props) {
     }
   };
 
+  const handleReferralCodeCompleted = (referralCode: string) => {
+    console.log('🎯 Código de referencia procesado:', referralCode);
+    // Aquí se registrará el código de referencia en el backend
+    // Por ahora solo completamos el onboarding
+    setShowReferralCode(false);
+    onCompleted();
+  };
+
   const isFormValid = age >= 13 && age <= 120 &&
                      weight >= 20 && weight <= 300 &&
                      height >= 100 && height <= 250 &&
                      gender !== '' &&
                      activityLevel !== '' &&
                      (goal === 'maintain_weight' || (weightGoalAmount >= 0.1 && weightGoalAmount <= 2.0));
+
+  // Si debe mostrar la pantalla de código de referencia
+  if (showReferralCode) {
+    return (
+      <ReferralCodeScreen 
+        onCodeSubmitted={handleReferralCodeCompleted}
+        onSkip={() => handleReferralCodeCompleted('')}
+      />
+    );
+  }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>

@@ -15,13 +15,17 @@ import { affiliateApiService } from '../services/affiliateApiService';
 const colors = Colors;
 
 interface ReferralCodeScreenProps {
-  navigation: any;
-  route: any;
+  navigation?: any;
+  route?: any;
+  onCodeSubmitted?: (code: string) => void;
+  onSkip?: () => void;
 }
 
 export const ReferralCodeScreen: React.FC<ReferralCodeScreenProps> = ({
   navigation,
-  route
+  route,
+  onCodeSubmitted,
+  onSkip
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const { userData } = route.params || {};
@@ -40,19 +44,29 @@ export const ReferralCodeScreen: React.FC<ReferralCodeScreenProps> = ({
           [
             {
               text: 'Continuar',
-              onPress: () => navigation.navigate('BiometricData', { 
-                userData,
-                referralCode 
-              })
+              onPress: () => {
+                if (onCodeSubmitted) {
+                  onCodeSubmitted(referralCode);
+                } else if (navigation) {
+                  navigation.navigate('BiometricData', { 
+                    userData,
+                    referralCode 
+                  });
+                }
+              }
             }
           ]
         );
       } else {
         // Continuar sin código de referencia
-        navigation.navigate('BiometricData', { 
-          userData,
-          referralCode: null 
-        });
+        if (onCodeSubmitted) {
+          onCodeSubmitted('');
+        } else if (navigation) {
+          navigation.navigate('BiometricData', { 
+            userData,
+            referralCode: null 
+          });
+        }
       }
     } catch (error) {
       Alert.alert(
@@ -62,10 +76,16 @@ export const ReferralCodeScreen: React.FC<ReferralCodeScreenProps> = ({
           { text: 'Cancelar', style: 'cancel' },
           { 
             text: 'Continuar sin código', 
-            onPress: () => navigation.navigate('BiometricData', { 
-              userData,
-              referralCode: null 
-            })
+            onPress: () => {
+              if (onCodeSubmitted) {
+                onCodeSubmitted('');
+              } else if (navigation) {
+                navigation.navigate('BiometricData', { 
+                  userData,
+                  referralCode: null 
+                });
+              }
+            }
           }
         ]
       );
@@ -82,10 +102,16 @@ export const ReferralCodeScreen: React.FC<ReferralCodeScreenProps> = ({
         { text: 'Cancelar', style: 'cancel' },
         { 
           text: 'Continuar', 
-          onPress: () => navigation.navigate('BiometricData', { 
-            userData,
-            referralCode: null 
-          })
+          onPress: () => {
+            if (onSkip) {
+              onSkip();
+            } else if (navigation) {
+              navigation.navigate('BiometricData', { 
+                userData,
+                referralCode: null 
+              });
+            }
+          }
         }
       ]
     );
