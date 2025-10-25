@@ -154,4 +154,11 @@ router.get('/simple-dashboard', authenticateToken, simpleAffiliateController.get
  */
 router.get('/my-info', authenticateToken, simpleAffiliateController.getMyAffiliateInfo);
 
+/**
+ * @route GET /api/affiliates/stats/:code
+ * @desc Obtener estadísticas de un código de afiliado específico
+ * @access Public (para validación de códigos)
+ */
+router.get('/stats/:code', simpleAffiliateController.getAffiliateStats);
+
 module.exports = router;

@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import { ReferralCodeInput } from '../ReferralCodeInput';
 import { Colors } from '../../../constants/colors';
-import { affiliateApiService } from '../services/affiliateApiService';
 
 const colors = Colors;
 
@@ -35,6 +34,9 @@ export const ReferralCodeScreen: React.FC<ReferralCodeScreenProps> = ({
     
     try {
       if (referralCode) {
+        // Importar el servicio de afiliados dinámicamente
+        const { affiliateApiService } = await import('../services/affiliateApiService');
+        
         // Registrar el código de referencia
         await affiliateApiService.registerReferralCode(referralCode);
         
@@ -69,6 +71,7 @@ export const ReferralCodeScreen: React.FC<ReferralCodeScreenProps> = ({
         }
       }
     } catch (error) {
+      console.error('❌ Error registrando código de referencia:', error);
       Alert.alert(
         'Error',
         'No se pudo registrar el código de referencia. ¿Quieres continuar sin él?',

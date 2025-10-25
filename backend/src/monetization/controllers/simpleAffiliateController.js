@@ -68,6 +68,62 @@ class SimpleAffiliateController {
   }
 
   /**
+   * Obtener estadísticas de un código de afiliado específico
+   * GET /api/affiliates/stats/:code
+   */
+  async getAffiliateStats(req, res) {
+    try {
+      const { code } = req.params;
+      
+      console.log('🔍 [SIMPLE AFFILIATE] Buscando estadísticas para código:', code);
+      
+      // Buscar el código de afiliado
+      const affiliateCode = await AffiliateCode.findByCode(code);
+      if (!affiliateCode) {
+        return res.status(404).json({
+          success: false,
+          message: 'Código de afiliado no encontrado'
+        });
+      }
+
+      // Obtener información del afiliado
+      const affiliate = await User.findById(affiliateCode.created_by);
+      if (!affiliate) {
+        return res.status(404).json({
+          success: false,
+          message: 'Afiliado no encontrado'
+        });
+      }
+
+      const stats = {
+        affiliate: {
+          affiliate_name: affiliate.name,
+          email: affiliate.email,
+          code: affiliateCode.code,
+          commission_percentage: affiliateCode.commission_percentage
+        },
+        total_referrals: 0, // Por ahora 0, se implementará después
+        premium_referrals: 0,
+        total_commissions: 0.00
+      };
+
+      console.log('✅ [SIMPLE AFFILIATE] Estadísticas encontradas:', stats);
+
+      res.json({
+        success: true,
+        data: stats
+      });
+
+    } catch (error) {
+      console.error('❌ Error obteniendo estadísticas de afiliado:', error.message);
+      res.status(500).json({
+        success: false,
+        message: 'Error obteniendo estadísticas de afiliado'
+      });
+    }
+  },
+
+  /**
    * Obtener información básica del afiliado
    * GET /api/affiliates/my-info
    */
