@@ -91,6 +91,7 @@ app.use('/api/meals', mealRoutes);
 app.use('/api/subscriptions', routes.subscriptionRoutes);
 app.use('/api/affiliates', routes.affiliateRoutes);
 app.use('/api/affiliates', require('./monetization/routes/payments'));
+app.use('/api/affiliates', require('./monetization/routes/balance'));
 
 // Ruta de salud
 app.get('/api/health', async (req, res) => {
