@@ -217,11 +217,25 @@ export const affiliateApiService = {
     }
   },
 
-  // Obtener estadísticas de afiliado
+  // Obtener estadísticas de afiliado (endpoint público para validación)
   async getAffiliateStats(code: string) {
     try {
-      const response = await authenticatedRequest(`/affiliates/stats/${code}`);
-      return response.data;
+      console.log('🔍 [AFFILIATE API] Validando código:', code);
+      const response = await fetch(`${API_BASE_URL}/api/affiliates/stats/${code}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ [AFFILIATE API] Código validado:', result);
+      return result.data;
     } catch (error) {
       console.error('Error getting affiliate stats:', error);
       throw error;
