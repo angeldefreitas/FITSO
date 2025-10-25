@@ -1,6 +1,5 @@
 const express = require('express');
 const affiliateController = require('../controllers/affiliateController');
-const simpleAffiliateController = require('../controllers/simpleAffiliateController');
 const { authenticateToken } = require('../../middleware/auth');
 
 const router = express.Router();
@@ -134,105 +133,19 @@ router.post('/payments', authenticateToken, affiliateController.processCommissio
  */
 router.get('/pending-payments', authenticateToken, affiliateController.getPendingPayments);
 
-/**
- * @route GET /api/affiliates/simple-dashboard
- * @desc Obtener dashboard simplificado de afiliado
- * @access Private (Affiliate)
- */
-router.get('/simple-dashboard', authenticateToken, simpleAffiliateController.getSimpleAffiliateDashboard);
-
-/**
- * @route GET /api/affiliates/my-info
- * @desc Obtener información básica del afiliado
- * @access Private (Affiliate)
- */
-router.get('/my-info', authenticateToken, simpleAffiliateController.getMyAffiliateInfo);
-
-/**
- * @route GET /api/affiliates/stats/:code
- * @desc Obtener estadísticas de un código de afiliado específico
- * @access Public (para validación de códigos)
- */
-router.get('/stats/:code', simpleAffiliateController.getAffiliateStats);
-
-/**
- * @route GET /api/affiliates/debug-codes
- * @desc Debug: Listar todos los códigos de afiliados
- * @access Public (para debugging)
- */
-router.get('/debug-codes', simpleAffiliateController.debugListCodes);
-
-/**
- * @route GET /api/affiliates/debug-db
- * @desc Debug: Verificar estado de la base de datos
- * @access Public (para debugging)
- */
-router.get('/debug-db', simpleAffiliateController.debugDatabase);
-
-/**
- * @route POST /api/affiliates/init-tables
- * @desc Debug: Inicializar tablas de afiliados
- * @access Public (para debugging)
- */
-router.post('/init-tables', simpleAffiliateController.initAffiliateTables);
-
-/**
- * @route GET /api/affiliates/debug-code/:code
- * @desc Debug: Probar validación de código específico
- * @access Public (para debugging)
- */
-router.get('/debug-code/:code', simpleAffiliateController.debugCode);
 
 
-/**
- * @route POST /api/affiliates/update-premium-status
- * @desc Actualizar referido a premium y crear comisión
- * @access Private (Admin)
- */
-router.post('/update-premium-status', authenticateToken, simpleAffiliateController.updatePremiumStatus);
 
-/**
- * @route POST /api/affiliates/simulate-premium-conversion
- * @desc Simular conversión a premium (para testing)
- * @access Public (para testing)
- */
-router.post('/simulate-premium-conversion', simpleAffiliateController.simulatePremiumConversion);
 
-/**
- * @route GET /api/affiliates/admin-dashboard
- * @desc Obtener dashboard de administración con datos reales
- * @access Private (Admin)
- */
-router.get('/admin-dashboard', authenticateToken, simpleAffiliateController.getAdminDashboard);
 
-/**
- * @route PUT /api/affiliates/codes/:code/toggle
- * @desc Activar/desactivar código de afiliado
- * @access Private (Admin)
- * @param {string} code - Código del afiliado
- * @body {boolean} is_active - Estado del código
- */
-router.put('/codes/:code/toggle', authenticateToken, simpleAffiliateController.toggleAffiliateCode);
 
-/**
- * @route PUT /api/affiliates/codes/:code/commission
- * @desc Actualizar porcentaje de comisión de un afiliado
- * @access Private (Admin)
- * @param {string} code - Código del afiliado
- * @body {number} commission_percentage - Nuevo porcentaje de comisión
- */
-router.put('/codes/:code/commission', authenticateToken, simpleAffiliateController.updateCommissionPercentage);
 
-/**
- * @route POST /api/affiliates/track-premium-conversion
- * @desc Tracking automático de conversiones premium y cancelaciones
- * @access Public (para webhooks de RevenueCat/Stripe)
- * @body {string} user_id - ID del usuario
- * @body {string} subscription_id - ID de la suscripción
- * @body {number} subscription_amount - Monto de la suscripción
- * @body {boolean} is_conversion - true para conversión, false para cancelación
- */
-router.post('/track-premium-conversion', simpleAffiliateController.trackPremiumConversion);
+
+
+
+
+
+
 
 // Ruta privada eliminada - los códigos de afiliados son públicos
 

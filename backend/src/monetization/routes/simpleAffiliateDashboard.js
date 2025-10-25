@@ -4,6 +4,6 @@ const { getSimpleAffiliateDashboard } = require('../controllers/simpleAffiliateD
 const { authenticateToken } = require('../../middleware/auth');
 
 // Dashboard simple de afiliado
-router.get('/simple-dashboard', authenticateToken, getSimpleAffiliateDashboard);
+router.get('/new-simple-dashboard', authenticateToken, getSimpleAffiliateDashboard);
 
 module.exports = router;
