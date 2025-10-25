@@ -428,6 +428,55 @@ class SimpleAffiliateController {
       });
     }
   }
+
+  /**
+   * Debug: Arreglar códigos con affiliate_id en lugar de created_by
+   * POST /api/affiliates/fix-codes
+   */
+  async fixCodes(req, res) {
+    try {
+      console.log('🔧 [DEBUG] Arreglando códigos con affiliate_id...');
+      
+      const { query } = require('../../config/database');
+      
+      // Buscar códigos que tienen affiliate_id pero no created_by
+      const result = await query(`
+        SELECT * FROM affiliate_codes 
+        WHERE affiliate_id IS NOT NULL 
+        AND (created_by IS NULL OR created_by = '')
+      `);
+      
+      console.log('🔍 [DEBUG] Códigos encontrados para arreglar:', result.rows.length);
+      
+      let fixed = 0;
+      for (const code of result.rows) {
+        console.log('🔧 [DEBUG] Arreglando código:', code.code, 'affiliate_id:', code.affiliate_id);
+        
+        // Actualizar created_by con el valor de affiliate_id
+        await query(`
+          UPDATE affiliate_codes 
+          SET created_by = $1 
+          WHERE id = $2
+        `, [code.affiliate_id, code.id]);
+        
+        fixed++;
+      }
+      
+      res.json({
+        success: true,
+        message: `Se arreglaron ${fixed} códigos`,
+        fixed: fixed
+      });
+      
+    } catch (error) {
+      console.error('❌ [DEBUG] Error arreglando códigos:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error arreglando códigos',
+        error: error.message
+      });
+    }
+  }
 }
 
 module.exports = new SimpleAffiliateController();
