@@ -45,7 +45,7 @@ class SimpleAffiliateController {
         pending_commissions: 0.00,
         paid_commissions: 0.00,
         conversion_rate: 0.00,
-        commission_percentage: 30, // Porcentaje por defecto
+        commission_percentage: 50, // Porcentaje por defecto
         affiliate_code: affiliateCode,
         user_info: {
           name: user.name,
