@@ -80,6 +80,7 @@ class SimpleAffiliateController {
       // Buscar el código de afiliado
       const affiliateCode = await AffiliateCode.findByCode(code);
       console.log('🔍 [SIMPLE AFFILIATE] Resultado de búsqueda:', affiliateCode ? 'Encontrado' : 'No encontrado');
+      console.log('🔍 [SIMPLE AFFILIATE] Código encontrado:', affiliateCode);
       
       if (!affiliateCode) {
         return res.status(404).json({
@@ -90,8 +91,10 @@ class SimpleAffiliateController {
 
       // Obtener información del afiliado
       console.log('🔍 [SIMPLE AFFILIATE] Buscando usuario con ID:', affiliateCode.created_by);
+      console.log('🔍 [SIMPLE AFFILIATE] Tipo de created_by:', typeof affiliateCode.created_by);
       const affiliate = await User.findById(affiliateCode.created_by);
       console.log('🔍 [SIMPLE AFFILIATE] Usuario encontrado:', affiliate ? 'Sí' : 'No');
+      console.log('🔍 [SIMPLE AFFILIATE] Usuario data:', affiliate);
       
       if (!affiliate) {
         return res.status(404).json({
