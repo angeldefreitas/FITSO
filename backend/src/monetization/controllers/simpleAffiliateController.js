@@ -68,7 +68,7 @@ class SimpleAffiliateController {
   }
 
   /**
-   * Obtener estadísticas de un código de afiliado específico
+   * Obtener estadísticas de un código de afiliado específico (PÚBLICO para validación)
    * GET /api/affiliates/stats/:code
    */
   async getAffiliateStats(req, res) {
@@ -76,14 +76,6 @@ class SimpleAffiliateController {
       const { code } = req.params;
       
       console.log('🔍 [SIMPLE AFFILIATE] Buscando estadísticas para código:', code);
-      
-      // Debug: Listar todos los códigos existentes
-      try {
-        const allCodes = await AffiliateCode.findAllActive();
-        console.log('📋 [DEBUG] Códigos activos en la base de datos:', allCodes.map(c => c.code));
-      } catch (debugError) {
-        console.log('⚠️ [DEBUG] Error listando códigos:', debugError.message);
-      }
       
       // Buscar el código de afiliado
       const affiliateCode = await AffiliateCode.findByCode(code);
