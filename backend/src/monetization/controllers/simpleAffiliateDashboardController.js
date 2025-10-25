@@ -1,4 +1,4 @@
-const { query } = require('../../../config/database');
+const { query } = require('../../config/database');
 
 // Dashboard simple de afiliado - SIN CONSULTAS COMPLEJAS
 const getSimpleAffiliateDashboard = async (req, res) => {
