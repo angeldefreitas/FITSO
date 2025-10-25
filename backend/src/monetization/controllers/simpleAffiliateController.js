@@ -60,8 +60,6 @@ class SimpleAffiliateController {
         const commissionResult = await query(commissionQuery, [affiliateCode]);
         const commissionPercentage = commissionResult.rows[0]?.commission_percentage || 30;
         
-        console.log('🔍 [DEBUG] Comisión obtenida:', commissionPercentage);
-        
         // Obtener estadísticas básicas
         const statsQuery = `
           SELECT 
