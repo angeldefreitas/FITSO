@@ -15,6 +15,7 @@ const affiliateController = require('./controllers/affiliateController');
 const subscriptionController = require('./controllers/subscriptionController');
 const paymentController = require('./controllers/paymentController');
 const balanceController = require('./controllers/balanceController');
+const simpleAffiliateDashboardController = require('./controllers/simpleAffiliateDashboardController');
 
 // Exportar todos los modelos
 const AffiliateCode = require('./models/AffiliateCode');
@@ -30,6 +31,7 @@ const affiliateRoutes = require('./routes/affiliates');
 const subscriptionRoutes = require('./routes/subscriptions');
 const paymentRoutes = require('./routes/payments');
 const balanceRoutes = require('./routes/balance');
+const simpleAffiliateDashboardRoutes = require('./routes/simpleAffiliateDashboard');
 
 module.exports = {
   // Controladores
@@ -58,6 +60,7 @@ module.exports = {
     affiliateRoutes,
     subscriptionRoutes,
     paymentRoutes,
-    balanceRoutes
+    balanceRoutes,
+    simpleAffiliateDashboardRoutes
   }
 };
