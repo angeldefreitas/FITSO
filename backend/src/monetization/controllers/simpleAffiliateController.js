@@ -174,6 +174,84 @@ class SimpleAffiliateController {
   }
 
   /**
+   * Debug: Verificar estado de la base de datos
+   * GET /api/affiliates/debug-db
+   */
+  async debugDatabase(req, res) {
+    try {
+      console.log('🔍 [DEBUG] Verificando estado de la base de datos...');
+      
+      // Verificar si las tablas existen
+      const tables = [
+        'affiliate_codes',
+        'user_referrals', 
+        'affiliate_commissions',
+        'affiliate_payments'
+      ];
+      
+      const results = {};
+      
+      for (const table of tables) {
+        try {
+          const query = `SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+            AND table_name = $1
+          )`;
+          const result = await query(query, [table]);
+          results[table] = result.rows[0].exists;
+          console.log(`📋 [DEBUG] Tabla ${table}: ${result.rows[0].exists ? 'EXISTE' : 'NO EXISTE'}`);
+        } catch (error) {
+          results[table] = false;
+          console.log(`❌ [DEBUG] Error verificando tabla ${table}:`, error.message);
+        }
+      }
+      
+      res.json({
+        success: true,
+        data: {
+          tables: results,
+          message: 'Verificación de base de datos completada'
+        }
+      });
+      
+    } catch (error) {
+      console.error('❌ [DEBUG] Error verificando base de datos:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error verificando base de datos',
+        error: error.message
+      });
+    }
+  },
+
+  /**
+   * Debug: Inicializar tablas de afiliados
+   * POST /api/affiliates/init-tables
+   */
+  async initAffiliateTables(req, res) {
+    try {
+      console.log('🔧 [DEBUG] Inicializando tablas de afiliados...');
+      
+      const { initAffiliateTables } = require('../../../scripts/init-affiliate-tables-production');
+      await initAffiliateTables();
+      
+      res.json({
+        success: true,
+        message: 'Tablas de afiliados inicializadas exitosamente'
+      });
+      
+    } catch (error) {
+      console.error('❌ [DEBUG] Error inicializando tablas:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error inicializando tablas de afiliados',
+        error: error.message
+      });
+    }
+  },
+
+  /**
    * Obtener información básica del afiliado
    * GET /api/affiliates/my-info
    */

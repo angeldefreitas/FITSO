@@ -168,4 +168,18 @@ router.get('/stats/:code', simpleAffiliateController.getAffiliateStats);
  */
 router.get('/debug-codes', simpleAffiliateController.debugListCodes);
 
+/**
+ * @route GET /api/affiliates/debug-db
+ * @desc Debug: Verificar estado de la base de datos
+ * @access Public (para debugging)
+ */
+router.get('/debug-db', simpleAffiliateController.debugDatabase);
+
+/**
+ * @route POST /api/affiliates/init-tables
+ * @desc Debug: Inicializar tablas de afiliados
+ * @access Public (para debugging)
+ */
+router.post('/init-tables', simpleAffiliateController.initAffiliateTables);
+
 module.exports = router;
