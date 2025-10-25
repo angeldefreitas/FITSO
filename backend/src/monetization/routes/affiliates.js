@@ -176,6 +176,13 @@ router.get('/debug-db', simpleAffiliateController.debugDatabase);
  */
 router.post('/init-tables', simpleAffiliateController.initAffiliateTables);
 
+/**
+ * @route GET /api/affiliates/debug-code/:code
+ * @desc Debug: Probar validación de código específico
+ * @access Public (para debugging)
+ */
+router.get('/debug-code/:code', simpleAffiliateController.debugCode);
+
 // Ruta privada eliminada - los códigos de afiliados son públicos
 
 module.exports = router;

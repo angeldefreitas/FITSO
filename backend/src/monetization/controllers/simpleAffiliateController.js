@@ -378,6 +378,56 @@ class SimpleAffiliateController {
       });
     }
   }
+
+  /**
+   * Debug: Probar validación de código específico
+   * GET /api/affiliates/debug-code/:code
+   */
+  async debugCode(req, res) {
+    try {
+      const { code } = req.params;
+      console.log('🔍 [DEBUG] Probando código:', code);
+      
+      // Buscar el código directamente
+      const { query } = require('../../config/database');
+      const result = await query('SELECT * FROM affiliate_codes WHERE code = $1 AND is_active = true', [code]);
+      
+      console.log('🔍 [DEBUG] Resultado directo:', result.rows);
+      
+      if (result.rows.length === 0) {
+        return res.json({
+          success: false,
+          message: 'Código no encontrado en base de datos',
+          code: code,
+          query: 'SELECT * FROM affiliate_codes WHERE code = $1 AND is_active = true'
+        });
+      }
+      
+      const affiliateCode = result.rows[0];
+      console.log('🔍 [DEBUG] Código encontrado:', affiliateCode);
+      
+      // Buscar el usuario
+      const userResult = await query('SELECT * FROM users WHERE id = $1', [affiliateCode.created_by]);
+      console.log('🔍 [DEBUG] Usuario encontrado:', userResult.rows);
+      
+      res.json({
+        success: true,
+        data: {
+          code: affiliateCode,
+          user: userResult.rows[0] || null,
+          message: 'Debug completado'
+        }
+      });
+      
+    } catch (error) {
+      console.error('❌ [DEBUG] Error en debug de código:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error en debug de código',
+        error: error.message
+      });
+    }
+  }
 }
 
 module.exports = new SimpleAffiliateController();
