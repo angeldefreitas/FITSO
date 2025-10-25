@@ -24,3 +24,5 @@ export { SimpleAdminButton } from './SimpleAdminButton';
 export { UserAccessButtons } from './UserAccessButtons';
 export { UserAccessButtonsReal } from './UserAccessButtonsReal';
 export { UserReferralInfo } from './UserReferralInfo';
+export { PaymentSetup } from './PaymentSetup';
+export { PaymentHistory } from './PaymentHistory';

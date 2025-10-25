@@ -414,4 +414,71 @@ export const affiliateApiService = {
       throw error;
     }
   },
+
+  // Métodos de pagos
+  async createStripeAccount(country: string = 'US', type: string = 'express') {
+    try {
+      console.log('🏦 [AFFILIATE API] Creando cuenta Stripe');
+      
+      const response = await authenticatedRequest('/affiliates/create-stripe-account', {
+        method: 'POST',
+        body: JSON.stringify({ country, type }),
+      });
+      
+      console.log('✅ [AFFILIATE API] Cuenta Stripe creada:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ [AFFILIATE API] Error creando cuenta Stripe:', error);
+      throw error;
+    }
+  },
+
+  async getStripeAccountStatus() {
+    try {
+      console.log('🔍 [AFFILIATE API] Verificando estado de cuenta Stripe');
+      
+      const response = await authenticatedRequest('/affiliates/stripe-account-status');
+      
+      console.log('✅ [AFFILIATE API] Estado de cuenta obtenido:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ [AFFILIATE API] Error verificando cuenta:', error);
+      throw error;
+    }
+  },
+
+  async processPayout(affiliateCode: string, amount: number, description?: string) {
+    try {
+      console.log('💰 [AFFILIATE API] Procesando pago de comisión');
+      
+      const response = await authenticatedRequest('/affiliates/process-payout', {
+        method: 'POST',
+        body: JSON.stringify({
+          affiliate_code: affiliateCode,
+          amount: amount,
+          description: description
+        }),
+      });
+      
+      console.log('✅ [AFFILIATE API] Pago procesado:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ [AFFILIATE API] Error procesando pago:', error);
+      throw error;
+    }
+  },
+
+  async getPaymentHistory(limit: number = 50, offset: number = 0) {
+    try {
+      console.log('📊 [AFFILIATE API] Obteniendo historial de pagos');
+      
+      const response = await authenticatedRequest(`/affiliates/payment-history?limit=${limit}&offset=${offset}`);
+      
+      console.log('✅ [AFFILIATE API] Historial obtenido:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ [AFFILIATE API] Error obteniendo historial:', error);
+      throw error;
+    }
+  },
 };

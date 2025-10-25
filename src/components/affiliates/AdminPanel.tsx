@@ -232,6 +232,51 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
     }
   };
 
+  const processPayout = async (affiliateCode: string, affiliateName: string) => {
+    try {
+      // Obtener comisiones pendientes del afiliado
+      const commissions = await affiliateApiService.getAffiliateCommissions(affiliateCode);
+      const pendingCommissions = commissions.filter((c: any) => !c.is_paid);
+      
+      if (pendingCommissions.length === 0) {
+        Alert.alert('Sin comisiones', 'Este afiliado no tiene comisiones pendientes de pago');
+        return;
+      }
+
+      const totalAmount = pendingCommissions.reduce((sum: number, c: any) => sum + parseFloat(c.commission_amount), 0);
+      
+      Alert.alert(
+        'Procesar Pago',
+        `¿Procesar pago de $${totalAmount.toFixed(2)} a ${affiliateName}?\n\nComisiones pendientes: ${pendingCommissions.length}`,
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { 
+            text: 'Procesar', 
+            onPress: async () => {
+              try {
+                const response = await affiliateApiService.processPayout(
+                  affiliateCode, 
+                  totalAmount, 
+                  `Pago de comisiones - ${affiliateName}`
+                );
+                
+                Alert.alert('Éxito', 'Pago procesado exitosamente');
+                fetchAffiliates();
+              } catch (error) {
+                console.error('❌ [ADMIN] Error procesando pago:', error);
+                Alert.alert('Error', 'No se pudo procesar el pago');
+              }
+            }
+          }
+        ]
+      );
+      
+    } catch (error) {
+      console.error('❌ [ADMIN] Error obteniendo comisiones:', error);
+      Alert.alert('Error', 'No se pudieron obtener las comisiones del afiliado');
+    }
+  };
+
   const handleChangeCommission = (affiliateCode: string, currentPercentage: number) => {
     Alert.prompt(
       'Cambiar Comisión',
@@ -300,20 +345,26 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
         </View>
       </View>
 
-      <View style={styles.affiliateActions}>
-        <TouchableOpacity 
-          style={[styles.actionButton, { backgroundColor: colors.blue }]}
-          onPress={() => handleViewReferrals(affiliate)}
-        >
-          <Text style={styles.actionButtonText}>Ver Referidos</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.actionButton, { backgroundColor: colors.orange }]}
-          onPress={() => handleManageAffiliate(affiliate)}
-        >
-          <Text style={styles.actionButtonText}>Gestionar</Text>
-        </TouchableOpacity>
-      </View>
+            <View style={styles.affiliateActions}>
+              <TouchableOpacity 
+                style={[styles.actionButton, { backgroundColor: colors.blue }]}
+                onPress={() => handleViewReferrals(affiliate)}
+              >
+                <Text style={styles.actionButtonText}>Ver Referidos</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.actionButton, { backgroundColor: colors.green }]}
+                onPress={() => processPayout(affiliate.affiliate_code, affiliate.name)}
+              >
+                <Text style={styles.actionButtonText}>💰 Pagar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.actionButton, { backgroundColor: colors.orange }]}
+                onPress={() => handleManageAffiliate(affiliate)}
+              >
+                <Text style={styles.actionButtonText}>Gestionar</Text>
+              </TouchableOpacity>
+            </View>
     </View>
   );
 

@@ -13,6 +13,8 @@ import {
 } from 'react-native';
 import { Colors } from '../../constants/colors';
 import { affiliateApiService } from './services/affiliateApiService';
+import { PaymentSetup } from './PaymentSetup';
+import { PaymentHistory } from './PaymentHistory';
 
 const colors = Colors;
 
@@ -37,6 +39,8 @@ export const AffiliateDashboard: React.FC<AffiliateDashboardProps> = ({ onClose 
   const [refreshing, setRefreshing] = useState(false);
   const [showReferralsModal, setShowReferralsModal] = useState(false);
   const [showCommissionsModal, setShowCommissionsModal] = useState(false);
+  const [showPaymentSetup, setShowPaymentSetup] = useState(false);
+  const [showPaymentHistory, setShowPaymentHistory] = useState(false);
   const [referrals, setReferrals] = useState<any[]>([]);
   const [commissions, setCommissions] = useState<any[]>([]);
   const [loadingReferrals, setLoadingReferrals] = useState(false);
@@ -256,6 +260,26 @@ export const AffiliateDashboard: React.FC<AffiliateDashboardProps> = ({ onClose 
           </View>
         </View>
 
+        {/* Sección de Pagos */}
+        <View style={styles.paymentSection}>
+          <Text style={styles.sectionTitle}>💰 Configuración de Pagos</Text>
+          <View style={styles.paymentCard}>
+            <Text style={styles.paymentDescription}>
+              Configura tu cuenta para recibir pagos de comisiones automáticamente
+            </Text>
+            <View style={styles.paymentActions}>
+              <TouchableOpacity style={styles.paymentButton} onPress={() => setShowPaymentSetup(true)}>
+                <Text style={styles.paymentButtonText}>Configurar Pagos</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.paymentButton, styles.secondaryButton]} onPress={() => setShowPaymentHistory(true)}>
+                <Text style={[styles.paymentButtonText, styles.secondaryButtonText]}>
+                  Ver Historial
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+
         {/* Botones de acción */}
         <View style={styles.actionsSection}>
           <TouchableOpacity style={styles.actionButton} onPress={handleViewReferrals}>
@@ -394,6 +418,52 @@ export const AffiliateDashboard: React.FC<AffiliateDashboardProps> = ({ onClose 
                 )}
               />
             )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de Configuración de Pagos */}
+      <Modal
+        visible={showPaymentSetup}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setShowPaymentSetup(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Configurar Pagos</Text>
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => setShowPaymentSetup(false)}
+            >
+              <Text style={styles.modalCloseButtonText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.modalContent}>
+            <PaymentSetup onSetupComplete={() => setShowPaymentSetup(false)} />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de Historial de Pagos */}
+      <Modal
+        visible={showPaymentHistory}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setShowPaymentHistory(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Historial de Pagos</Text>
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => setShowPaymentHistory(false)}
+            >
+              <Text style={styles.modalCloseButtonText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.modalContent}>
+            <PaymentHistory onClose={() => setShowPaymentHistory(false)} />
           </View>
         </View>
       </Modal>
@@ -777,5 +847,42 @@ const styles = StyleSheet.create({
   },
   commissionStatus: {
     marginLeft: 12,
+  },
+  // Estilos para sección de pagos
+  paymentSection: {
+    margin: 16,
+    marginTop: 0,
+  },
+  paymentCard: {
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    padding: 20,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  paymentDescription: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    lineHeight: 24,
+    marginBottom: 20,
+  },
+  paymentActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  paymentButton: {
+    backgroundColor: colors.primary,
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    flex: 1,
+  },
+  paymentButtonText: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
