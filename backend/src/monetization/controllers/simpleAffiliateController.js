@@ -223,7 +223,7 @@ class SimpleAffiliateController {
         error: error.message
       });
     }
-  },
+  }
 
   /**
    * Debug: Inicializar tablas de afiliados
