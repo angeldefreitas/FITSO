@@ -88,13 +88,7 @@ router.get('/my-referral', authenticateToken, affiliateController.getMyReferral)
  */
 router.get('/dashboard', authenticateToken, affiliateController.getAffiliateDashboard);
 
-/**
- * @route GET /api/affiliates/stats/:code
- * @desc Obtener estadísticas de un afiliado
- * @access Private (Admin)
- * @param {string} code - Código del afiliado
- */
-router.get('/stats/:code', authenticateToken, affiliateController.getAffiliateStats);
+// Ruta movida más abajo para evitar conflicto con la ruta pública
 
 /**
  * @route GET /api/affiliates/referrals/:code
@@ -181,5 +175,7 @@ router.get('/debug-db', simpleAffiliateController.debugDatabase);
  * @access Public (para debugging)
  */
 router.post('/init-tables', simpleAffiliateController.initAffiliateTables);
+
+// Ruta privada eliminada - los códigos de afiliados son públicos
 
 module.exports = router;
