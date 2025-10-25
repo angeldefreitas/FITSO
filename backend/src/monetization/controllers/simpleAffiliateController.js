@@ -35,9 +35,11 @@ class SimpleAffiliateController {
         console.log('⚠️ [SIMPLE AFFILIATE] Error buscando código real:', codeError.message);
       }
 
-      // Crear estadísticas básicas para el dashboard
-      const dashboardStats = {
-        total_referrals: 0, // Por ahora 0, se puede implementar después
+      // Obtener estadísticas reales de la base de datos
+      const { query } = require('../../config/database');
+      
+      let dashboardStats = {
+        total_referrals: 0,
         premium_referrals: 0,
         total_commissions: 0.00,
         pending_commissions: 0.00,
@@ -50,6 +52,48 @@ class SimpleAffiliateController {
           member_since: user.created_at
         }
       };
+
+      try {
+        // Obtener estadísticas reales
+        const statsQuery = `
+          SELECT 
+            COUNT(ur.id) as total_referrals,
+            COUNT(CASE WHEN ur.is_premium = true THEN 1 END) as premium_referrals,
+            COALESCE(SUM(ac.commission_amount), 0) as total_commissions,
+            COALESCE(SUM(CASE WHEN ac.is_paid = false THEN ac.commission_amount ELSE 0 END), 0) as pending_commissions,
+            COALESCE(SUM(CASE WHEN ac.is_paid = true THEN ac.commission_amount ELSE 0 END), 0) as paid_commissions
+          FROM user_referrals ur
+          LEFT JOIN affiliate_commissions ac ON ur.affiliate_code = ac.affiliate_code AND ur.user_id = ac.user_id
+          WHERE ur.affiliate_code = $1
+        `;
+        
+        const statsResult = await query(statsQuery, [affiliateCode]);
+        const stats = statsResult.rows[0];
+        
+        const totalReferrals = parseInt(stats.total_referrals) || 0;
+        const premiumReferrals = parseInt(stats.premium_referrals) || 0;
+        const conversionRate = totalReferrals > 0 ? (premiumReferrals / totalReferrals) * 100 : 0;
+
+        dashboardStats = {
+          total_referrals: totalReferrals,
+          premium_referrals: premiumReferrals,
+          total_commissions: parseFloat(stats.total_commissions) || 0,
+          pending_commissions: parseFloat(stats.pending_commissions) || 0,
+          paid_commissions: parseFloat(stats.paid_commissions) || 0,
+          conversion_rate: Math.round(conversionRate * 100) / 100,
+          affiliate_code: affiliateCode,
+          user_info: {
+            name: user.name,
+            email: user.email,
+            member_since: user.created_at
+          }
+        };
+        
+        console.log('📊 [SIMPLE AFFILIATE] Estadísticas reales obtenidas:', dashboardStats);
+      } catch (statsError) {
+        console.log('⚠️ [SIMPLE AFFILIATE] Error obteniendo estadísticas reales:', statsError.message);
+        console.log('📊 [SIMPLE AFFILIATE] Usando estadísticas por defecto');
+      }
 
       console.log('✅ [SIMPLE AFFILIATE] Dashboard generado:', dashboardStats);
 
@@ -473,6 +517,121 @@ class SimpleAffiliateController {
       res.status(500).json({
         success: false,
         message: 'Error arreglando códigos',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Actualizar referido a premium
+   * POST /api/affiliates/update-premium-status
+   */
+  async updatePremiumStatus(req, res) {
+    try {
+      const { user_id, is_premium } = req.body;
+      
+      console.log('🔄 [AFFILIATE] Actualizando estado premium para usuario:', user_id, 'is_premium:', is_premium);
+      
+      const { query } = require('../../config/database');
+      
+      // Actualizar el referido
+      const updateResult = await query(`
+        UPDATE user_referrals 
+        SET is_premium = $1, premium_conversion_date = $2
+        WHERE user_id = $3
+        RETURNING *
+      `, [is_premium, is_premium ? new Date() : null, user_id]);
+      
+      if (updateResult.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'Referido no encontrado'
+        });
+      }
+      
+      const referral = updateResult.rows[0];
+      console.log('✅ [AFFILIATE] Referido actualizado:', referral);
+      
+      // Si se convirtió a premium, crear comisión
+      if (is_premium) {
+        console.log('💰 [AFFILIATE] Creando comisión para conversión premium...');
+        
+        // Obtener el código de afiliado
+        const affiliateCode = await query(`
+          SELECT * FROM affiliate_codes 
+          WHERE code = $1
+        `, [referral.affiliate_code]);
+        
+        if (affiliateCode.rows.length > 0) {
+          const code = affiliateCode.rows[0];
+          const commissionPercentage = parseFloat(code.commission_percentage);
+          const subscriptionAmount = 9.99; // Precio de suscripción mensual
+          const commissionAmount = (subscriptionAmount * commissionPercentage) / 100;
+          
+          // Crear comisión
+          await query(`
+            INSERT INTO affiliate_commissions (
+              affiliate_code, user_id, commission_amount, 
+              commission_percentage, subscription_amount,
+              payment_period_start, payment_period_end
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+          `, [
+            referral.affiliate_code,
+            user_id,
+            commissionAmount,
+            commissionPercentage,
+            subscriptionAmount,
+            new Date(), // Inicio del período
+            new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 días después
+          ]);
+          
+          console.log('💰 [AFFILIATE] Comisión creada:', {
+            affiliate_code: referral.affiliate_code,
+            user_id,
+            commission_amount: commissionAmount,
+            commission_percentage: commissionPercentage
+          });
+        }
+      }
+      
+      res.json({
+        success: true,
+        message: 'Estado premium actualizado exitosamente',
+        data: referral
+      });
+      
+    } catch (error) {
+      console.error('❌ [AFFILIATE] Error actualizando estado premium:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error actualizando estado premium',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Simular conversión a premium (para testing)
+   * POST /api/affiliates/simulate-premium-conversion
+   */
+  async simulatePremiumConversion(req, res) {
+    try {
+      const { user_id } = req.body;
+      
+      console.log('🧪 [AFFILIATE] Simulando conversión premium para usuario:', user_id);
+      
+      // Llamar al método de actualización
+      const result = await this.updatePremiumStatus({
+        body: { user_id, is_premium: true }
+      }, res);
+      
+      console.log('✅ [AFFILIATE] Conversión simulada exitosamente');
+      
+    } catch (error) {
+      console.error('❌ [AFFILIATE] Error simulando conversión:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error simulando conversión premium',
         error: error.message
       });
     }

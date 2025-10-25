@@ -190,6 +190,20 @@ router.get('/debug-code/:code', simpleAffiliateController.debugCode);
  */
 router.post('/fix-codes', simpleAffiliateController.fixCodes);
 
+/**
+ * @route POST /api/affiliates/update-premium-status
+ * @desc Actualizar referido a premium y crear comisión
+ * @access Private (Admin)
+ */
+router.post('/update-premium-status', authenticateToken, simpleAffiliateController.updatePremiumStatus);
+
+/**
+ * @route POST /api/affiliates/simulate-premium-conversion
+ * @desc Simular conversión a premium (para testing)
+ * @access Public (para testing)
+ */
+router.post('/simulate-premium-conversion', simpleAffiliateController.simulatePremiumConversion);
+
 // Ruta privada eliminada - los códigos de afiliados son públicos
 
 module.exports = router;
