@@ -378,4 +378,40 @@ export const affiliateApiService = {
       throw error;
     }
   },
+
+  async trackPremiumConversion(userId: string, subscriptionId: string, subscriptionAmount: number, isConversion: boolean = true) {
+    try {
+      console.log('🔄 [AFFILIATE API] Tracking conversión premium:', {
+        userId,
+        subscriptionId,
+        subscriptionAmount,
+        isConversion
+      });
+      
+      const response = await fetch(`${API_BASE_URL}/api/affiliates/track-premium-conversion`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          subscription_id: subscriptionId,
+          subscription_amount: subscriptionAmount,
+          is_conversion: isConversion
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Error en tracking de conversión');
+      }
+      
+      console.log('✅ [AFFILIATE API] Conversión tracked:', data);
+      return data;
+    } catch (error) {
+      console.error('❌ [AFFILIATE API] Error en tracking:', error);
+      throw error;
+    }
+  },
 };

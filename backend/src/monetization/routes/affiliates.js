@@ -229,6 +229,17 @@ router.put('/codes/:code/toggle', authenticateToken, simpleAffiliateController.t
  */
 router.put('/codes/:code/commission', authenticateToken, simpleAffiliateController.updateCommissionPercentage);
 
+/**
+ * @route POST /api/affiliates/track-premium-conversion
+ * @desc Tracking automático de conversiones premium y cancelaciones
+ * @access Public (para webhooks de RevenueCat/Stripe)
+ * @body {string} user_id - ID del usuario
+ * @body {string} subscription_id - ID de la suscripción
+ * @body {number} subscription_amount - Monto de la suscripción
+ * @body {boolean} is_conversion - true para conversión, false para cancelación
+ */
+router.post('/track-premium-conversion', simpleAffiliateController.trackPremiumConversion);
+
 // Ruta privada eliminada - los códigos de afiliados son públicos
 
 module.exports = router;

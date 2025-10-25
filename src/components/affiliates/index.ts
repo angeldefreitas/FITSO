@@ -6,6 +6,7 @@ export { ReferralCodeScreen } from './screens/ReferralCodeScreen';
 // Exportaciones de hooks
 export { useUserType, type UserType, type UserTypeInfo } from './hooks/useUserType';
 export { useUserTypeReal } from './hooks/useUserTypeReal';
+export { useAffiliateTracking } from './hooks/useAffiliateTracking';
 
 // Exportaciones de servicios
 export { affiliateApiService } from './services/affiliateApiService';

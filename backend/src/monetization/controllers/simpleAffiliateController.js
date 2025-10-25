@@ -56,20 +56,20 @@ class SimpleAffiliateController {
 
       try {
         // Obtener estadísticas reales y porcentaje de comisión
-        const statsQuery = `
-          SELECT 
-            COUNT(ur.id) as total_referrals,
-            COUNT(CASE WHEN ur.is_premium = true THEN 1 END) as premium_referrals,
-            COALESCE(SUM(ac.commission_amount), 0) as total_commissions,
-            COALESCE(SUM(CASE WHEN ac.is_paid = false THEN ac.commission_amount ELSE 0 END), 0) as pending_commissions,
-            COALESCE(SUM(CASE WHEN ac.is_paid = true THEN ac.commission_amount ELSE 0 END), 0) as paid_commissions,
-            ac_affiliate.commission_percentage
-          FROM user_referrals ur
-          LEFT JOIN affiliate_commissions ac ON ur.affiliate_code = ac.affiliate_code AND ur.user_id = ac.user_id
-          LEFT JOIN affiliate_codes ac_affiliate ON ur.affiliate_code = ac_affiliate.code
-          WHERE ur.affiliate_code = $1
-          GROUP BY ac_affiliate.commission_percentage
-        `;
+            const statsQuery = `
+              SELECT 
+                COUNT(ur.id) as total_referrals,
+                COUNT(CASE WHEN ur.is_premium = true THEN 1 END) as premium_referrals,
+                COALESCE(SUM(CASE WHEN ac.is_cancelled = false OR ac.is_cancelled IS NULL THEN ac.commission_amount ELSE 0 END), 0) as total_commissions,
+                COALESCE(SUM(CASE WHEN (ac.is_paid = false AND (ac.is_cancelled = false OR ac.is_cancelled IS NULL)) THEN ac.commission_amount ELSE 0 END), 0) as pending_commissions,
+                COALESCE(SUM(CASE WHEN (ac.is_paid = true AND (ac.is_cancelled = false OR ac.is_cancelled IS NULL)) THEN ac.commission_amount ELSE 0 END), 0) as paid_commissions,
+                ac_affiliate.commission_percentage
+              FROM user_referrals ur
+              LEFT JOIN affiliate_commissions ac ON ur.affiliate_code = ac.affiliate_code AND ur.user_id = ac.user_id
+              LEFT JOIN affiliate_codes ac_affiliate ON ur.affiliate_code = ac_affiliate.code
+              WHERE ur.affiliate_code = $1
+              GROUP BY ac_affiliate.commission_percentage
+            `;
         
         const statsResult = await query(statsQuery, [affiliateCode]);
         const stats = statsResult.rows[0];
@@ -881,6 +881,146 @@ class SimpleAffiliateController {
       res.status(500).json({
         success: false,
         message: 'Error actualizando porcentaje de comisión',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Tracking automático de conversión premium
+   * POST /api/affiliates/track-premium-conversion
+   */
+  async trackPremiumConversion(req, res) {
+    try {
+      const { user_id, subscription_id, subscription_amount, is_conversion = true } = req.body;
+
+      console.log('🔄 [TRACKING] Procesando conversión premium:', {
+        user_id,
+        subscription_id,
+        subscription_amount,
+        is_conversion
+      });
+
+      if (!user_id) {
+        return res.status(400).json({
+          success: false,
+          message: 'user_id es requerido'
+        });
+      }
+
+      const { query } = require('../../config/database');
+
+      // Buscar si el usuario tiene un código de referencia
+      const referralQuery = `
+        SELECT ur.*, ac.code as affiliate_code, ac.created_by as affiliate_id, ac.commission_percentage
+        FROM user_referrals ur
+        LEFT JOIN affiliate_codes ac ON ur.affiliate_code = ac.code
+        WHERE ur.user_id = $1
+      `;
+      
+      const referralResult = await query(referralQuery, [user_id]);
+      
+      if (referralResult.rows.length === 0) {
+        console.log('⚠️ [TRACKING] Usuario no tiene código de referencia');
+        return res.json({
+          success: true,
+          message: 'Usuario no tiene código de referencia',
+          data: null
+        });
+      }
+
+      const referral = referralResult.rows[0];
+      const affiliateCode = referral.affiliate_code;
+      const affiliateId = referral.affiliate_id;
+      const commissionPercentage = parseFloat(referral.commission_percentage) || 30;
+
+      if (is_conversion) {
+        // CONVERSIÓN A PREMIUM
+        console.log('✅ [TRACKING] Procesando conversión a premium');
+
+        // Actualizar el referral como premium
+        const updateReferralQuery = `
+          UPDATE user_referrals 
+          SET is_premium = true, premium_conversion_date = CURRENT_TIMESTAMP
+          WHERE user_id = $1
+        `;
+        await query(updateReferralQuery, [user_id]);
+
+        // Calcular comisión
+        const commissionAmount = (subscription_amount * commissionPercentage) / 100;
+
+        // Crear comisión
+        const commissionQuery = `
+          INSERT INTO affiliate_commissions (
+            id, affiliate_code, user_id, subscription_id, commission_amount, 
+            commission_percentage, is_paid, created_at, updated_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        `;
+        
+        const { v4: uuidv4 } = require('uuid');
+        await query(commissionQuery, [
+          uuidv4(),
+          affiliateCode,
+          user_id,
+          subscription_id || uuidv4(),
+          commissionAmount,
+          commissionPercentage,
+          false // No pagado inicialmente
+        ]);
+
+        console.log('💰 [TRACKING] Comisión creada:', {
+          affiliateCode,
+          commissionAmount,
+          commissionPercentage
+        });
+
+        res.json({
+          success: true,
+          message: 'Conversión a premium procesada exitosamente',
+          data: {
+            affiliate_code: affiliateCode,
+            commission_amount: commissionAmount,
+            commission_percentage: commissionPercentage
+          }
+        });
+
+      } else {
+        // CANCELACIÓN DE SUSCRIPCIÓN
+        console.log('❌ [TRACKING] Procesando cancelación de suscripción');
+
+        // Actualizar el referral como no premium
+        const updateReferralQuery = `
+          UPDATE user_referrals 
+          SET is_premium = false, premium_conversion_date = NULL
+          WHERE user_id = $1
+        `;
+        await query(updateReferralQuery, [user_id]);
+
+        // Marcar comisiones relacionadas como canceladas (opcional)
+        const updateCommissionsQuery = `
+          UPDATE affiliate_commissions 
+          SET is_cancelled = true, updated_at = CURRENT_TIMESTAMP
+          WHERE user_id = $1 AND is_paid = false
+        `;
+        await query(updateCommissionsQuery, [user_id]);
+
+        console.log('🔄 [TRACKING] Suscripción cancelada para usuario:', user_id);
+
+        res.json({
+          success: true,
+          message: 'Cancelación de suscripción procesada exitosamente',
+          data: {
+            affiliate_code: affiliateCode,
+            user_id: user_id
+          }
+        });
+      }
+
+    } catch (error) {
+      console.error('❌ [TRACKING] Error procesando conversión premium:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error procesando conversión premium',
         error: error.message
       });
     }
