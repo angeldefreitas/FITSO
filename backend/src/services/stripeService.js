@@ -2,8 +2,17 @@ const Stripe = require('stripe');
 
 class StripeService {
   constructor() {
-    this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-    this.webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    // Solo inicializar Stripe si la API key está disponible
+    if (process.env.STRIPE_SECRET_KEY) {
+      this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+      this.webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+      this.isConfigured = true;
+    } else {
+      console.warn('⚠️ [STRIPE] API key no configurada - Stripe deshabilitado');
+      this.stripe = null;
+      this.webhookSecret = null;
+      this.isConfigured = false;
+    }
   }
 
   /**
@@ -16,6 +25,10 @@ class StripeService {
    * @returns {Promise<Object>} - Resultado del pago
    */
   async createPayout({ affiliateId, email, amount, description }) {
+    if (!this.isConfigured) {
+      throw new Error('Stripe no está configurado. Configura STRIPE_SECRET_KEY en las variables de entorno.');
+    }
+
     try {
       console.log('💰 [STRIPE] Creando pago de comisión:', {
         affiliateId,
@@ -60,6 +73,10 @@ class StripeService {
    * @returns {Promise<Object>} - Datos de la cuenta creada
    */
   async createConnectedAccount({ email, country = 'US', type = 'express' }) {
+    if (!this.isConfigured) {
+      throw new Error('Stripe no está configurado. Configura STRIPE_SECRET_KEY en las variables de entorno.');
+    }
+
     try {
       console.log('🏦 [STRIPE] Creando cuenta conectada para:', email);
 
@@ -100,6 +117,10 @@ class StripeService {
    * @returns {Promise<Object>} - Enlace de onboarding
    */
   async createOnboardingLink(accountId, returnUrl) {
+    if (!this.isConfigured) {
+      throw new Error('Stripe no está configurado. Configura STRIPE_SECRET_KEY en las variables de entorno.');
+    }
+
     try {
       console.log('🔗 [STRIPE] Creando enlace de onboarding para:', accountId);
 
@@ -129,6 +150,10 @@ class StripeService {
    * @returns {Promise<Object>} - Estado de la cuenta
    */
   async getAccountStatus(accountId) {
+    if (!this.isConfigured) {
+      throw new Error('Stripe no está configurado. Configura STRIPE_SECRET_KEY en las variables de entorno.');
+    }
+
     try {
       console.log('🔍 [STRIPE] Verificando estado de cuenta:', accountId);
 
@@ -156,6 +181,10 @@ class StripeService {
    * @returns {Promise<Object>} - Evento procesado
    */
   async processWebhook(payload, signature) {
+    if (!this.isConfigured) {
+      throw new Error('Stripe no está configurado. Configura STRIPE_SECRET_KEY en las variables de entorno.');
+    }
+
     try {
       const event = this.stripe.webhooks.constructEvent(
         payload,
