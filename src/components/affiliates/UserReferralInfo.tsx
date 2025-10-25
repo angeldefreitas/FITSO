@@ -146,33 +146,14 @@ export const UserReferralInfo: React.FC<UserReferralInfoProps> = ({ onClose }) =
           </View>
         </View>
 
-        {/* Información sobre comisiones */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>¿Cómo funciona?</Text>
-          <View style={styles.infoCard}>
-            <Text style={styles.infoText}>
-              • Te registraste usando el código de {referralInfo.affiliate_name || 'tu influencer'}
-            </Text>
-            <Text style={styles.infoText}>
-              • Si te suscribes a premium, {referralInfo.affiliate_name || 'tu influencer'} recibirá una comisión
-            </Text>
-            <Text style={styles.infoText}>
-              • Las comisiones se pagan automáticamente cada mes
-            </Text>
-            <Text style={styles.infoText}>
-              • ¡Ayudas a tu influencer mientras disfrutas de Fitso!
-            </Text>
-          </View>
-        </View>
-
         {/* Beneficios */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Beneficios de tener un influencer</Text>
+          <Text style={styles.sectionTitle}>Beneficios de tu código</Text>
           <View style={styles.benefitsCard}>
-            <Text style={styles.benefitItem}>💡 Consejos personalizados</Text>
-            <Text style={styles.benefitItem}>👥 Acceso a comunidad exclusiva</Text>
-            <Text style={styles.benefitItem}>📱 Contenido especial</Text>
-            <Text style={styles.benefitItem}>🎯 Seguimiento personalizado</Text>
+            <Text style={styles.benefitItem}>💰 Descuentos especiales en planes premium</Text>
+            <Text style={styles.benefitItem}>🎁 Ofertas exclusivas de tu influencer</Text>
+            <Text style={styles.benefitItem}>⭐ Contenido freemium adicional</Text>
+            <Text style={styles.benefitItem}>🚀 Acceso anticipado a nuevas funciones</Text>
           </View>
         </View>
       </ScrollView>
@@ -201,6 +182,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 20,
+    paddingTop: 50,
     backgroundColor: colors.white,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
