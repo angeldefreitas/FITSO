@@ -121,7 +121,7 @@ class SimpleAffiliateController {
         message: 'Error obteniendo estadísticas de afiliado'
       });
     }
-  },
+  }
 
   /**
    * Obtener información básica del afiliado
