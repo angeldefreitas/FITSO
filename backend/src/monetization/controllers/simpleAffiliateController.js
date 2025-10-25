@@ -171,7 +171,7 @@ class SimpleAffiliateController {
         error: error.message
       });
     }
-  },
+  }
 
   /**
    * Obtener información básica del afiliado
