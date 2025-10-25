@@ -77,8 +77,18 @@ class SimpleAffiliateController {
       
       console.log('🔍 [SIMPLE AFFILIATE] Buscando estadísticas para código:', code);
       
+      // Debug: Listar todos los códigos existentes
+      try {
+        const allCodes = await AffiliateCode.findAllActive();
+        console.log('📋 [DEBUG] Códigos activos en la base de datos:', allCodes.map(c => c.code));
+      } catch (debugError) {
+        console.log('⚠️ [DEBUG] Error listando códigos:', debugError.message);
+      }
+      
       // Buscar el código de afiliado
       const affiliateCode = await AffiliateCode.findByCode(code);
+      console.log('🔍 [SIMPLE AFFILIATE] Resultado de búsqueda:', affiliateCode ? 'Encontrado' : 'No encontrado');
+      
       if (!affiliateCode) {
         return res.status(404).json({
           success: false,
@@ -87,7 +97,10 @@ class SimpleAffiliateController {
       }
 
       // Obtener información del afiliado
+      console.log('🔍 [SIMPLE AFFILIATE] Buscando usuario con ID:', affiliateCode.created_by);
       const affiliate = await User.findById(affiliateCode.created_by);
+      console.log('🔍 [SIMPLE AFFILIATE] Usuario encontrado:', affiliate ? 'Sí' : 'No');
+      
       if (!affiliate) {
         return res.status(404).json({
           success: false,
