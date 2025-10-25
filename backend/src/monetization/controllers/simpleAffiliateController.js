@@ -45,6 +45,7 @@ class SimpleAffiliateController {
         pending_commissions: 0.00,
         paid_commissions: 0.00,
         conversion_rate: 0.00,
+        commission_percentage: 30, // Porcentaje por defecto
         affiliate_code: affiliateCode,
         user_info: {
           name: user.name,
@@ -54,17 +55,20 @@ class SimpleAffiliateController {
       };
 
       try {
-        // Obtener estadísticas reales
+        // Obtener estadísticas reales y porcentaje de comisión
         const statsQuery = `
           SELECT 
             COUNT(ur.id) as total_referrals,
             COUNT(CASE WHEN ur.is_premium = true THEN 1 END) as premium_referrals,
             COALESCE(SUM(ac.commission_amount), 0) as total_commissions,
             COALESCE(SUM(CASE WHEN ac.is_paid = false THEN ac.commission_amount ELSE 0 END), 0) as pending_commissions,
-            COALESCE(SUM(CASE WHEN ac.is_paid = true THEN ac.commission_amount ELSE 0 END), 0) as paid_commissions
+            COALESCE(SUM(CASE WHEN ac.is_paid = true THEN ac.commission_amount ELSE 0 END), 0) as paid_commissions,
+            ac_affiliate.commission_percentage
           FROM user_referrals ur
           LEFT JOIN affiliate_commissions ac ON ur.affiliate_code = ac.affiliate_code AND ur.user_id = ac.user_id
+          LEFT JOIN affiliate_codes ac_affiliate ON ur.affiliate_code = ac_affiliate.code
           WHERE ur.affiliate_code = $1
+          GROUP BY ac_affiliate.commission_percentage
         `;
         
         const statsResult = await query(statsQuery, [affiliateCode]);
@@ -81,6 +85,7 @@ class SimpleAffiliateController {
           pending_commissions: parseFloat(stats.pending_commissions) || 0,
           paid_commissions: parseFloat(stats.paid_commissions) || 0,
           conversion_rate: Math.round(conversionRate * 100) / 100,
+          commission_percentage: parseFloat(stats.commission_percentage) || 30,
           affiliate_code: affiliateCode,
           user_info: {
             name: user.name,

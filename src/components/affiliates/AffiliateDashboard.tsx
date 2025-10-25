@@ -21,6 +21,7 @@ interface AffiliateStats {
   pending_commissions: number;
   paid_commissions: number;
   conversion_rate: number;
+  commission_percentage: number;
   affiliate_code: string;
 }
 
@@ -38,6 +39,7 @@ export const AffiliateDashboard: React.FC<AffiliateDashboardProps> = ({ onClose 
       console.log('🔄 [DASHBOARD] Obteniendo estadísticas...');
       const response = await affiliateApiService.getAffiliateDashboard();
       console.log('✅ [DASHBOARD] Respuesta recibida:', response);
+      
       setStats(response);
     } catch (error) {
       console.error('❌ [DASHBOARD] Error obteniendo estadísticas:', error);
@@ -126,6 +128,22 @@ export const AffiliateDashboard: React.FC<AffiliateDashboardProps> = ({ onClose 
           <Text style={styles.codeHelpText}>
             Comparte este código con tus seguidores para ganar comisiones
           </Text>
+        </View>
+
+        {/* Porcentaje de comisión */}
+        <View style={styles.commissionSection}>
+          <Text style={styles.sectionTitle}>Mi Porcentaje de Comisión</Text>
+          <View style={styles.commissionCard}>
+            <View style={styles.commissionInfo}>
+              <Text style={styles.commissionPercentage}>{stats.commission_percentage}%</Text>
+              <Text style={styles.commissionLabel}>de cada suscripción premium</Text>
+            </View>
+            <View style={styles.commissionDetails}>
+              <Text style={styles.commissionDetailText}>
+                Por cada referido que se suscriba al premium, recibirás el {stats.commission_percentage}% del valor de la suscripción como comisión.
+              </Text>
+            </View>
+          </View>
         </View>
 
         {/* Estadísticas principales */}
@@ -411,5 +429,45 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     color: colors.primary,
+  },
+  commissionSection: {
+    margin: 16,
+    marginTop: 0,
+  },
+  commissionCard: {
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    padding: 20,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  commissionInfo: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  commissionPercentage: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: colors.primary,
+    marginBottom: 8,
+  },
+  commissionLabel: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  commissionDetails: {
+    backgroundColor: colors.grayLight,
+    borderRadius: 8,
+    padding: 16,
+  },
+  commissionDetailText: {
+    fontSize: 14,
+    color: colors.text,
+    lineHeight: 20,
+    textAlign: 'center',
   },
 });

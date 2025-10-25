@@ -35,6 +35,7 @@ interface AffiliateStats {
   pending_commissions: number;
   paid_commissions: number;
   conversion_rate: number;
+  commission_percentage: number;
   affiliate_code: string;
 }
 
