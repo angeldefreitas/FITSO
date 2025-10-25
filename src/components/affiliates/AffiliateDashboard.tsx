@@ -7,7 +7,9 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
-  RefreshControl
+  RefreshControl,
+  Modal,
+  FlatList,
 } from 'react-native';
 import { Colors } from '../../constants/colors';
 import { affiliateApiService } from './services/affiliateApiService';
@@ -33,6 +35,12 @@ export const AffiliateDashboard: React.FC<AffiliateDashboardProps> = ({ onClose 
   const [stats, setStats] = useState<AffiliateStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showReferralsModal, setShowReferralsModal] = useState(false);
+  const [showCommissionsModal, setShowCommissionsModal] = useState(false);
+  const [referrals, setReferrals] = useState<any[]>([]);
+  const [commissions, setCommissions] = useState<any[]>([]);
+  const [loadingReferrals, setLoadingReferrals] = useState(false);
+  const [loadingCommissions, setLoadingCommissions] = useState(false);
 
   const fetchStats = async () => {
     try {
@@ -57,6 +65,46 @@ export const AffiliateDashboard: React.FC<AffiliateDashboardProps> = ({ onClose 
   const handleRefresh = () => {
     setRefreshing(true);
     fetchStats();
+  };
+
+  const fetchReferrals = async () => {
+    if (!stats?.affiliate_code) return;
+    
+    try {
+      setLoadingReferrals(true);
+      const response = await affiliateApiService.getAffiliateReferrals(stats.affiliate_code);
+      setReferrals(response);
+    } catch (error) {
+      console.error('Error cargando referidos:', error);
+      Alert.alert('Error', 'No se pudieron cargar los referidos');
+    } finally {
+      setLoadingReferrals(false);
+    }
+  };
+
+  const fetchCommissions = async () => {
+    if (!stats?.affiliate_code) return;
+    
+    try {
+      setLoadingCommissions(true);
+      const response = await affiliateApiService.getAffiliateCommissions(stats.affiliate_code);
+      setCommissions(response);
+    } catch (error) {
+      console.error('Error cargando comisiones:', error);
+      Alert.alert('Error', 'No se pudieron cargar las comisiones');
+    } finally {
+      setLoadingCommissions(false);
+    }
+  };
+
+  const handleViewReferrals = () => {
+    setShowReferralsModal(true);
+    fetchReferrals();
+  };
+
+  const handleViewCommissions = () => {
+    setShowCommissionsModal(true);
+    fetchCommissions();
   };
 
   const StatCard: React.FC<{ title: string; value: string | number; subtitle?: string; color?: string }> = ({ 
@@ -210,16 +258,145 @@ export const AffiliateDashboard: React.FC<AffiliateDashboardProps> = ({ onClose 
 
         {/* Botones de acción */}
         <View style={styles.actionsSection}>
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity style={styles.actionButton} onPress={handleViewReferrals}>
             <Text style={styles.actionButtonText}>Ver Referidos Detallados</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionButton, styles.secondaryButton]}>
+          <TouchableOpacity style={[styles.actionButton, styles.secondaryButton]} onPress={handleViewCommissions}>
             <Text style={[styles.actionButtonText, styles.secondaryButtonText]}>
               Historial de Comisiones
             </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Modal de Referidos Detallados */}
+      <Modal
+        visible={showReferralsModal}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setShowReferralsModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Referidos Detallados</Text>
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => setShowReferralsModal(false)}
+            >
+              <Text style={styles.modalCloseButtonText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.modalContent}>
+            {loadingReferrals ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={styles.loadingText}>Cargando referidos...</Text>
+              </View>
+            ) : referrals.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateText}>No tienes referidos aún</Text>
+                <Text style={styles.emptyStateSubtext}>
+                  Comparte tu código para empezar a ganar comisiones
+                </Text>
+              </View>
+            ) : (
+              <FlatList
+                data={referrals}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <View style={styles.referralItem}>
+                    <View style={styles.referralInfo}>
+                      <Text style={styles.referralName}>
+                        {item.user_name || 'Usuario'}
+                      </Text>
+                      <Text style={styles.referralEmail}>
+                        {item.user_email || 'Sin email'}
+                      </Text>
+                      <Text style={styles.referralDate}>
+                        Registrado: {new Date(item.referral_date).toLocaleDateString()}
+                      </Text>
+                    </View>
+                    <View style={styles.referralStatus}>
+                      <View style={[
+                        styles.statusBadge,
+                        { backgroundColor: item.is_premium ? colors.green : colors.orange }
+                      ]}>
+                        <Text style={styles.statusBadgeText}>
+                          {item.is_premium ? 'Premium' : 'Gratuito'}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                )}
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de Historial de Comisiones */}
+      <Modal
+        visible={showCommissionsModal}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setShowCommissionsModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Historial de Comisiones</Text>
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => setShowCommissionsModal(false)}
+            >
+              <Text style={styles.modalCloseButtonText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.modalContent}>
+            {loadingCommissions ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={styles.loadingText}>Cargando comisiones...</Text>
+              </View>
+            ) : commissions.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateText}>No tienes comisiones aún</Text>
+                <Text style={styles.emptyStateSubtext}>
+                  Las comisiones aparecerán cuando tus referidos se suscriban a premium
+                </Text>
+              </View>
+            ) : (
+              <FlatList
+                data={commissions}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <View style={styles.commissionItem}>
+                    <View style={styles.commissionItemInfo}>
+                      <Text style={styles.commissionAmount}>
+                        ${item.commission_amount}
+                      </Text>
+                      <Text style={styles.commissionDate}>
+                        {new Date(item.created_at).toLocaleDateString()}
+                      </Text>
+                    </View>
+                    <View style={styles.commissionStatus}>
+                      <View style={[
+                        styles.statusBadge,
+                        { backgroundColor: item.is_paid ? colors.green : colors.orange }
+                      ]}>
+                        <Text style={styles.statusBadgeText}>
+                          {item.is_paid ? 'Pagado' : 'Pendiente'}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                )}
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -473,5 +650,131 @@ const styles = StyleSheet.create({
     color: colors.text,
     lineHeight: 20,
     textAlign: 'center',
+  },
+  // Estilos para modales
+  modalContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    paddingTop: 50,
+    backgroundColor: colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: colors.text,
+  },
+  modalCloseButton: {
+    padding: 8,
+  },
+  modalCloseButtonText: {
+    fontSize: 18,
+    color: colors.text,
+  },
+  modalContent: {
+    flex: 1,
+    padding: 16,
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  emptyStateText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 8,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  // Estilos para referidos
+  referralItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  referralInfo: {
+    flex: 1,
+  },
+  referralName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  referralEmail: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: 4,
+  },
+  referralDate: {
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  referralStatus: {
+    marginLeft: 12,
+  },
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  statusBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.white,
+  },
+  // Estilos para comisiones
+  commissionItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  commissionItemInfo: {
+    flex: 1,
+  },
+  commissionAmount: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.primary,
+    marginBottom: 4,
+  },
+  commissionDate: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  commissionStatus: {
+    marginLeft: 12,
   },
 });
