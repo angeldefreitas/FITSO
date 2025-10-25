@@ -657,6 +657,7 @@ class SimpleAffiliateController {
           u.is_affiliate,
           ac.code as affiliate_code,
           ac.commission_percentage,
+          ac.is_active,
           ac.created_at as code_created_at,
           COUNT(ur.id) as total_referrals,
           COUNT(CASE WHEN ur.is_premium = true THEN 1 END) as premium_referrals,
@@ -668,7 +669,7 @@ class SimpleAffiliateController {
         LEFT JOIN user_referrals ur ON ac.code = ur.affiliate_code
         LEFT JOIN affiliate_commissions afc ON ac.code = afc.affiliate_code AND ur.user_id = afc.user_id
         WHERE u.is_affiliate = true
-        GROUP BY u.id, u.name, u.email, u.created_at, u.is_affiliate, ac.code, ac.commission_percentage, ac.created_at
+        GROUP BY u.id, u.name, u.email, u.created_at, u.is_affiliate, ac.code, ac.commission_percentage, ac.is_active, ac.created_at
         ORDER BY u.created_at DESC
       `;
       
@@ -699,6 +700,7 @@ class SimpleAffiliateController {
           member_since: affiliate.member_since,
           affiliate_code: affiliate.affiliate_code,
           commission_percentage: parseFloat(affiliate.commission_percentage) || 0,
+          is_active: affiliate.is_active || false,
           code_created_at: affiliate.code_created_at,
           stats: {
             total_referrals: totalRefs,
@@ -740,6 +742,140 @@ class SimpleAffiliateController {
       res.status(500).json({
         success: false,
         message: 'Error obteniendo dashboard de administración',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Toggle estado del código de afiliado
+   * PUT /api/affiliates/codes/:code/toggle
+   */
+  async toggleAffiliateCode(req, res) {
+    try {
+      const { code } = req.params;
+      const { is_active } = req.body;
+
+      console.log('🔄 [ADMIN] Cambiando estado del código:', code, 'a:', is_active);
+
+      const { query } = require('../../config/database');
+
+      // Verificar que el código existe
+      const codeQuery = 'SELECT id, is_active FROM affiliate_codes WHERE code = $1';
+      const codeResult = await query(codeQuery, [code]);
+
+      if (codeResult.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'Código de afiliado no encontrado'
+        });
+      }
+
+      const currentCode = codeResult.rows[0];
+
+      // Actualizar el estado
+      const updateQuery = `
+        UPDATE affiliate_codes 
+        SET is_active = $1, updated_at = CURRENT_TIMESTAMP 
+        WHERE code = $2
+        RETURNING *
+      `;
+
+      const updateResult = await query(updateQuery, [is_active, code]);
+      const updatedCode = updateResult.rows[0];
+
+      console.log('✅ [ADMIN] Estado del código actualizado:', {
+        code: code,
+        old_status: currentCode.is_active,
+        new_status: updatedCode.is_active
+      });
+
+      res.json({
+        success: true,
+        message: `Código ${is_active ? 'activado' : 'desactivado'} exitosamente`,
+        data: {
+          code: code,
+          is_active: updatedCode.is_active,
+          updated_at: updatedCode.updated_at
+        }
+      });
+
+    } catch (error) {
+      console.error('❌ [ADMIN] Error cambiando estado del código:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error cambiando estado del código',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Actualizar porcentaje de comisión
+   * PUT /api/affiliates/codes/:code/commission
+   */
+  async updateCommissionPercentage(req, res) {
+    try {
+      const { code } = req.params;
+      const { commission_percentage } = req.body;
+
+      console.log('💰 [ADMIN] Actualizando comisión para:', code, 'a:', commission_percentage + '%');
+
+      const { query } = require('../../config/database');
+
+      // Verificar que el código existe
+      const codeQuery = 'SELECT id, commission_percentage FROM affiliate_codes WHERE code = $1';
+      const codeResult = await query(codeQuery, [code]);
+
+      if (codeResult.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'Código de afiliado no encontrado'
+        });
+      }
+
+      const currentCode = codeResult.rows[0];
+
+      // Validar porcentaje
+      if (commission_percentage < 0 || commission_percentage > 100) {
+        return res.status(400).json({
+          success: false,
+          message: 'El porcentaje de comisión debe estar entre 0 y 100'
+        });
+      }
+
+      // Actualizar el porcentaje
+      const updateQuery = `
+        UPDATE affiliate_codes 
+        SET commission_percentage = $1, updated_at = CURRENT_TIMESTAMP 
+        WHERE code = $2
+        RETURNING *
+      `;
+
+      const updateResult = await query(updateQuery, [commission_percentage, code]);
+      const updatedCode = updateResult.rows[0];
+
+      console.log('✅ [ADMIN] Porcentaje de comisión actualizado:', {
+        code: code,
+        old_percentage: currentCode.commission_percentage,
+        new_percentage: updatedCode.commission_percentage
+      });
+
+      res.json({
+        success: true,
+        message: `Porcentaje de comisión actualizado a ${commission_percentage}%`,
+        data: {
+          code: code,
+          commission_percentage: updatedCode.commission_percentage,
+          updated_at: updatedCode.updated_at
+        }
+      });
+
+    } catch (error) {
+      console.error('❌ [ADMIN] Error actualizando comisión:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error actualizando porcentaje de comisión',
         error: error.message
       });
     }

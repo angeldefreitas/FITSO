@@ -23,6 +23,7 @@ interface AffiliateData {
   member_since: string;
   affiliate_code: string;
   commission_percentage: number;
+  is_active: boolean;
   code_created_at: string;
   stats: {
     total_referrals: number;
@@ -231,6 +232,29 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
     }
   };
 
+  const handleChangeCommission = (affiliateCode: string, currentPercentage: number) => {
+    Alert.prompt(
+      'Cambiar Comisión',
+      `Porcentaje actual: ${currentPercentage}%\n\nIngresa el nuevo porcentaje (0-100):`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Actualizar',
+          onPress: (text) => {
+            const newPercentage = parseFloat(text);
+            if (isNaN(newPercentage) || newPercentage < 0 || newPercentage > 100) {
+              Alert.alert('Error', 'Por favor ingresa un porcentaje válido entre 0 y 100');
+              return;
+            }
+            updateCommissionPercentage(affiliateCode, newPercentage);
+          }
+        }
+      ],
+      'plain-text',
+      currentPercentage.toString()
+    );
+  };
+
   const AffiliateCard: React.FC<{ affiliate: AffiliateData }> = ({ affiliate }) => (
     <View style={styles.affiliateCard}>
       <View style={styles.affiliateHeader}>
@@ -245,9 +269,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
         <View style={styles.affiliateStatus}>
           <View style={[
             styles.statusBadge,
-            { backgroundColor: colors.green }
+            { backgroundColor: affiliate.is_active ? colors.green : colors.red }
           ]}>
-            <Text style={styles.statusText}>Activo</Text>
+            <Text style={styles.statusText}>
+              {affiliate.is_active ? 'Activo' : 'Inactivo'}
+            </Text>
           </View>
           <Text style={styles.commissionText}>
             {affiliate.commission_percentage}% comisión
@@ -594,6 +620,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
                 <Text style={styles.infoLabel}>Código:</Text>
                 <Text style={styles.infoValue}>{selectedAffiliate?.affiliate_code}</Text>
                 
+                <Text style={styles.infoLabel}>Estado:</Text>
+                <Text style={[styles.infoValue, { 
+                  color: selectedAffiliate?.is_active ? colors.green : colors.red,
+                  fontWeight: '600'
+                }]}>
+                  {selectedAffiliate?.is_active ? 'Activo' : 'Inactivo'}
+                </Text>
+                
                 <Text style={styles.infoLabel}>Comisión actual:</Text>
                 <Text style={styles.infoValue}>{selectedAffiliate?.commission_percentage}%</Text>
                 
@@ -607,32 +641,41 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
               <View style={styles.managementActions}>
                 <TouchableOpacity
                   style={[styles.managementButton, { backgroundColor: colors.blue }]}
-                  onPress={() => {
-                    // Aquí podrías abrir un modal para cambiar el porcentaje
-                    Alert.alert('Info', 'Función de cambio de comisión en desarrollo');
-                  }}
+                  onPress={() => handleChangeCommission(selectedAffiliate?.affiliate_code || '', selectedAffiliate?.commission_percentage || 0)}
                 >
                   <Text style={styles.managementButtonText}>Cambiar Comisión</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.managementButton, { backgroundColor: colors.red }]}
+                  style={[styles.managementButton, { 
+                    backgroundColor: selectedAffiliate?.is_active ? colors.red : colors.green 
+                  }]}
                   onPress={() => {
+                    const action = selectedAffiliate?.is_active ? 'Desactivar' : 'Activar';
+                    const message = selectedAffiliate?.is_active 
+                      ? '¿Estás seguro? La app ganará el 100% de las comisiones de este afiliado.'
+                      : '¿Estás seguro? El afiliado volverá a ganar comisiones.';
+                    
                     Alert.alert(
-                      'Desactivar Código',
-                      '¿Estás seguro? La app ganará el 100% de las comisiones de este afiliado.',
+                      `${action} Código`,
+                      message,
                       [
                         { text: 'Cancelar', style: 'cancel' },
                         { 
-                          text: 'Desactivar', 
-                          style: 'destructive',
-                          onPress: () => toggleAffiliateStatus(selectedAffiliate?.affiliate_code || '', true)
+                          text: action, 
+                          style: selectedAffiliate?.is_active ? 'destructive' : 'default',
+                          onPress: () => toggleAffiliateStatus(
+                            selectedAffiliate?.affiliate_code || '', 
+                            selectedAffiliate?.is_active || false
+                          )
                         }
                       ]
                     );
                   }}
                 >
-                  <Text style={styles.managementButtonText}>Desactivar Código</Text>
+                  <Text style={styles.managementButtonText}>
+                    {selectedAffiliate?.is_active ? 'Desactivar Código' : 'Activar Código'}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>

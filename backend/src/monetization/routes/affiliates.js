@@ -211,6 +211,24 @@ router.post('/simulate-premium-conversion', simpleAffiliateController.simulatePr
  */
 router.get('/admin-dashboard', authenticateToken, simpleAffiliateController.getAdminDashboard);
 
+/**
+ * @route PUT /api/affiliates/codes/:code/toggle
+ * @desc Activar/desactivar código de afiliado
+ * @access Private (Admin)
+ * @param {string} code - Código del afiliado
+ * @body {boolean} is_active - Estado del código
+ */
+router.put('/codes/:code/toggle', authenticateToken, simpleAffiliateController.toggleAffiliateCode);
+
+/**
+ * @route PUT /api/affiliates/codes/:code/commission
+ * @desc Actualizar porcentaje de comisión de un afiliado
+ * @access Private (Admin)
+ * @param {string} code - Código del afiliado
+ * @body {number} commission_percentage - Nuevo porcentaje de comisión
+ */
+router.put('/codes/:code/commission', authenticateToken, simpleAffiliateController.updateCommissionPercentage);
+
 // Ruta privada eliminada - los códigos de afiliados son públicos
 
 module.exports = router;

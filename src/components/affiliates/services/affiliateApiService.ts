@@ -347,14 +347,13 @@ export const affiliateApiService = {
     try {
       console.log('🔄 [AFFILIATE API] Cambiando estado del código:', code, 'a:', isActive);
       
-      // Por ahora simulamos la llamada, necesitaríamos crear el endpoint en el backend
-      // const response = await authenticatedRequest(`/affiliates/codes/${code}/toggle`, {
-      //   method: 'PUT',
-      //   body: JSON.stringify({ is_active: isActive }),
-      // });
+      const response = await authenticatedRequest(`/affiliates/codes/${code}/toggle`, {
+        method: 'PUT',
+        body: JSON.stringify({ is_active: isActive }),
+      });
       
-      // Simulación temporal
-      return { success: true, message: 'Estado del código actualizado' };
+      console.log('✅ [AFFILIATE API] Estado del código actualizado:', response.data);
+      return response.data;
     } catch (error) {
       console.error('❌ [AFFILIATE API] Error cambiando estado del código:', error);
       throw error;
@@ -366,14 +365,13 @@ export const affiliateApiService = {
     try {
       console.log('💰 [AFFILIATE API] Actualizando comisión para:', code, 'a:', newPercentage + '%');
       
-      // Por ahora simulamos la llamada, necesitaríamos crear el endpoint en el backend
-      // const response = await authenticatedRequest(`/affiliates/codes/${code}/commission`, {
-      //   method: 'PUT',
-      //   body: JSON.stringify({ commission_percentage: newPercentage }),
-      // });
+      const response = await authenticatedRequest(`/affiliates/codes/${code}/commission`, {
+        method: 'PUT',
+        body: JSON.stringify({ commission_percentage: newPercentage }),
+      });
       
-      // Simulación temporal
-      return { success: true, message: 'Porcentaje de comisión actualizado' };
+      console.log('✅ [AFFILIATE API] Porcentaje de comisión actualizado:', response.data);
+      return response.data;
     } catch (error) {
       console.error('❌ [AFFILIATE API] Error actualizando comisión:', error);
       throw error;
