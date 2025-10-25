@@ -66,7 +66,7 @@ class SimpleAffiliateController {
                 ac_affiliate.commission_percentage
               FROM affiliate_codes ac_affiliate
               LEFT JOIN user_referrals ur ON ur.affiliate_code_id = ac_affiliate.id
-              LEFT JOIN affiliate_commissions ac ON ur.affiliate_code_id = ac.affiliate_id AND ur.user_id = ac.user_id
+              LEFT JOIN affiliate_commissions ac ON ac_affiliate.created_by = ac.affiliate_id AND ur.user_id = ac.user_id
               WHERE ac_affiliate.code = $1
               GROUP BY ac_affiliate.commission_percentage
             `;
