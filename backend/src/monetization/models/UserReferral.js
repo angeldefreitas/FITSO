@@ -104,11 +104,13 @@ class UserReferral {
     params.push(limit, offset);
     const result = await query(selectQuery, params);
     
-    return result.rows.map(row => ({
-      ...new UserReferral(row),
-      user_name: row.user_name,
-      user_email: row.user_email
-    }));
+    return result.rows.map(row => {
+      const referral = new UserReferral(row);
+      // Agregar los campos adicionales al objeto
+      referral.user_name = row.user_name;
+      referral.user_email = row.user_email;
+      return referral;
+    });
   }
 
   // Obtener estadísticas de conversión por afiliado
