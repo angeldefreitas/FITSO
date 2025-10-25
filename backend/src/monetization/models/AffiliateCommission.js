@@ -155,8 +155,8 @@ class AffiliateCommission {
 
   // Obtener estadísticas de comisiones por afiliado
   static async getStatsByAffiliate(affiliateCode, dateFrom = null, dateTo = null) {
-    // Primero obtener el affiliate_id del código
-    const affiliateQuery = 'SELECT affiliate_id FROM affiliate_codes WHERE code = $1';
+    // Primero obtener el created_by del código
+    const affiliateQuery = 'SELECT created_by FROM affiliate_codes WHERE code = $1';
     const affiliateResult = await query(affiliateQuery, [affiliateCode]);
     
     if (affiliateResult.rows.length === 0) {
@@ -171,7 +171,7 @@ class AffiliateCommission {
       };
     }
 
-    const affiliateId = affiliateResult.rows[0].affiliate_id;
+    const affiliateId = affiliateResult.rows[0].created_by;
     let whereClause = 'WHERE ac.affiliate_id = $1';
     const params = [affiliateId];
 

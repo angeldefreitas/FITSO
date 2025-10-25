@@ -5,7 +5,7 @@ class AffiliateCode {
   constructor(data) {
     this.id = data.id;
     this.code = data.code;
-    this.affiliate_id = data.affiliate_id;
+    this.created_by = data.created_by;
     this.commission_percentage = data.commission_percentage;
     this.is_active = data.is_active;
     this.created_at = data.created_at;
@@ -14,7 +14,7 @@ class AffiliateCode {
 
   // Crear un nuevo código de afiliado
   static async create(affiliateData) {
-    const { code, affiliate_id, commission_percentage = 30 } = affiliateData;
+    const { code, created_by, commission_percentage = 30 } = affiliateData;
     
     // Si no se proporciona código, generar uno único
     let finalCode = code;
@@ -31,7 +31,7 @@ class AffiliateCode {
     const values = [
       uuidv4(),
       finalCode, 
-      affiliate_id, 
+      created_by, 
       commission_percentage, 
       true, 
       new Date(), 
@@ -147,7 +147,7 @@ class AffiliateCode {
         COALESCE(SUM(afc.commission_amount), 0) as total_commissions
       FROM affiliate_codes ac
       LEFT JOIN user_referrals ur ON ac.id = ur.affiliate_code_id
-      LEFT JOIN affiliate_commissions afc ON ac.affiliate_id = afc.affiliate_id
+      LEFT JOIN affiliate_commissions afc ON ac.created_by = afc.affiliate_id
       WHERE ac.code = $1
       GROUP BY ac.id
     `;
