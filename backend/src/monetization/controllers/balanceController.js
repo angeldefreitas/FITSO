@@ -8,29 +8,9 @@ class BalanceController {
    */
   async getBalance(req, res) {
     try {
-      const { user_id } = req.user;
+      const userId = req.user.id;
 
-      console.log('💰 [BALANCE] Obteniendo balance para usuario:', user_id);
-
-      // Verificar si es admin
-      const userQuery = 'SELECT is_admin FROM users WHERE id = $1';
-      const userResult = await query(userQuery, [user_id]);
-      
-      if (userResult.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'Usuario no encontrado'
-        });
-      }
-
-      const isAdmin = userResult.rows[0].is_admin;
-
-      if (!isAdmin) {
-        return res.status(403).json({
-          success: false,
-          message: 'Solo administradores pueden ver el balance'
-        });
-      }
+      console.log('💰 [BALANCE] Obteniendo balance para usuario:', userId);
 
       // Obtener estadísticas de comisiones
       const commissionStatsQuery = `
@@ -125,30 +105,10 @@ class BalanceController {
    */
   async getTransferHistory(req, res) {
     try {
-      const { user_id } = req.user;
+      const userId = req.user.id;
       const { limit = 50, offset = 0 } = req.query;
 
-      console.log('📊 [BALANCE] Obteniendo historial de transferencias para usuario:', user_id);
-
-      // Verificar si es admin
-      const userQuery = 'SELECT is_admin FROM users WHERE id = $1';
-      const userResult = await query(userQuery, [user_id]);
-      
-      if (userResult.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'Usuario no encontrado'
-        });
-      }
-
-      const isAdmin = userResult.rows[0].is_admin;
-
-      if (!isAdmin) {
-        return res.status(403).json({
-          success: false,
-          message: 'Solo administradores pueden ver el historial de transferencias'
-        });
-      }
+      console.log('📊 [BALANCE] Obteniendo historial de transferencias para usuario:', userId);
 
       // Obtener historial de pagos
       const historyQuery = `
