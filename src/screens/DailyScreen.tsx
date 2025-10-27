@@ -86,6 +86,16 @@ export default function DailyScreen({ onTabChange, shouldOpenAddModal, onModalOp
   const { isPremium, canUseAIScan, recordAIScan, dailyScansUsed } = usePremium();
   const { t } = useTranslation();
   
+  // Debug: Log estado premium
+  useEffect(() => {
+    console.log('🏆 [DAILY] Estado premium cambiado:', {
+      isPremium,
+      dailyScansUsed,
+      userId: user?.id,
+      userEmail: user?.email
+    });
+  }, [isPremium, dailyScansUsed, user?.id, user?.email]);
+  
   // Mapeo de tipos de comida a traducciones
   const getMealTypeTranslation = (mealType: string) => {
     const translations: { [key: string]: string } = {
@@ -396,8 +406,14 @@ export default function DailyScreen({ onTabChange, shouldOpenAddModal, onModalOp
   };
 
   const handlePremiumPress = () => {
+    console.log('🏆 [DAILY] handlePremiumPress - isPremium:', isPremium);
+    console.log('🏆 [DAILY] dailyScansUsed:', dailyScansUsed);
+    
     if (!isPremium) {
+      console.log('✅ [DAILY] Abriendo PremiumScreen');
       setShowPremiumScreen(true);
+    } else {
+      console.log('⚠️ [DAILY] Usuario ya es premium, no se abre modal');
     }
   };
 

@@ -138,12 +138,13 @@ export const PremiumProvider: React.FC<PremiumProviderProps> = ({ children }) =>
     try {
       const canUse = await subscriptionService.canUseAIScan();
       console.log('🤖 ¿Puede usar IA?', canUse);
+      console.log('🤖 Estado premium actual:', premiumStatus);
       return canUse;
     } catch (error) {
       console.error('❌ Error verificando límite de IA:', error);
       return false;
     }
-  }, []);
+  }, [premiumStatus]);
 
   // Registrar uso de escaneo con IA
   const recordAIScan = useCallback(async () => {
