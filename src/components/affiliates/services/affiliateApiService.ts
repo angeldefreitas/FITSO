@@ -385,7 +385,7 @@ export const affiliateApiService = {
     try {
       console.log('🔄 [AFFILIATE API] Cambiando estado del código:', code, 'a:', isActive);
       
-      const response = await authenticatedRequest(`/affiliates/codes/${code}/toggle`, {
+      const response = await authenticatedRequest(`/affiliates/${code}/status`, {
         method: 'PUT',
         body: JSON.stringify({ is_active: isActive }),
       });
@@ -403,7 +403,7 @@ export const affiliateApiService = {
     try {
       console.log('💰 [AFFILIATE API] Actualizando comisión para:', code, 'a:', newPercentage + '%');
       
-      const response = await authenticatedRequest(`/affiliates/codes/${code}/commission`, {
+      const response = await authenticatedRequest(`/affiliates/${code}/commission`, {
         method: 'PUT',
         body: JSON.stringify({ commission_percentage: newPercentage }),
       });

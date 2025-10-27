@@ -192,19 +192,19 @@ export const BalanceDashboard: React.FC<BalanceDashboardProps> = ({ onClose }) =
           <View style={styles.statsGrid}>
             <View style={styles.statCard}>
               <Text style={styles.statValue}>
-                ${balance?.commissions.total_paid.toFixed(2) || '0.00'}
+                ${balance?.commissions?.total_paid ? balance.commissions.total_paid.toFixed(2) : '0.00'}
               </Text>
               <Text style={styles.statLabel}>Total Pagado</Text>
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statValue}>
-                ${balance?.commissions.pending.toFixed(2) || '0.00'}
+                ${balance?.commissions?.pending ? balance.commissions.pending.toFixed(2) : '0.00'}
               </Text>
               <Text style={styles.statLabel}>Pendiente</Text>
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statValue}>
-                {balance?.commissions.total_payments_made || 0}
+                {balance?.commissions?.total_payments_made || 0}
               </Text>
               <Text style={styles.statLabel}>Pagos Realizados</Text>
             </View>
@@ -217,19 +217,19 @@ export const BalanceDashboard: React.FC<BalanceDashboardProps> = ({ onClose }) =
           <View style={styles.statsGrid}>
             <View style={styles.statCard}>
               <Text style={styles.statValue}>
-                ${balance?.subscriptions.total_revenue.toFixed(2) || '0.00'}
+                ${balance?.subscriptions?.total_revenue ? balance.subscriptions.total_revenue.toFixed(2) : '0.00'}
               </Text>
               <Text style={styles.statLabel}>Ingresos Totales</Text>
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statValue}>
-                ${balance?.subscriptions.apple_cut.toFixed(2) || '0.00'}
+                ${balance?.subscriptions?.apple_cut ? balance.subscriptions.apple_cut.toFixed(2) : '0.00'}
               </Text>
               <Text style={styles.statLabel}>Apple (30%)</Text>
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statValue}>
-                ${balance?.subscriptions.net_revenue.toFixed(2) || '0.00'}
+                ${balance?.subscriptions?.net_revenue ? balance.subscriptions.net_revenue.toFixed(2) : '0.00'}
               </Text>
               <Text style={styles.statLabel}>Neto (70%)</Text>
             </View>
@@ -243,13 +243,13 @@ export const BalanceDashboard: React.FC<BalanceDashboardProps> = ({ onClose }) =
             <View style={styles.profitRow}>
               <Text style={styles.profitLabel}>Ganancia:</Text>
               <Text style={[styles.profitAmount, { color: colors.green }]}>
-                ${balance?.profit.estimated.toFixed(2) || '0.00'}
+                ${balance?.profit?.estimated ? balance.profit.estimated.toFixed(2) : '0.00'}
               </Text>
             </View>
             <View style={styles.profitRow}>
               <Text style={styles.profitLabel}>Margen:</Text>
               <Text style={styles.profitAmount}>
-                {balance?.profit.margin_percentage || '0.00'}%
+                {balance?.profit?.margin_percentage || '0.00'}%
               </Text>
             </View>
           </View>
@@ -285,7 +285,7 @@ export const BalanceDashboard: React.FC<BalanceDashboardProps> = ({ onClose }) =
                 <View key={transfer.id} style={styles.transferItem}>
                   <View style={styles.transferHeader}>
                     <Text style={styles.transferAmount}>
-                      ${transfer.amount.toFixed(2)}
+                      ${transfer.amount ? parseFloat(transfer.amount).toFixed(2) : '0.00'}
                     </Text>
                     <View style={[styles.statusBadge, { backgroundColor: getStatusColor(transfer.status) }]}>
                       <Text style={styles.statusText}>{transfer.status}</Text>

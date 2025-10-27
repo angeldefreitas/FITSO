@@ -283,9 +283,15 @@ class ApiService {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
+    // Las solicitudes PUT, POST, DELETE siempre deben ir al servidor (modifican datos)
+    // Solo las solicitudes GET pueden usar modo offline
+    const method = options.method || 'GET';
+    const isReadOnlyRequest = method === 'GET';
+    
     try {
-      // Verificar si debe usar modo offline
-      if (this.shouldUseOfflineMode()) {
+      
+      // Verificar si debe usar modo offline (solo para GET)
+      if (isReadOnlyRequest && this.shouldUseOfflineMode()) {
         console.log('📱 Modo offline - cargando datos locales para:', endpoint);
         return await this.loadOfflineData(endpoint);
       }
@@ -323,8 +329,10 @@ class ApiService {
         throw new Error(data.message || `Error ${response.status}: ${response.statusText}`);
       }
 
-      // Guardar datos para uso offline
-      await this.saveOfflineData(endpoint, data);
+      // Solo guardar datos para uso offline si es una solicitud GET (read-only)
+      if (isReadOnlyRequest) {
+        await this.saveOfflineData(endpoint, data);
+      }
       
       // Resetear contador de fallos en caso de éxito
       this.failedRequests = 0;
@@ -343,12 +351,14 @@ class ApiService {
         this.offlineMode = true;
       }
       
-      // Si es un error de red, usar datos offline
-      if (error.message?.includes('Network request failed') || 
-          error.message?.includes('timeout') ||
-          error.message?.includes('Failed to fetch') ||
-          error.name === 'AbortError' ||
-          error.name === 'TypeError') {
+      // Si es un error de red y es una solicitud GET, usar datos offline
+      if (method === 'GET' && (
+        error.message?.includes('Network request failed') || 
+        error.message?.includes('timeout') ||
+        error.message?.includes('Failed to fetch') ||
+        error.name === 'AbortError' ||
+        error.name === 'TypeError')
+      ) {
         console.log('🌐 Error de red - usando datos offline');
         return await this.loadOfflineData(endpoint);
       }

@@ -18,15 +18,14 @@ import { BalanceDashboard } from './BalanceDashboard';
 const colors = Colors;
 
 interface AffiliateData {
-  user_id: string;
-  name: string;
-  email: string;
-  member_since: string;
-  affiliate_code: string;
+  id: string;
+  affiliate_name: string;
+  code: string;
   commission_percentage: number;
   is_active: boolean;
-  code_created_at: string;
-  stats: {
+  created_at: string;
+  email?: string;
+  stats?: {
     total_referrals: number;
     premium_referrals: number;
     total_commissions: number;
@@ -44,7 +43,7 @@ interface AdminDashboardData {
     total_commissions: number;
     pending_commissions: number;
     paid_commissions: number;
-    overall_conversion_rate: number;
+    overall_conversion: number;
   };
   affiliates: AffiliateData[];
 }
@@ -173,11 +172,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
 
   const handleViewReferrals = async (affiliate: AffiliateData) => {
     try {
-      console.log('🔍 [ADMIN] Cargando referidos para:', affiliate.name);
+      console.log('🔍 [ADMIN] Cargando referidos para:', affiliate.affiliate_name);
       setSelectedAffiliate(affiliate);
       
       // Llamada real a la API para obtener referidos
-      const response = await affiliateApiService.getAffiliateReferrals(affiliate.affiliate_code, {
+      const response = await affiliateApiService.getAffiliateReferrals(affiliate.code, {
         limit: 100, // Obtener hasta 100 referidos
         offset: 0
       });
@@ -306,11 +305,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
     <View style={styles.affiliateCard}>
       <View style={styles.affiliateHeader}>
         <View style={styles.affiliateInfo}>
-          <Text style={styles.affiliateName}>{affiliate.name}</Text>
-          <Text style={styles.affiliateCode}>Código: {affiliate.affiliate_code}</Text>
-          <Text style={styles.affiliateEmail}>{affiliate.email}</Text>
+          <Text style={styles.affiliateName}>{affiliate.affiliate_name}</Text>
+          <Text style={styles.affiliateCode}>Código: {affiliate.code}</Text>
+          {affiliate.email && (
+            <Text style={styles.affiliateEmail}>{affiliate.email}</Text>
+          )}
           <Text style={styles.memberSince}>
-            Miembro desde: {new Date(affiliate.member_since).toLocaleDateString()}
+            Miembro desde: {new Date(affiliate.created_at).toLocaleDateString()}
           </Text>
         </View>
         <View style={styles.affiliateStatus}>
@@ -328,24 +329,26 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
         </View>
       </View>
 
-      <View style={styles.affiliateStats}>
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{affiliate.stats.total_referrals}</Text>
-          <Text style={styles.statLabel}>Referidos</Text>
+      {affiliate.stats && (
+        <View style={styles.affiliateStats}>
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{affiliate.stats.total_referrals}</Text>
+            <Text style={styles.statLabel}>Referidos</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{affiliate.stats.premium_referrals}</Text>
+            <Text style={styles.statLabel}>Premium</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>${affiliate.stats.total_commissions.toFixed(2)}</Text>
+            <Text style={styles.statLabel}>Comisiones</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{affiliate.stats.conversion_rate}%</Text>
+            <Text style={styles.statLabel}>Conversión</Text>
+          </View>
         </View>
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{affiliate.stats.premium_referrals}</Text>
-          <Text style={styles.statLabel}>Premium</Text>
-        </View>
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>${affiliate.stats.total_commissions.toFixed(2)}</Text>
-          <Text style={styles.statLabel}>Comisiones</Text>
-        </View>
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{affiliate.stats.conversion_rate}%</Text>
-          <Text style={styles.statLabel}>Conversión</Text>
-        </View>
-      </View>
+      )}
 
             <View style={styles.affiliateActions}>
               <TouchableOpacity 
@@ -356,7 +359,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
               </TouchableOpacity>
               <TouchableOpacity 
                 style={[styles.actionButton, { backgroundColor: colors.green }]}
-                onPress={() => processPayout(affiliate.affiliate_code, affiliate.name)}
+                onPress={() => processPayout(affiliate.code, affiliate.affiliate_name)}
               >
                 <Text style={styles.actionButtonText}>💰 Pagar</Text>
               </TouchableOpacity>
@@ -409,13 +412,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
             </View>
             <View style={styles.summaryItem}>
               <Text style={styles.summaryValue}>
-                ${dashboardData?.summary.total_commissions.toFixed(2) || '0.00'}
+                ${dashboardData?.summary.total_commissions?.toFixed(2) || '0.00'}
               </Text>
               <Text style={styles.summaryLabel}>Total Comisiones</Text>
             </View>
             <View style={styles.summaryItem}>
               <Text style={styles.summaryValue}>
-                {dashboardData?.summary.overall_conversion_rate.toFixed(1) || '0.0'}%
+                {dashboardData?.summary.overall_conversion?.toFixed(1) || '0.0'}%
               </Text>
               <Text style={styles.summaryLabel}>Conversión</Text>
             </View>
@@ -450,7 +453,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
         <View style={styles.affiliatesSection}>
           <Text style={styles.sectionTitle}>👥 Lista de Afiliados</Text>
           {dashboardData?.affiliates.map((affiliate) => (
-            <AffiliateCard key={affiliate.user_id} affiliate={affiliate} />
+            <AffiliateCard key={affiliate.id} affiliate={affiliate} />
           )) || []}
         </View>
       </ScrollView>
@@ -565,32 +568,38 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
             </View>
 
             <ScrollView style={styles.commissionsList}>
-              {commissions.map((commission) => (
-                <View key={commission.id} style={styles.commissionCard}>
-                  <View style={styles.commissionHeader}>
-                    <Text style={styles.commissionCode}>{commission.affiliate_code}</Text>
-                    <View style={[
-                      styles.statusBadge,
-                      { backgroundColor: commission.is_paid ? colors.green : colors.orange }
-                    ]}>
-                      <Text style={styles.statusText}>
-                        {commission.is_paid ? 'Pagada' : 'Pendiente'}
-                      </Text>
-                    </View>
-                  </View>
-                  <Text style={styles.commissionAmount}>
-                    ${commission.commission_amount.toFixed(2)}
-                  </Text>
-                  <Text style={styles.commissionDetails}>
-                    Suscripción: ${commission.subscription_amount.toFixed(2)}
-                  </Text>
-                  {commission.is_paid && commission.paid_date && (
-                    <Text style={styles.paidDate}>
-                      Pagada: {new Date(commission.paid_date).toLocaleDateString()}
-                    </Text>
-                  )}
+              {commissions.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyStateText}>No hay comisiones pendientes</Text>
                 </View>
-              ))}
+              ) : (
+                commissions.map((commission) => (
+                  <View key={commission.id} style={styles.commissionCard}>
+                    <View style={styles.commissionHeader}>
+                      <Text style={styles.commissionCode}>{commission.affiliate_code || 'N/A'}</Text>
+                      <View style={[
+                        styles.statusBadge,
+                        { backgroundColor: commission.is_paid ? colors.green : colors.orange }
+                      ]}>
+                        <Text style={styles.statusText}>
+                          {commission.is_paid ? 'Pagada' : 'Pendiente'}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={styles.commissionAmount}>
+                      ${commission.commission_amount ? parseFloat(commission.commission_amount).toFixed(2) : '0.00'}
+                    </Text>
+                    <Text style={styles.commissionDetails}>
+                      Suscripción: ${commission.subscription_amount ? parseFloat(commission.subscription_amount).toFixed(2) : '0.00'}
+                    </Text>
+                    {commission.is_paid && commission.paid_date && (
+                      <Text style={styles.paidDate}>
+                        Pagada: {new Date(commission.paid_date).toLocaleDateString()}
+                      </Text>
+                    )}
+                  </View>
+                ))
+              )}
             </ScrollView>
           </View>
         </View>
@@ -607,7 +616,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
-                Referidos de {selectedAffiliate?.name}
+                Referidos de {selectedAffiliate?.affiliate_name}
               </Text>
               <TouchableOpacity
                 style={styles.closeButton}
@@ -664,7 +673,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
-                Gestionar {selectedAffiliate?.name}
+                Gestionar {selectedAffiliate?.affiliate_name}
               </Text>
               <TouchableOpacity
                 style={styles.closeButton}
@@ -677,7 +686,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
             <View style={styles.modalBody}>
               <View style={styles.affiliateInfoCard}>
                 <Text style={styles.infoLabel}>Código:</Text>
-                <Text style={styles.infoValue}>{selectedAffiliate?.affiliate_code}</Text>
+                <Text style={styles.infoValue}>{selectedAffiliate?.code}</Text>
                 
                 <Text style={styles.infoLabel}>Estado:</Text>
                 <Text style={[styles.infoValue, { 
@@ -690,17 +699,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
                 <Text style={styles.infoLabel}>Comisión actual:</Text>
                 <Text style={styles.infoValue}>{selectedAffiliate?.commission_percentage}%</Text>
                 
-                <Text style={styles.infoLabel}>Referidos totales:</Text>
-                <Text style={styles.infoValue}>{selectedAffiliate?.stats.total_referrals}</Text>
-                
-                <Text style={styles.infoLabel}>Referidos premium:</Text>
-                <Text style={styles.infoValue}>{selectedAffiliate?.stats.premium_referrals}</Text>
+                {selectedAffiliate?.stats && (
+                  <>
+                    <Text style={styles.infoLabel}>Referidos totales:</Text>
+                    <Text style={styles.infoValue}>{selectedAffiliate.stats.total_referrals}</Text>
+                    
+                    <Text style={styles.infoLabel}>Referidos premium:</Text>
+                    <Text style={styles.infoValue}>{selectedAffiliate.stats.premium_referrals}</Text>
+                  </>
+                )}
               </View>
 
               <View style={styles.managementActions}>
                 <TouchableOpacity
                   style={[styles.managementButton, { backgroundColor: colors.blue }]}
-                  onPress={() => handleChangeCommission(selectedAffiliate?.affiliate_code || '', selectedAffiliate?.commission_percentage || 0)}
+                  onPress={() => handleChangeCommission(selectedAffiliate?.code || '', selectedAffiliate?.commission_percentage || 0)}
                 >
                   <Text style={styles.managementButtonText}>Cambiar Comisión</Text>
                 </TouchableOpacity>
@@ -724,7 +737,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
                           text: action, 
                           style: selectedAffiliate?.is_active ? 'destructive' : 'default',
                           onPress: () => toggleAffiliateStatus(
-                            selectedAffiliate?.affiliate_code || '', 
+                            selectedAffiliate?.code || '', 
                             selectedAffiliate?.is_active || false
                           )
                         }

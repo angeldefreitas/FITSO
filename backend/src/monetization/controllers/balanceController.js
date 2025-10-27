@@ -37,7 +37,7 @@ class BalanceController {
         SELECT 
           COALESCE(SUM(ac.commission_amount), 0) as total_commissions_paid,
           COALESCE(SUM(CASE WHEN ac.is_paid = true THEN ac.commission_amount ELSE 0 END), 0) as paid_commissions,
-          COALESCE(SUM(CASE WHEN ac.is_paid = false AND (ac.is_cancelled = false OR ac.is_cancelled IS NULL) THEN ac.commission_amount ELSE 0 END), 0) as pending_commissions,
+          COALESCE(SUM(CASE WHEN ac.is_paid = false THEN ac.commission_amount ELSE 0 END), 0) as pending_commissions,
           COUNT(CASE WHEN ac.is_paid = true THEN 1 END) as total_payments_made
         FROM affiliate_commissions ac
       `;
