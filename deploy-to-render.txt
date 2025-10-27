@@ -1,0 +1,41 @@
+# INSTRUCCIONES PARA DEPLOY MANUAL A RENDER
+# Dado que GitHub tiene el push bloqueado por el secret en el historial
+
+## OPCIÓN 1: Subir archivos via Render Dashboard (MÁS FÁCIL)
+1. Ve a: https://dashboard.render.com
+2. Encuentra tu servicio `fitso`
+3. Click en "Manual Deploy" o "Deploy Latest Commit"
+4. Esto copiará los archivos locales al servidor
+
+## OPCIÓN 2: Copiar archivos manualmente via Shell de Render
+
+Desde el shell de Render, crea estos archivos:
+
+### 1. adminDashboardController.js
+```bash
+# Copiar el contenido que está en el archivo local
+# backend/src/monetization/controllers/adminDashboardController.js
+```
+
+### 2. Actualizar affiliates.js
+El archivo ya está actualizado en `/Users/angeldefreitas/Projects/fit-mvp/backend/src/monetization/routes/affiliates.js`
+
+Necesitas agregar estas rutas:
+```javascript
+// Importar al inicio del archivo:
+const adminDashboardController = require('../controllers/adminDashboardController');
+
+// Agregar estas rutas al final:
+router.get('/admin-dashboard', authenticateToken, adminDashboardController.getAdminDashboard);
+router.put('/:code/commission', authenticateToken, adminDashboardController.updateAffiliateCommission);
+router.put('/:code/status', authenticateToken, adminDashboardController.toggleAffiliateStatus);
+```
+
+## OPCIÓN 3: Allow Secret en GitHub (más rápido)
+1. Ve a: https://github.com/angeldefreitas/FITSO/security/secret-scanning/unblock-secret/34eiakKPVF5zbrhmBZJG88bItXh
+2. Click en "Allow Secret"
+3. Vuelve a hacer `git push origin main`
+4. Render se desplegará automáticamente
+
+**MI RECOMENDACIÓN: OPCIÓN 3** ⭐
+
