@@ -559,12 +559,6 @@ class SubscriptionService {
         return true;
       }
       
-      // Verificar si el ID contiene 'admin' o 'angelfritas' (para testing)
-      if (user.id && (user.id.includes('admin') || user.id.includes('angelfritas'))) {
-        console.log('👑 Usuario es admin por ID:', user.id);
-        return true;
-      }
-      
       return false;
     } catch (error) {
       console.error('❌ Error verificando rol de usuario:', error);
