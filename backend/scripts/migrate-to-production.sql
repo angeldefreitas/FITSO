@@ -160,3 +160,4 @@ FROM affiliate_payments;
 -- 2. Configurar webhooks en Stripe Dashboard
 -- 3. Probar el sistema con cuentas de prueba
 -- =====================================================
+

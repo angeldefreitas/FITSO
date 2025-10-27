@@ -20,6 +20,7 @@ export { AdminButton } from './AdminButton';
 export { ProfileAdminButton } from './ProfileAdminButton';
 export { ProfileAdminButtonSettings } from './ProfileAdminButtonSettings';
 export { ReferralCodeInput } from './ReferralCodeInput';
+export { ReferralCodeScreenV2 } from './screens/ReferralCodeScreenV2';
 export { SimpleAdminButton } from './SimpleAdminButton';
 export { UserAccessButtons } from './UserAccessButtons';
 export { UserAccessButtonsReal } from './UserAccessButtonsReal';

@@ -20,3 +20,4 @@ router.get('/balance', authenticateToken, balanceController.getBalance);
 router.get('/transfer-history', authenticateToken, balanceController.getTransferHistory);
 
 module.exports = router;
+
