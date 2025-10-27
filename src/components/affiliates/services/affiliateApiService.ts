@@ -220,11 +220,11 @@ export const affiliateApiService = {
     }
   },
 
-  // Obtener estadísticas de afiliado (endpoint público para validación)
-  async getAffiliateStats(code: string) {
+  // Validar código de afiliado (endpoint público, no requiere autenticación)
+  async validateAffiliateCode(code: string) {
     try {
       console.log('🔍 [AFFILIATE API] Validando código:', code);
-      const response = await fetch(`${API_BASE_URL}/api/affiliates/stats/${code}`, {
+      const response = await fetch(`${API_BASE_URL}/api/affiliates/validate/${code}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -238,11 +238,16 @@ export const affiliateApiService = {
 
       const result = await response.json();
       console.log('✅ [AFFILIATE API] Código validado:', result);
-      return result.data;
+      return result;
     } catch (error) {
-      console.error('Error getting affiliate stats:', error);
+      console.error('Error validating affiliate code:', error);
       throw error;
     }
+  },
+
+  // Obtener estadísticas de afiliado (endpoint público para validación) - DEPRECATED, usa validateAffiliateCode
+  async getAffiliateStats(code: string) {
+    return this.validateAffiliateCode(code);
   },
 
   // Procesar pago

@@ -1,11 +1,20 @@
 const express = require('express');
 const affiliateController = require('../controllers/affiliateController');
+const validateCodeController = require('../controllers/validateCodeController');
 const { authenticateToken } = require('../../middleware/auth');
 
 const router = express.Router();
 
 // Middleware de autenticación para todas las rutas EXCEPTO create-account
 // router.use(authenticateToken);
+
+/**
+ * @route GET /api/affiliates/validate/:code
+ * @desc Validar código de afiliado (público, no requiere autenticación)
+ * @access Public
+ * @param {string} code - Código de afiliado a validar
+ */
+router.get('/validate/:code', validateCodeController.validateCode);
 
 /**
  * @route POST /api/affiliates/create-account
