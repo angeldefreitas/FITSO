@@ -560,22 +560,53 @@ class SubscriptionService {
     try {
       const user = await this.getCurrentUser();
       
-      // Verificar si es admin por email
+      // 1. Verificar si es admin por email
       if (user.email && isAdminEmail(user.email)) {
         console.log('👑 Usuario es admin por email:', user.email);
         return true;
       }
       
-      // Verificar si es afiliado
-      if (user.is_affiliate) {
-        console.log('🤝 Usuario es afiliado');
-        return true;
+      // 2. Verificar si el usuario tiene un código de afiliado (creado desde panel de admin)
+      // Los afiliados tienen acceso premium gratuito porque SON PARTE del sistema
+      try {
+        const response = await fetch(
+          `${process.env.EXPO_PUBLIC_API_URL || 'https://fitso.onrender.com'}/api/affiliates/my-info`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${await this.getAuthToken()}`,
+            },
+          }
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          // Si el usuario tiene información de afiliado, significa que es un afiliado creado
+          if (data.data && data.data.affiliate_code) {
+            console.log('🤝 Usuario es afiliado con código:', data.data.affiliate_code);
+            return true;
+          }
+        }
+      } catch (error) {
+        console.log('ℹ️ Usuario no es afiliado (sin código de afiliado)');
       }
       
+      console.log('ℹ️ Usuario NO es admin ni afiliado, necesita comprar suscripción');
       return false;
     } catch (error) {
       console.error('❌ Error verificando rol de usuario:', error);
       return false;
+    }
+  }
+  
+  private async getAuthToken(): Promise<string | null> {
+    try {
+      const token = await AsyncStorage.getItem('auth_token');
+      return token;
+    } catch (error) {
+      console.error('Error obteniendo token:', error);
+      return null;
     }
   }
 

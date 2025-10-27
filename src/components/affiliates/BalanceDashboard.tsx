@@ -30,6 +30,8 @@ interface BalanceData {
     total_revenue: number;
     apple_cut: number;
     net_revenue: number;
+    premium_with_referral: number;
+    premium_without_referral: number;
   };
   profit: {
     estimated: number;
@@ -232,6 +234,29 @@ export const BalanceDashboard: React.FC<BalanceDashboardProps> = ({ onClose }) =
                 ${balance?.subscriptions?.net_revenue ? balance.subscriptions.net_revenue.toFixed(2) : '0.00'}
               </Text>
               <Text style={styles.statLabel}>Neto (70%)</Text>
+            </View>
+          </View>
+          
+          {/* Desglose de Usuarios Premium */}
+          <View style={styles.infoCard}>
+            <Text style={styles.infoTitle}>Desglose de Usuarios Premium</Text>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>🔄 Con Referral (Generan comisiones):</Text>
+              <Text style={styles.infoValue}>
+                {balance?.subscriptions?.premium_with_referral || 0} usuarios
+              </Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>👤 Sin Referral (100% de la app):</Text>
+              <Text style={styles.infoValue}>
+                {balance?.subscriptions?.premium_without_referral || 0} usuarios
+              </Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={[styles.infoLabel, { fontWeight: 'bold' }]}>Total Premium:</Text>
+              <Text style={[styles.infoValue, { fontWeight: 'bold' }]}>
+                {balance?.subscriptions?.total || 0} usuarios
+              </Text>
             </View>
           </View>
         </View>
@@ -513,6 +538,39 @@ const styles = StyleSheet.create({
   transferDate: {
     fontSize: 12,
     color: colors.textSecondary,
+  },
+  infoCard: {
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 12,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  infoTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: 12,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  infoLabel: {
+    fontSize: 14,
+    color: colors.text,
+    flex: 1,
+  },
+  infoValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
   },
 });
 
