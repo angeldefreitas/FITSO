@@ -93,6 +93,7 @@ app.use('/api/affiliates', routes.affiliateRoutes);
 app.use('/api/affiliates', require('./monetization/routes/payments'));
 app.use('/api/affiliates', require('./monetization/routes/balance'));
 app.use('/api/affiliates', require('./monetization/routes/simpleAffiliateDashboard'));
+app.use('/api/webhooks', require('./routes/webhooks'));
 
 // Ruta de salud
 app.get('/api/health', async (req, res) => {
