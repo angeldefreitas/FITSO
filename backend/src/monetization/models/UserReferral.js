@@ -69,8 +69,7 @@ class UserReferral {
     const updateQuery = `
       UPDATE user_referrals 
       SET is_premium = true, 
-          premium_conversion_date = CURRENT_TIMESTAMP,
-          updated_at = CURRENT_TIMESTAMP
+          premium_conversion_date = CURRENT_TIMESTAMP
       WHERE id = $1
       RETURNING *
     `;
