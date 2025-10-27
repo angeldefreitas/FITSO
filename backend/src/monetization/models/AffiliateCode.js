@@ -146,8 +146,8 @@ class AffiliateCode {
         COUNT(ur.id) as total_referrals,
         COALESCE(SUM(afc.commission_amount), 0) as total_commissions
       FROM affiliate_codes ac
-      LEFT JOIN user_referrals ur ON ac.id = ur.affiliate_code_id
-      LEFT JOIN affiliate_commissions afc ON ac.created_by = afc.affiliate_id
+      LEFT JOIN user_referrals ur ON ac.code = ur.affiliate_code
+      LEFT JOIN affiliate_commissions afc ON ac.code = afc.affiliate_code
       WHERE ac.code = $1
       GROUP BY ac.id
     `;

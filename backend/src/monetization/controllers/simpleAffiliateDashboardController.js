@@ -42,10 +42,10 @@ const getSimpleAffiliateDashboard = async (req, res) => {
         0 as pending_commissions,
         0 as paid_commissions
       FROM user_referrals ur
-      WHERE ur.affiliate_code_id = $1
+      WHERE ur.affiliate_code = $1
     `;
     
-    const statsResult = await query(statsQuery, [affiliateCode.id]);
+    const statsResult = await query(statsQuery, [affiliateCode.code]);
     const stats = statsResult.rows[0];
 
     // 4. Calcular tasa de conversión

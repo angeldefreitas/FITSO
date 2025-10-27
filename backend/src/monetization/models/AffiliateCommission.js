@@ -189,11 +189,11 @@ class AffiliateCommission {
       SELECT 
         COUNT(*) as total_commissions,
         COALESCE(SUM(ac.commission_amount), 0) as total_commission_amount,
-        COALESCE(SUM(CASE WHEN ac.status = 'paid' THEN ac.commission_amount ELSE 0 END), 0) as paid_commission_amount,
-        COALESCE(SUM(CASE WHEN ac.status = 'pending' THEN ac.commission_amount ELSE 0 END), 0) as pending_commission_amount,
+        COALESCE(SUM(CASE WHEN ac.is_paid = true THEN ac.commission_amount ELSE 0 END), 0) as paid_commission_amount,
+        COALESCE(SUM(CASE WHEN ac.is_paid = false THEN ac.commission_amount ELSE 0 END), 0) as pending_commission_amount,
         COALESCE(AVG(ac.commission_percentage), 0) as avg_commission_percentage,
-        COUNT(CASE WHEN ac.status = 'paid' THEN 1 END) as paid_commissions_count,
-        COUNT(CASE WHEN ac.status = 'pending' THEN 1 END) as pending_commissions_count
+        COUNT(CASE WHEN ac.is_paid = true THEN 1 END) as paid_commissions_count,
+        COUNT(CASE WHEN ac.is_paid = false THEN 1 END) as pending_commissions_count
       FROM affiliate_commissions ac
       ${whereClause}
     `;
