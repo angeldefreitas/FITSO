@@ -32,6 +32,8 @@ interface BalanceData {
     net_revenue: number;
     premium_with_referral: number;
     premium_without_referral: number;
+    total_with_referral: number;
+    total_without_referral: number;
   };
   profit: {
     estimated: number;
@@ -239,23 +241,49 @@ export const BalanceDashboard: React.FC<BalanceDashboardProps> = ({ onClose }) =
           
           {/* Desglose de Usuarios Premium */}
           <View style={styles.infoCard}>
-            <Text style={styles.infoTitle}>Desglose de Usuarios Premium</Text>
+            <Text style={styles.infoTitle}>Desglose de Usuarios</Text>
+            
+            <View style={styles.infoDivider}>
+              <Text style={styles.infoSubtitle}>Con Código de Referral (Todos):</Text>
+            </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>🔄 Con Referral (Generan comisiones):</Text>
+              <Text style={styles.infoLabel}>Total con código de referral:</Text>
               <Text style={styles.infoValue}>
+                {balance?.subscriptions?.total_with_referral || 0} usuarios
+              </Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>  → Premium (generan ingresos):</Text>
+              <Text style={[styles.infoValue, { color: colors.green }]}>
                 {balance?.subscriptions?.premium_with_referral || 0} usuarios
               </Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>👤 Sin Referral (100% de la app):</Text>
+              <Text style={styles.infoLabel}>  → No premium (aún):</Text>
+              <Text style={[styles.infoValue, { color: colors.orange }]}>
+                {(balance?.subscriptions?.total_with_referral || 0) - (balance?.subscriptions?.premium_with_referral || 0)} usuarios
+              </Text>
+            </View>
+            
+            <View style={styles.infoDivider}>
+              <Text style={styles.infoSubtitle}>Usuarios Premium Totales:</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>🔄 Con referral:</Text>
               <Text style={styles.infoValue}>
-                {balance?.subscriptions?.premium_without_referral || 0} usuarios
+                {balance?.subscriptions?.premium_with_referral || 0}
+              </Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>👤 Sin referral (100% app):</Text>
+              <Text style={styles.infoValue}>
+                {balance?.subscriptions?.premium_without_referral || 0}
               </Text>
             </View>
             <View style={styles.infoRow}>
               <Text style={[styles.infoLabel, { fontWeight: 'bold' }]}>Total Premium:</Text>
               <Text style={[styles.infoValue, { fontWeight: 'bold' }]}>
-                {balance?.subscriptions?.total || 0} usuarios
+                {balance?.subscriptions?.total || 0}
               </Text>
             </View>
           </View>
@@ -571,6 +599,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: colors.primary,
+  },
+  infoDivider: {
+    marginTop: 12,
+    marginBottom: 8,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  infoSubtitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textSecondary,
   },
 });
 

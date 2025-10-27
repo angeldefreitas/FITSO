@@ -33,10 +33,21 @@ class BalanceController {
         total_subscriptions: 0, 
         total_revenue: 0,
         premium_with_referral: 0,
-        premium_without_referral: 0
+        premium_without_referral: 0,
+        total_with_referral: 0,
+        total_without_referral: 0
       };
       
       try {
+        // Contar TODOS los usuarios con código de referral
+        const totalWithReferralQuery = `
+          SELECT COUNT(*) as count
+          FROM user_referrals
+        `;
+        
+        const totalWithReferralResult = await query(totalWithReferralQuery);
+        subscriptionStats.total_with_referral = parseInt(totalWithReferralResult.rows[0].count) || 0;
+        
         // Contar usuarios premium CON referral (is_premium = true en user_referrals)
         const premiumWithReferralQuery = `
           SELECT COUNT(*) as count
@@ -44,8 +55,8 @@ class BalanceController {
           WHERE is_premium = true
         `;
         
-        const withReferralResult = await query(premiumWithReferralQuery);
-        subscriptionStats.premium_with_referral = parseInt(withReferralResult.rows[0].count) || 0;
+        const premiumWithReferralResult = await query(premiumWithReferralQuery);
+        subscriptionStats.premium_with_referral = parseInt(premiumWithReferralResult.rows[0].count) || 0;
         
         // Contar usuarios premium SIN referral (con subscripción activa pero sin user_referral)
         const premiumWithoutReferralQuery = `
@@ -59,14 +70,25 @@ class BalanceController {
             )
         `;
         
-        const withoutReferralResult = await query(premiumWithoutReferralQuery);
-        subscriptionStats.premium_without_referral = parseInt(withoutReferralResult.rows[0].count) || 0;
+        const premiumWithoutReferralResult = await query(premiumWithoutReferralQuery);
+        subscriptionStats.premium_without_referral = parseInt(premiumWithoutReferralResult.rows[0].count) || 0;
         
         subscriptionStats.total_subscriptions = subscriptionStats.premium_with_referral + subscriptionStats.premium_without_referral;
         
+        // Contar TOTAL de usuarios premium (referidos + normales)
+        const totalPremiumQuery = `
+          SELECT COUNT(DISTINCT s.user_id) as count
+          FROM subscriptions s
+          WHERE s.is_active = true 
+            AND s.expires_date > CURRENT_TIMESTAMP
+        `;
+        
+        const totalPremiumResult = await query(totalPremiumQuery);
+        subscriptionStats.total_without_referral = parseInt(totalPremiumResult.rows[0].count) || subscriptionStats.premium_without_referral;
+        
         // Calcular ingresos estimados:
-        // Usuarios referidos: $9.99 al mes (pero la app se queda con 70% - 30% para Apple - comisiones para afiliados)
-        // Usuarios normales: $9.99 al mes (app se queda con 70% - 30% para Apple, sin comisiones)
+        // Solo usuarios premium generan ingresos
+        // Usuarios referidos que NO son premium: NO generan ingresos todavía
         const monthlyRevenuePerUser = 9.99;
         
         const revenueFromReferrals = subscriptionStats.premium_with_referral * monthlyRevenuePerUser;
@@ -74,7 +96,9 @@ class BalanceController {
         
         subscriptionStats.total_revenue = revenueFromReferrals + revenueFromNormal;
         
-        console.log(`📊 [BALANCE] Suscripciones: ${subscriptionStats.total_subscriptions} total (${subscriptionStats.premium_with_referral} con referral, ${subscriptionStats.premium_without_referral} normales)`);
+        console.log(`📊 [BALANCE] Usuarios con referral: ${subscriptionStats.total_with_referral} total, ${subscriptionStats.premium_with_referral} premium`);
+        console.log(`📊 [BALANCE] Usuarios premium: ${subscriptionStats.total_subscriptions} total (${subscriptionStats.premium_with_referral} con referral, ${subscriptionStats.premium_without_referral} normales)`);
+        console.log(`💰 [BALANCE] Ingresos estimados: $${subscriptionStats.total_revenue.toFixed(2)}`);
         
       } catch (error) {
         console.log('⚠️ [BALANCE] Error obteniendo estadísticas de suscripciones:', error.message);
@@ -117,7 +141,9 @@ class BalanceController {
             apple_cut: estimatedAppleCut,
             net_revenue: estimatedNetRevenue,
             premium_with_referral: subscriptionStats.premium_with_referral,
-            premium_without_referral: subscriptionStats.premium_without_referral
+            premium_without_referral: subscriptionStats.premium_without_referral,
+            total_with_referral: subscriptionStats.total_with_referral,
+            total_without_referral: subscriptionStats.total_without_referral
           },
           profit: {
             estimated: estimatedProfit,
