@@ -29,12 +29,14 @@ export default function PremiumScreen({ onClose }: PremiumScreenProps) {
 
   const handleSubscribe = async () => {
     try {
-      const productId = selectedPlan === 'monthly' ? 'fitso_premium_monthly' : 'fitso_premium_yearly';
+      const productId = selectedPlan === 'monthly' ? 'Fitso_Premium_Monthly' : 'Fitso_Premium_Yearly';
+      console.log('🛒 [PREMIUM SCREEN] Iniciando compra de:', productId);
       await purchaseSubscription(productId);
+      console.log('✅ [PREMIUM SCREEN] Compra completada exitosamente');
       // Cerrar la pantalla después de la compra exitosa
       onClose();
     } catch (error) {
-      console.error('Error en suscripción:', error);
+      console.error('❌ [PREMIUM SCREEN] Error en suscripción:', error);
       Alert.alert(
         t('alerts.error'),
         t('premium.subscriptionError'),

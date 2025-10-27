@@ -200,6 +200,9 @@ class SubscriptionService {
       if (customerInfo.entitlements.active[PREMIUM_ENTITLEMENT]) {
         console.log('✅ Compra exitosa, usuario tiene acceso premium');
         await this.refreshPremiumStatusFromRevenueCat();
+        
+        // Notificar al backend sobre la compra (para comisiones de afiliados)
+        await this.notifyBackendAboutPurchase(productId, customerInfo);
       } else {
         throw new Error('Compra exitosa pero sin acceso premium');
       }
@@ -566,6 +569,53 @@ class SubscriptionService {
     } catch (error) {
       console.error('❌ Error verificando rol de usuario:', error);
       return false;
+    }
+  }
+
+  private async notifyBackendAboutPurchase(productId: string, customerInfo: CustomerInfo): Promise<void> {
+    try {
+      console.log('📤 [SUBSCRIPTION] Notificando al backend sobre la compra...');
+      
+      const { default: apiService } = await import('./apiService');
+      const userId = await this.getCurrentUserId();
+      
+      // Extraer información de la compra
+      const premiumEntitlement = customerInfo.entitlements.active[PREMIUM_ENTITLEMENT];
+      const subscriptionType = productId.includes('Monthly') ? 'monthly' : 'yearly';
+      
+      // Obtener el ID de la transacción más reciente
+      const transactionId = premiumEntitlement?.latestPurchaseDate || new Date().toISOString();
+      
+      // Calcular precio basado en el plan
+      const price = subscriptionType === 'monthly' ? 2.99 : 19.99;
+      
+      const purchaseData = {
+        userId,
+        productId,
+        subscriptionType,
+        transactionId,
+        purchaseDate: new Date().toISOString(),
+        expiresAt: premiumEntitlement?.expirationDate,
+        price,
+      };
+      
+      console.log('📊 [SUBSCRIPTION] Datos de compra:', purchaseData);
+      
+      // Enviar al backend
+      const response = await apiService.post('/subscriptions/purchase', purchaseData);
+      
+      if (response.success) {
+        console.log('✅ [SUBSCRIPTION] Backend notificado exitosamente');
+        console.log('💰 [SUBSCRIPTION] Comisión de afiliado procesada:', response.data);
+      } else {
+        console.warn('⚠️ [SUBSCRIPTION] Backend respondió con error:', response.message);
+      }
+      
+    } catch (error) {
+      console.error('❌ [SUBSCRIPTION] Error notificando al backend:', error);
+      // No lanzar error para no afectar el flujo de compra
+      // El webhook de RevenueCat se encargará de procesar la comisión
+      console.log('ℹ️ [SUBSCRIPTION] La comisión será procesada por el webhook de RevenueCat');
     }
   }
 
