@@ -33,27 +33,46 @@ const getSimpleAffiliateDashboard = async (req, res) => {
     const affiliateCode = affiliateResult.rows[0];
     console.log('✅ [SIMPLE DASHBOARD] Código encontrado:', affiliateCode.code);
 
-    // 3. Obtener estadísticas básicas
-    const statsQuery = `
+    // 3. Obtener estadísticas de referidos
+    const referralsQuery = `
       SELECT 
         COALESCE(COUNT(ur.id), 0) as total_referrals,
-        0 as premium_referrals,
-        0 as total_commissions,
-        0 as pending_commissions,
-        0 as paid_commissions
+        COALESCE(SUM(CASE WHEN ur.is_premium = true THEN 1 ELSE 0 END), 0) as premium_referrals
       FROM user_referrals ur
       WHERE ur.affiliate_code = $1
     `;
     
-    const statsResult = await query(statsQuery, [affiliateCode.code]);
-    const stats = statsResult.rows[0];
+    const referralsResult = await query(referralsQuery, [affiliateCode.code]);
+    const referralsStats = referralsResult.rows[0];
+    
+    // 4. Obtener estadísticas de comisiones
+    const commissionsQuery = `
+      SELECT 
+        COALESCE(SUM(ac.commission_amount), 0) as total_commissions,
+        COALESCE(SUM(CASE WHEN ac.is_paid = false THEN ac.commission_amount ELSE 0 END), 0) as pending_commissions,
+        COALESCE(SUM(CASE WHEN ac.is_paid = true THEN ac.commission_amount ELSE 0 END), 0) as paid_commissions
+      FROM affiliate_commissions ac
+      WHERE ac.affiliate_code = $1
+    `;
+    
+    const commissionsResult = await query(commissionsQuery, [affiliateCode.code]);
+    const commissionsStats = commissionsResult.rows[0];
+    
+    // 5. Combinar estadísticas
+    const stats = {
+      total_referrals: referralsStats.total_referrals,
+      premium_referrals: referralsStats.premium_referrals,
+      total_commissions: commissionsStats.total_commissions,
+      pending_commissions: commissionsStats.pending_commissions,
+      paid_commissions: commissionsStats.paid_commissions
+    };
 
-    // 4. Calcular tasa de conversión
+    // 6. Calcular tasa de conversión
     const totalReferrals = parseInt(stats.total_referrals) || 0;
     const premiumReferrals = parseInt(stats.premium_referrals) || 0;
     const conversionRate = totalReferrals > 0 ? (premiumReferrals / totalReferrals) * 100 : 0;
 
-    // 5. Preparar respuesta
+    // 7. Preparar respuesta
     const dashboardData = {
       total_referrals: totalReferrals,
       premium_referrals: premiumReferrals,
