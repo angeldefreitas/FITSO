@@ -149,21 +149,43 @@ export const affiliateApiService = {
   async getAdminDashboard() {
     try {
       console.log('🔍 [ADMIN API] Obteniendo dashboard de administración...');
-      // La ruta admin-dashboard no existe, usar la lista de códigos
-      const response = await authenticatedRequest('/affiliates/codes');
+      const response = await authenticatedRequest('/affiliates/admin-dashboard');
       console.log('✅ [ADMIN API] Dashboard obtenido:', response.data);
-      return {
-        success: true,
-        data: {
-          total_affiliates: response.data?.length || 0,
-          affiliates: response.data || [],
-          total_referrals: 0,
-          total_commissions: 0,
-          conversion: 0
-        }
-      };
+      return response.data;
     } catch (error) {
       console.error('❌ [ADMIN API] Error obteniendo dashboard:', error);
+      throw error;
+    }
+  },
+
+  // Actualizar comisión de afiliado
+  async updateAffiliateCommission(code: string, commissionPercentage: number) {
+    try {
+      console.log('🔄 [ADMIN API] Actualizando comisión de', code, 'a', commissionPercentage);
+      const response = await authenticatedRequest(`/affiliates/${code}/commission`, {
+        method: 'PUT',
+        body: JSON.stringify({ commission_percentage: commissionPercentage }),
+      });
+      console.log('✅ [ADMIN API] Comisión actualizada');
+      return response;
+    } catch (error) {
+      console.error('❌ [ADMIN API] Error actualizando comisión:', error);
+      throw error;
+    }
+  },
+
+  // Activar/desactivar afiliado
+  async toggleAffiliateStatus(code: string, isActive: boolean) {
+    try {
+      console.log('🔄 [ADMIN API] Cambiando estado de', code, 'a', isActive);
+      const response = await authenticatedRequest(`/affiliates/${code}/status`, {
+        method: 'PUT',
+        body: JSON.stringify({ is_active: isActive }),
+      });
+      console.log('✅ [ADMIN API] Estado actualizado');
+      return response;
+    } catch (error) {
+      console.error('❌ [ADMIN API] Error actualizando estado:', error);
       throw error;
     }
   },

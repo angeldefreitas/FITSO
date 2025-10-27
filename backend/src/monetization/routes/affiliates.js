@@ -1,6 +1,7 @@
 const express = require('express');
 const affiliateController = require('../controllers/affiliateController');
 const validateCodeController = require('../controllers/validateCodeController');
+const adminDashboardController = require('../controllers/adminDashboardController');
 const { authenticateToken } = require('../../middleware/auth');
 
 const router = express.Router();
@@ -142,9 +143,30 @@ router.post('/payments', authenticateToken, affiliateController.processCommissio
  */
 router.get('/pending-payments', authenticateToken, affiliateController.getPendingPayments);
 
+/**
+ * @route GET /api/affiliates/admin-dashboard
+ * @desc Obtener dashboard completo de administración con estadísticas de todos los afiliados
+ * @access Private (Admin)
+ */
+router.get('/admin-dashboard', authenticateToken, adminDashboardController.getAdminDashboard);
 
+/**
+ * @route PUT /api/affiliates/:code/commission
+ * @desc Actualizar porcentaje de comisión de un afiliado
+ * @access Private (Admin)
+ * @param {string} code - Código del afiliado
+ * @body {number} commission_percentage - Nuevo porcentaje de comisión (0-100)
+ */
+router.put('/:code/commission', authenticateToken, adminDashboardController.updateAffiliateCommission);
 
-
+/**
+ * @route PUT /api/affiliates/:code/status
+ * @desc Activar o desactivar código de afiliado
+ * @access Private (Admin)
+ * @param {string} code - Código del afiliado
+ * @body {boolean} is_active - Estado activo/inactivo
+ */
+router.put('/:code/status', authenticateToken, adminDashboardController.toggleAffiliateStatus);
 
 
 

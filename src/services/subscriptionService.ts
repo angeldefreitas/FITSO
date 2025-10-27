@@ -170,19 +170,26 @@ class SubscriptionService {
         }
       }
 
-      console.log('🛒 Iniciando compra de suscripción:', productId);
+      console.log('🛒 [PURCHASE] Iniciando compra de suscripción:', productId);
+      console.log('📦 [PURCHASE] Productos disponibles:', this.products.map(p => p.identifier));
       
       // Verificar que el producto existe
       const product = this.products.find(p => p.identifier === productId);
       if (!product) {
-        throw new Error('Producto no encontrado');
+        console.error('❌ [PURCHASE] Producto no encontrado en productos disponibles');
+        console.error('❌ [PURCHASE] Productos disponibles:', this.products.map(p => ({ id: p.identifier, title: p.title })));
+        throw new Error(`Producto no encontrado: ${productId}`);
       }
+      console.log('✅ [PURCHASE] Producto encontrado:', product.title);
 
       // Obtener ofertas de RevenueCat
+      console.log('🔄 [PURCHASE] Obteniendo ofertas de RevenueCat...');
       const offerings = await Purchases.getOfferings();
       if (!offerings.current) {
+        console.error('❌ [PURCHASE] No hay ofertas disponibles');
         throw new Error('No hay ofertas disponibles');
       }
+      console.log('✅ [PURCHASE] Ofertas encontradas:', offerings.current.availablePackages.map(p => p.identifier));
 
       // Encontrar el paquete correspondiente
       const packageToPurchase = offerings.current.availablePackages.find(
@@ -190,8 +197,14 @@ class SubscriptionService {
       );
 
       if (!packageToPurchase) {
-        throw new Error('Paquete no encontrado en RevenueCat');
+        console.error('❌ [PURCHASE] Paquete no encontrado en RevenueCat');
+        console.error('❌ [PURCHASE] Paquetes disponibles:', offerings.current.availablePackages.map(p => ({ 
+          packageId: p.identifier, 
+          productId: p.product.identifier 
+        })));
+        throw new Error(`Paquete no encontrado en RevenueCat: ${productId}`);
       }
+      console.log('✅ [PURCHASE] Paquete encontrado:', packageToPurchase.identifier);
 
       // Realizar la compra
       const { customerInfo } = await Purchases.purchasePackage(packageToPurchase);
