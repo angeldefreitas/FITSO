@@ -149,9 +149,19 @@ export const affiliateApiService = {
   async getAdminDashboard() {
     try {
       console.log('🔍 [ADMIN API] Obteniendo dashboard de administración...');
-      const response = await authenticatedRequest('/affiliates/admin-dashboard');
+      // La ruta admin-dashboard no existe, usar la lista de códigos
+      const response = await authenticatedRequest('/affiliates/codes');
       console.log('✅ [ADMIN API] Dashboard obtenido:', response.data);
-      return response.data;
+      return {
+        success: true,
+        data: {
+          total_affiliates: response.data?.length || 0,
+          affiliates: response.data || [],
+          total_referrals: 0,
+          total_commissions: 0,
+          conversion: 0
+        }
+      };
     } catch (error) {
       console.error('❌ [ADMIN API] Error obteniendo dashboard:', error);
       throw error;
