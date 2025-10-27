@@ -67,16 +67,31 @@ export const BalanceDashboard: React.FC<BalanceDashboardProps> = ({ onClose }) =
   const [showTransfers, setShowTransfers] = useState(false);
 
   useEffect(() => {
+    // Limpiar cache antes de cargar
+    clearBalanceCache();
     loadBalance();
   }, []);
+
+  const clearBalanceCache = async () => {
+    try {
+      const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
+      const key = '@fitso_offline__affiliates_balance';
+      await AsyncStorage.removeItem(key);
+      console.log('🧹 [BALANCE DASHBOARD] Cache de balance limpiado');
+    } catch (error) {
+      console.error('❌ Error limpiando cache:', error);
+    }
+  };
 
   const loadBalance = async () => {
     try {
       setLoading(true);
       const response = await affiliateApiService.getBalance();
+      console.log('🔍 [BALANCE DASHBOARD] Datos recibidos del API:', JSON.stringify(response.data, null, 2));
       setBalance(response.data);
+      console.log('✅ [BALANCE DASHBOARD] Estado actualizado con:', response.data);
     } catch (error) {
-      console.error('Error cargando balance:', error);
+      console.error('❌ [BALANCE DASHBOARD] Error cargando balance:', error);
       Alert.alert('Error', 'No se pudo cargar el balance');
     } finally {
       setLoading(false);

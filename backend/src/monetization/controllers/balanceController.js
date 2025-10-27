@@ -58,33 +58,15 @@ class BalanceController {
         const premiumWithReferralResult = await query(premiumWithReferralQuery);
         subscriptionStats.premium_with_referral = parseInt(premiumWithReferralResult.rows[0].count) || 0;
         
-        // Contar usuarios premium SIN referral (con subscripción activa pero sin user_referral)
-        const premiumWithoutReferralQuery = `
-          SELECT COUNT(DISTINCT s.user_id) as count
-          FROM subscriptions s
-          WHERE s.is_active = true 
-            AND s.expires_date > CURRENT_TIMESTAMP
-            AND NOT EXISTS (
-              SELECT 1 FROM user_referrals ur 
-              WHERE ur.user_id = s.user_id
-            )
-        `;
+        // NOTA: La tabla 'subscriptions' no existe en la base de datos de producción.
+        // Por ahora, solo contamos usuarios premium basados en user_referrals.is_premium
+        // En el futuro, cuando se implemente RevenueCat o Stripe, se podrá usar la tabla subscriptions.
         
-        const premiumWithoutReferralResult = await query(premiumWithoutReferralQuery);
-        subscriptionStats.premium_without_referral = parseInt(premiumWithoutReferralResult.rows[0].count) || 0;
+        // Contar usuarios premium SIN referral: 0 por ahora (no hay tabla subscriptions)
+        subscriptionStats.premium_without_referral = 0;
         
         subscriptionStats.total_subscriptions = subscriptionStats.premium_with_referral + subscriptionStats.premium_without_referral;
-        
-        // Contar TOTAL de usuarios premium (referidos + normales)
-        const totalPremiumQuery = `
-          SELECT COUNT(DISTINCT s.user_id) as count
-          FROM subscriptions s
-          WHERE s.is_active = true 
-            AND s.expires_date > CURRENT_TIMESTAMP
-        `;
-        
-        const totalPremiumResult = await query(totalPremiumQuery);
-        subscriptionStats.total_without_referral = parseInt(totalPremiumResult.rows[0].count) || subscriptionStats.premium_without_referral;
+        subscriptionStats.total_without_referral = subscriptionStats.premium_without_referral;
         
         // Calcular ingresos estimados:
         // Solo usuarios premium generan ingresos
