@@ -23,23 +23,23 @@ class RevenueCatWebhookController {
         }
       }
 
-      const event = req.body;
+      const payload = req.body;
       
-      console.log('📨 [REVENUECAT] Webhook recibido:', event.type);
-      console.log('📋 [REVENUECAT] Event data:', JSON.stringify(event, null, 2));
+      console.log('📨 [REVENUECAT] Webhook recibido');
+      console.log('📋 [REVENUECAT] Payload:', JSON.stringify(payload, null, 2));
 
       // Validar que el evento tenga la estructura correcta
-      if (!event || !event.type || !event.event) {
-        console.error('❌ [REVENUECAT] Evento inválido:', event);
+      if (!payload || !payload.event) {
+        console.error('❌ [REVENUECAT] Payload inválido:', payload);
         return res.status(400).json({
           success: false,
-          message: 'Evento inválido'
+          message: 'Payload inválido'
         });
       }
 
       // Extraer información del evento
-      const eventType = event.type;
-      const eventData = event.event;
+      const eventData = payload.event;
+      const eventType = eventData.type;
       
       // Información del usuario y suscripción
       const appUserId = eventData.app_user_id;
@@ -48,12 +48,17 @@ class RevenueCatWebhookController {
       const price = eventData.price || eventData.price_in_purchased_currency || 0;
       const currency = eventData.currency || 'USD';
 
+      console.log(`📨 [REVENUECAT] Tipo de evento: ${eventType}`);
       console.log(`👤 [REVENUECAT] Usuario: ${appUserId}`);
       console.log(`📦 [REVENUECAT] Producto: ${productId}`);
       console.log(`💰 [REVENUECAT] Precio: ${price} ${currency}`);
 
       // Procesar según el tipo de evento
       switch (eventType) {
+        case 'TEST':
+          console.log('✅ [REVENUECAT] Evento de prueba recibido correctamente');
+          break;
+
         case 'INITIAL_PURCHASE':
           await this.handleInitialPurchase(appUserId, transactionId, price, productId);
           break;
