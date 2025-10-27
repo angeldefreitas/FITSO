@@ -48,4 +48,18 @@ router.post('/cancel', subscriptionController.cancelSubscription);
  */
 router.get('/history/:userId', subscriptionController.getSubscriptionHistory);
 
+/**
+ * @route POST /api/subscriptions/purchase
+ * @desc Procesa una compra y genera comisión de afiliado inmediatamente
+ * @access Private
+ * @body {string} userId - ID del usuario que compró
+ * @body {string} productId - ID del producto (Fitso_Premium_Monthly/Yearly)
+ * @body {string} subscriptionType - Tipo de suscripción (monthly/yearly)
+ * @body {string} transactionId - ID de la transacción
+ * @body {number} price - Precio de la suscripción
+ * @body {string} purchaseDate - Fecha de compra
+ * @body {string} expiresAt - Fecha de expiración
+ */
+router.post('/purchase', subscriptionController.processPurchase);
+
 module.exports = router;

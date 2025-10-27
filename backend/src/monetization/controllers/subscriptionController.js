@@ -394,6 +394,79 @@ class SubscriptionController {
       });
     }
   }
+
+  /**
+   * Procesa una compra directamente desde la app
+   * POST /api/subscriptions/purchase
+   */
+  async processPurchase(req, res) {
+    try {
+      const { userId, productId, subscriptionType, transactionId, price, purchaseDate, expiresAt } = req.body;
+
+      console.log('📱 [PURCHASE] Compra recibida desde app:', {
+        userId,
+        productId,
+        subscriptionType,
+        price,
+        transactionId
+      });
+
+      // Validar datos requeridos
+      if (!userId || !productId || !transactionId || !price) {
+        return res.status(400).json({
+          success: false,
+          message: 'Datos incompletos: userId, productId, transactionId y price son requeridos'
+        });
+      }
+
+      // Verificar si el usuario tiene código de referencia
+      console.log('🔍 [PURCHASE] Buscando código de referencia para usuario:', userId);
+      
+      // Procesar comisión de afiliado
+      const commission = await AffiliateService.processPremiumConversion(
+        userId,
+        transactionId,
+        price,
+        subscriptionType || 'monthly'
+      );
+
+      if (commission) {
+        console.log('✅ [PURCHASE] Comisión generada exitosamente:', {
+          affiliate_code: commission.affiliate_code,
+          commission_amount: commission.commission_amount
+        });
+
+        res.json({
+          success: true,
+          message: 'Compra procesada y comisión generada exitosamente',
+          data: {
+            commission: {
+              affiliate_code: commission.affiliate_code,
+              commission_amount: commission.commission_amount,
+              commission_percentage: commission.commission_percentage
+            }
+          }
+        });
+      } else {
+        console.log('ℹ️ [PURCHASE] Compra procesada pero sin comisión (usuario sin código de referencia)');
+        
+        res.json({
+          success: true,
+          message: 'Compra procesada exitosamente',
+          data: {
+            commission: null
+          }
+        });
+      }
+
+    } catch (error) {
+      console.error('❌ [PURCHASE] Error procesando compra:', error);
+      res.status(500).json({
+        success: false,
+        message: `Error procesando compra: ${error.message}`
+      });
+    }
+  }
 }
 
 module.exports = new SubscriptionController();
