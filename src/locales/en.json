@@ -478,7 +478,20 @@
     "purchasesRestoredMessage": "Your previous purchases have been restored.",
     "scanLimitTitle": "Scan Limit Reached",
     "scanLimitMessage": "You have reached the limit of 1 AI scan per day. Subscribe to Premium for unlimited scans.",
-    "viewPremium": "View Premium"
+    "viewPremium": "View Premium",
+    "errorTitle": "Oops!",
+    "errorCanceled": "Purchase Canceled",
+    "errorCanceledMessage": "The purchase was canceled. Don't worry! You can try again whenever you want.",
+    "errorConnection": "No Connection",
+    "errorConnectionMessage": "We couldn't connect to the server. Check your internet connection and try again.",
+    "errorAlreadyActive": "You're Already Premium",
+    "errorAlreadyActiveMessage": "You already have an active subscription. Enjoy all the benefits!",
+    "errorNotAllowed": "Purchases Not Available",
+    "errorNotAllowedMessage": "Purchases are not available on this device. Please contact support if you need help.",
+    "errorInvalid": "Configuration Error",
+    "errorInvalidMessage": "There's a problem with the configuration. Please contact support.",
+    "errorGeneric": "Something Went Wrong",
+    "errorGenericMessage": "We couldn't process your purchase. Please try again."
   },
   "modals": {
     "close": "Close",

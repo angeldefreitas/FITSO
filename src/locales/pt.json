@@ -488,7 +488,20 @@
     "purchasesRestoredMessage": "Suas compras anteriores foram restauradas.",
     "scanLimitTitle": "Limite de Escaneios Alcançado",
     "scanLimitMessage": "Você atingiu o limite de 1 escaneio com IA por dia. Assine o Premium para escaneios ilimitados.",
-    "viewPremium": "Ver Premium"
+    "viewPremium": "Ver Premium",
+    "errorTitle": "Ops!",
+    "errorCanceled": "Compra Cancelada",
+    "errorCanceledMessage": "A compra foi cancelada. Não se preocupe! Você pode tentar novamente quando quiser.",
+    "errorConnection": "Sem Conexão",
+    "errorConnectionMessage": "Não pudemos conectar ao servidor. Verifique sua conexão com a internet e tente novamente.",
+    "errorAlreadyActive": "Você Já É Premium",
+    "errorAlreadyActiveMessage": "Você já tem uma assinatura ativa. Aproveite todos os benefícios!",
+    "errorNotAllowed": "Compras Não Disponíveis",
+    "errorNotAllowedMessage": "As compras não estão disponíveis neste dispositivo. Por favor, entre em contato com o suporte se precisar de ajuda.",
+    "errorInvalid": "Erro de Configuração",
+    "errorInvalidMessage": "Há um problema com a configuração. Por favor, entre em contato com o suporte.",
+    "errorGeneric": "Algo Deu Errado",
+    "errorGenericMessage": "Não pudemos processar sua compra. Por favor, tente novamente."
   },
   "modals": {
     "close": "Fechar",

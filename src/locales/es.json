@@ -469,7 +469,20 @@
     "subscribeNow": "Suscribirse Ahora",
     "subscriptionError": "No se pudo procesar la compra. Inténtalo de nuevo.",
     "purchasesRestored": "Compras Restauradas",
-    "purchasesRestoredMessage": "Se han restaurado tus compras anteriores."
+    "purchasesRestoredMessage": "Se han restaurado tus compras anteriores.",
+    "errorTitle": "¡Oops!",
+    "errorCanceled": "Compra Cancelada",
+    "errorCanceledMessage": "La compra fue cancelada. ¡No te preocupes! Puedes intentarlo de nuevo cuando quieras.",
+    "errorConnection": "Sin Conexión",
+    "errorConnectionMessage": "No pudimos conectar con el servidor. Verifica tu conexión a internet e inténtalo de nuevo.",
+    "errorAlreadyActive": "Ya Eres Premium",
+    "errorAlreadyActiveMessage": "Ya tienes una suscripción activa. ¡Disfruta de todos los beneficios!",
+    "errorNotAllowed": "Compras No Disponibles",
+    "errorNotAllowedMessage": "Las compras no están disponibles en este dispositivo. Por favor, contacta al soporte si necesitas ayuda.",
+    "errorInvalid": "Error de Configuración",
+    "errorInvalidMessage": "Hay un problema con la configuración. Por favor, contacta al soporte.",
+    "errorGeneric": "Algo Salió Mal",
+    "errorGenericMessage": "No pudimos procesar tu compra. Por favor, inténtalo de nuevo."
   },
   "modals": {
     "close": "Cerrar",

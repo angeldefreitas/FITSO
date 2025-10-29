@@ -76,15 +76,7 @@ export const PremiumProvider: React.FC<PremiumProviderProps> = ({ children }) =>
       console.log('✅ Compra de suscripción completada');
     } catch (error) {
       console.error('❌ Error en compra de suscripción:', error);
-      
-      // Mostrar error al usuario
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-      Alert.alert(
-        'Error en la Compra',
-        `No se pudo procesar la compra: ${errorMessage}`,
-        [{ text: 'OK' }]
-      );
-      
+      // NO mostrar Alert.alert aquí - el error será manejado por PremiumScreen con el modal bonito
       throw error;
     } finally {
       setLoading(false);

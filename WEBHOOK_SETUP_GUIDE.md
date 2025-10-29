@@ -101,3 +101,4 @@ Selecciona estos eventos específicos:
 
 **¡Una vez configurado, el sistema se actualizará automáticamente!** 🚀
 
+

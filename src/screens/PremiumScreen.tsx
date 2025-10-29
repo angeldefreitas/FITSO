@@ -18,6 +18,44 @@ import { usePremium } from '../contexts/PremiumContext';
 
 const { width, height } = Dimensions.get('window');
 
+interface ErrorModalProps {
+  visible: boolean;
+  title: string;
+  message: string;
+  onClose: () => void;
+  t: (key: string) => string;
+  isSuccess?: boolean;
+}
+
+const ErrorModal: React.FC<ErrorModalProps> = ({ visible, title, message, onClose, t, isSuccess = false }) => {
+  const titleColor = isSuccess ? '#4CAF50' : '#DC143C';
+  const buttonColor = isSuccess ? '#4CAF50' : '#DC143C';
+  
+  return (
+    <Modal
+      visible={visible}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <View style={styles.errorModalOverlay}>
+        <View style={styles.errorModalContent}>
+          <View style={styles.errorModalHeader}>
+            <Text style={[styles.errorModalTitle, { color: titleColor }]}>{title}</Text>
+          </View>
+          <Text style={styles.errorModalMessage}>{message}</Text>
+          <TouchableOpacity
+            style={[styles.errorModalButton, { backgroundColor: buttonColor }]}
+            onPress={onClose}
+          >
+            <Text style={styles.errorModalButtonText}>{t('modals.ok')}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
 interface PremiumScreenProps {
   onClose: () => void;
 }
@@ -26,10 +64,17 @@ export default function PremiumScreen({ onClose }: PremiumScreenProps) {
   const { t } = useTranslation();
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('monthly');
   const { purchaseSubscription, restorePurchases, loading } = usePremium();
+  const [errorModal, setErrorModal] = useState<{ visible: boolean; title: string; message: string; isSuccess?: boolean }>({
+    visible: false,
+    title: '',
+    message: '',
+    isSuccess: false
+  });
 
   const handleSubscribe = async () => {
     try {
-      const productId = selectedPlan === 'monthly' ? 'Fitso_Premium_Monthly' : 'Fitso_Premium_Yearly';
+      // Usar los packages que SÍ están en la offering
+      const productId = selectedPlan === 'monthly' ? '$rc_monthly' : '$rc_annual';
       console.log('🛒 [PREMIUM SCREEN] Iniciando compra de:', productId);
       await purchaseSubscription(productId);
       console.log('✅ [PREMIUM SCREEN] Compra completada exitosamente');
@@ -37,29 +82,60 @@ export default function PremiumScreen({ onClose }: PremiumScreenProps) {
       onClose();
     } catch (error) {
       console.error('❌ [PREMIUM SCREEN] Error en suscripción:', error);
-      Alert.alert(
-        t('alerts.error'),
-        t('premium.subscriptionError'),
-        [{ text: t('modals.ok') }]
-      );
+      
+      // Determinar qué tipo de error es y mostrar mensaje apropiado
+      let errorTitle = t('premium.errorTitle');
+      let errorMessage = t('premium.errorGenericMessage');
+      
+      if (error instanceof Error) {
+        const errorMsg = error.message;
+        
+        if (errorMsg.includes('Compra cancelada') || errorMsg.includes('cancelada') || errorMsg.includes('cancelled')) {
+          errorTitle = t('premium.errorCanceled');
+          errorMessage = t('premium.errorCanceledMessage');
+        } else if (errorMsg.includes('Error de conexión') || errorMsg.includes('conexión') || errorMsg.includes('connection') || errorMsg.includes('network')) {
+          errorTitle = t('premium.errorConnection');
+          errorMessage = t('premium.errorConnectionMessage');
+        } else if (errorMsg.includes('Ya tienes') || errorMsg.includes('already')) {
+          errorTitle = t('premium.errorAlreadyActive');
+          errorMessage = t('premium.errorAlreadyActiveMessage');
+        } else if (errorMsg.includes('no están permitidas') || errorMsg.includes('not allowed')) {
+          errorTitle = t('premium.errorNotAllowed');
+          errorMessage = t('premium.errorNotAllowedMessage');
+        } else if (errorMsg.includes('Credenciales inválidas') || errorMsg.includes('invalid')) {
+          errorTitle = t('premium.errorInvalid');
+          errorMessage = t('premium.errorInvalidMessage');
+        }
+      }
+      
+      setErrorModal({
+        visible: true,
+        title: errorTitle,
+        message: errorMessage,
+        isSuccess: false
+      });
     }
   };
 
   const handleRestore = async () => {
     try {
       await restorePurchases();
-      Alert.alert(
-        t('premium.purchasesRestored'),
-        t('premium.purchasesRestoredMessage'),
-        [{ text: t('modals.ok') }]
-      );
+      // Mostrar éxito con modal bonito
+      setErrorModal({
+        visible: true,
+        title: t('premium.purchasesRestored'),
+        message: t('premium.purchasesRestoredMessage'),
+        isSuccess: true
+      });
     } catch (error) {
       console.error('Error restaurando compras:', error);
-      Alert.alert(
-        'Error',
-        'No se pudieron restaurar las compras. Inténtalo de nuevo.',
-        [{ text: 'OK' }]
-      );
+      // Mostrar error con modal bonito
+      setErrorModal({
+        visible: true,
+        title: t('premium.errorTitle'),
+        message: 'No se pudieron restaurar las compras. Inténtalo de nuevo.',
+        isSuccess: false
+      });
     }
   };
 
@@ -238,6 +314,16 @@ export default function PremiumScreen({ onClose }: PremiumScreenProps) {
         </Text>
         </ScrollView>
       </LinearGradient>
+
+      {/* Error Modal */}
+      <ErrorModal
+        visible={errorModal.visible}
+        title={errorModal.title}
+        message={errorModal.message}
+        onClose={() => setErrorModal({ visible: false, title: '', message: '', isSuccess: false })}
+        t={t}
+        isSuccess={errorModal.isSuccess}
+      />
     </Modal>
   );
 }
@@ -460,5 +546,47 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginTop: 20,
     lineHeight: 16,
+  },
+  errorModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  errorModalContent: {
+    backgroundColor: '#2c2c2c',
+    borderRadius: 20,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  errorModalHeader: {
+    marginBottom: 16,
+  },
+  errorModalTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  errorModalMessage: {
+    fontSize: 16,
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 24,
+  },
+  errorModalButton: {
+    backgroundColor: '#DC143C',
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+  errorModalButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
 });

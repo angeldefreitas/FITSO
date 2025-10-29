@@ -161,3 +161,4 @@ FROM affiliate_payments;
 -- 3. Probar el sistema con cuentas de prueba
 -- =====================================================
 
+

@@ -16,15 +16,21 @@ class AppleReceiptService {
 
   /**
    * Valida un recibo de Apple Store
+   * Sigue la recomendación de Apple: siempre validar primero contra producción,
+   * y solo si falla con error 21007 ("Sandbox receipt used in production"),
+   * validar contra sandbox.
+   * 
    * @param {string} receiptData - Datos del recibo en base64
-   * @param {boolean} isSandbox - Si es sandbox o producción
+   * @param {boolean} isSandbox - Si es sandbox o producción (solo para reintentos internos)
    * @returns {Promise<Object>} - Resultado de la validación
    */
   async validateReceipt(receiptData, isSandbox = false) {
     try {
-      console.log('🍎 Validando recibo de Apple...', { isSandbox });
-      
+      // Según recomendación de Apple: siempre validar primero contra producción
       const url = isSandbox ? this.sandboxUrl : this.productionUrl;
+      const environment = isSandbox ? 'sandbox' : 'production';
+      
+      console.log(`🍎 [VALIDATE] Validando recibo contra ${environment}...`);
       
       const requestBody = {
         'receipt-data': receiptData,
@@ -40,23 +46,35 @@ class AppleReceiptService {
       });
 
       const result = response.data;
-      console.log('📱 Respuesta de Apple:', { status: result.status, environment: result.environment });
+      console.log('📱 [VALIDATE] Respuesta de Apple:', { 
+        status: result.status, 
+        environment: result.environment || environment,
+        statusCode: result.status 
+      });
 
-      // Si el recibo es de sandbox pero estamos en producción, intentar con sandbox
+      // Según recomendación de Apple: si validación en producción falla con 21007,
+      // entonces validar contra sandbox
       if (result.status === 21007 && !isSandbox) {
-        console.log('🔄 Recibo de sandbox detectado, reintentando con sandbox...');
+        console.log('🔄 [VALIDATE] Error 21007 detectado: Recibo de sandbox usado en producción');
+        console.log('🔄 [VALIDATE] Reintentando validación contra entorno sandbox...');
         return await this.validateReceipt(receiptData, true);
       }
 
-      // Si el recibo es de producción pero estamos en sandbox, intentar con producción
-      if (result.status === 21008 && isSandbox) {
-        console.log('🔄 Recibo de producción detectado, reintentando con producción...');
-        return await this.validateReceipt(receiptData, false);
-      }
-
+      // Si ya estamos validando contra sandbox y recibimos otros errores,
+      // o si la validación es exitosa, procesar la respuesta
       return this.processAppleResponse(result);
     } catch (error) {
-      console.error('❌ Error validando recibo de Apple:', error.message);
+      console.error('❌ [VALIDATE] Error validando recibo de Apple:', error.message);
+      
+      // Si es un error de red o timeout, pero tenemos un error 21007 pendiente,
+      // no reintentar automáticamente - dejar que el cliente lo maneje
+      if (error.response && error.response.data && error.response.data.status === 21007) {
+        console.log('🔄 [VALIDATE] Error 21007 en respuesta de error, intentando sandbox...');
+        if (!isSandbox) {
+          return await this.validateReceipt(receiptData, true);
+        }
+      }
+      
       throw new Error(`Error validando recibo: ${error.message}`);
     }
   }
@@ -70,8 +88,10 @@ class AppleReceiptService {
     const { status, receipt, latest_receipt_info, pending_renewal_info } = appleResponse;
 
     // Verificar estado de la respuesta
+    // Nota: El error 21007 ya fue manejado en validateReceipt antes de llegar aquí
     if (status !== 0) {
       const errorMessage = this.getStatusErrorMessage(status);
+      console.error(`❌ [PROCESS] Error de Apple al procesar respuesta: ${errorMessage} (${status})`);
       throw new Error(`Error de Apple: ${errorMessage} (${status})`);
     }
 

@@ -178,7 +178,7 @@ class SubscriptionService {
       if (!product) {
         console.error('❌ [PURCHASE] Producto no encontrado en productos disponibles');
         console.error('❌ [PURCHASE] Productos disponibles:', this.products.map(p => ({ id: p.identifier, title: p.title })));
-        throw new Error(`Producto no encontrado: ${productId}`);
+        throw new Error('No pudimos procesar tu compra. Por favor, inténtalo de nuevo.');
       }
       console.log('✅ [PURCHASE] Producto encontrado:', product.title);
 
@@ -187,13 +187,52 @@ class SubscriptionService {
       const offerings = await Purchases.getOfferings();
       if (!offerings.current) {
         console.error('❌ [PURCHASE] No hay ofertas disponibles');
-        throw new Error('No hay ofertas disponibles');
+        throw new Error('No pudimos procesar tu compra. Por favor, inténtalo de nuevo.');
       }
       console.log('✅ [PURCHASE] Ofertas encontradas:', offerings.current.availablePackages.map(p => p.identifier));
 
       // Encontrar el paquete correspondiente
+      // Los packages en RevenueCat tienen IDs como $rc_monthly y $rc_annual
+      // pero también podemos buscar por el product ID
+      console.log('📦 [PURCHASE] Buscando paquete para:', productId);
+      console.log('📦 [PURCHASE] Paquetes disponibles:', offerings.current.availablePackages.map(p => ({
+        packageId: p.identifier,
+        productId: p.product.identifier,
+        productTitle: p.product.title
+      })));
+      
       const packageToPurchase = offerings.current.availablePackages.find(
-        pkg => pkg.identifier === productId || pkg.product.identifier === productId
+        pkg => {
+          console.log(`📦 [PURCHASE] Comparando package: ${pkg.identifier} con productId: ${productId}`);
+          
+          // Buscar por product identifier
+          const matchesProduct = pkg.product.identifier === productId;
+          
+          // Buscar por package identifier
+          const matchesPackage = pkg.identifier === productId;
+          
+          // Buscar por package identifier sin case sensitivity
+          const matchesPackageIgnoreCase = pkg.identifier.toLowerCase() === productId.toLowerCase();
+          
+          // Si el productId es $rc_monthly o $rc_annual, buscar con esos formatos
+          let matchesPackageFormat = false;
+          if (productId.includes('monthly')) {
+            matchesPackageFormat = pkg.identifier === '$rc_monthly' || 
+                                  pkg.identifier === 'rc_monthly' ||
+                                  pkg.identifier.toLowerCase() === 'rc_monthly';
+          } else if (productId.includes('annual') || productId.includes('yearly')) {
+            matchesPackageFormat = pkg.identifier === '$rc_annual' || 
+                                  pkg.identifier === 'rc_annual' ||
+                                  pkg.identifier.toLowerCase() === 'rc_annual';
+          }
+          
+          const matches = matchesProduct || matchesPackage || matchesPackageIgnoreCase || matchesPackageFormat;
+          if (matches) {
+            console.log(`✅ [PURCHASE] Match encontrado: ${pkg.identifier}`);
+          }
+          
+          return matches;
+        }
       );
 
       if (!packageToPurchase) {
@@ -202,7 +241,7 @@ class SubscriptionService {
           packageId: p.identifier, 
           productId: p.product.identifier 
         })));
-        throw new Error(`Paquete no encontrado en RevenueCat: ${productId}`);
+        throw new Error('No pudimos procesar tu compra. Por favor, inténtalo de nuevo.');
       }
       console.log('✅ [PURCHASE] Paquete encontrado:', packageToPurchase.identifier);
 
@@ -221,7 +260,26 @@ class SubscriptionService {
       }
       
     } catch (error) {
-      console.error('❌ Error en compra:', error);
+      console.error('❌ [PURCHASE] Error en compra:', error);
+      
+      // Proporcionar mensajes de error más específicos
+      if (error instanceof Error) {
+        const errorMessage = error.message;
+        
+        // Manejar errores específicos de RevenueCat
+        if (errorMessage.includes('UserCancelledError') || errorMessage.includes('Cancelled')) {
+          throw new Error('Compra cancelada');
+        } else if (errorMessage.includes('NetworkError') || errorMessage.includes('network')) {
+          throw new Error('Error de conexión. Verifica tu conexión a internet.');
+        } else if (errorMessage.includes('AlreadyPurchasedError')) {
+          throw new Error('Ya tienes esta suscripción activa.');
+        } else if (errorMessage.includes('PurchaseNotAllowedError')) {
+          throw new Error('Las compras no están permitidas en este dispositivo.');
+        } else if (errorMessage.includes('InvalidCredentialsError')) {
+          throw new Error('Credenciales inválidas. Por favor, contacta al soporte.');
+        }
+      }
+      
       throw error;
     }
   }
@@ -299,6 +357,23 @@ class SubscriptionService {
       }
 
       const status: PremiumStatus = JSON.parse(statusJson);
+      
+      // IMPORTANTE: Si el usuario tiene isPremium: true en caché pero NO es admin/afiliado,
+      // limpiar el caché para evitar el bug de premium automático
+      // Verificar nuevamente si es admin/afiliado antes de usar el caché
+      const isAdminOrAffiliateCheck = await this.isUserAdminOrAffiliate();
+      if (status.isPremium && !isAdminOrAffiliateCheck) {
+        console.log('⚠️ Usuario tiene isPremium: true en caché pero NO es admin/afiliado - limpiando caché');
+        const correctedStatus: PremiumStatus = {
+          isPremium: false,
+          subscriptionType: null,
+          expiresAt: null,
+          dailyScansUsed: 0,
+          lastScanDate: null,
+        };
+        await this.savePremiumStatus(correctedStatus);
+        return correctedStatus;
+      }
       
       // Verificar si la suscripción ha expirado
       if (status.isPremium && status.expiresAt) {
@@ -560,39 +635,27 @@ class SubscriptionService {
     try {
       const user = await this.getCurrentUser();
       
+      console.log('🔍 Verificando rol de usuario:', { 
+        email: user.email, 
+        is_affiliate: user.is_affiliate,
+        id: user.id 
+      });
+      
       // 1. Verificar si es admin por email
       if (user.email && isAdminEmail(user.email)) {
         console.log('👑 Usuario es admin por email:', user.email);
         return true;
       }
       
-      // 2. Verificar si el usuario tiene un código de afiliado (creado desde panel de admin)
-      // Los afiliados tienen acceso premium gratuito porque SON PARTE del sistema
-      try {
-        const response = await fetch(
-          `${process.env.EXPO_PUBLIC_API_URL || 'https://fitso.onrender.com'}/api/affiliates/my-info`,
-          {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${await this.getAuthToken()}`,
-            },
-          }
-        );
-        
-        if (response.ok) {
-          const data = await response.json();
-          // Si el usuario tiene información de afiliado, significa que es un afiliado creado
-          if (data.data && data.data.affiliate_code) {
-            console.log('🤝 Usuario es afiliado con código:', data.data.affiliate_code);
-            return true;
-          }
-        }
-      } catch (error) {
-        console.log('ℹ️ Usuario no es afiliado (sin código de afiliado)');
+      // 2. Verificar si el usuario tiene el campo is_affiliate = true 
+      // SOLO usuarios creados desde el admin panel con is_affiliate = true
+      // pueden tener acceso premium gratuito
+      if (user.is_affiliate === true) {
+        console.log('✅ Usuario es afiliado (is_affiliate = true) - tiene acceso premium');
+        return true;
       }
       
-      console.log('ℹ️ Usuario NO es admin ni afiliado, necesita comprar suscripción');
+      console.log('ℹ️ Usuario NO es admin ni afiliado (is_affiliate = false)');
       return false;
     } catch (error) {
       console.error('❌ Error verificando rol de usuario:', error);
@@ -619,10 +682,24 @@ class SubscriptionService {
       
       // Extraer información de la compra
       const premiumEntitlement = customerInfo.entitlements.active[PREMIUM_ENTITLEMENT];
-      const subscriptionType = productId.includes('Monthly') ? 'monthly' : 'yearly';
+      
+      // Determinar el tipo de suscripción basado en productId o package identifier
+      let subscriptionType = 'monthly';
+      if (productId.includes('Monthly') || productId.includes('monthly') || 
+          productId === '$rc_monthly' || productId === 'rc_monthly') {
+        subscriptionType = 'monthly';
+      } else if (productId.includes('Yearly') || productId.includes('yearly') || 
+                 productId.includes('Annual') || productId.includes('annual') ||
+                 productId === '$rc_annual' || productId === 'rc_annual') {
+        subscriptionType = 'yearly';
+      }
       
       // Obtener el ID de la transacción más reciente
-      const transactionId = premiumEntitlement?.latestPurchaseDate || new Date().toISOString();
+      // RevenueCat proporciona latestPurchaseDate, pero necesitamos un ID único
+      // Usar el latestTransactionDate del entitlement o generar uno basado en la fecha
+      const transactionId = premiumEntitlement?.latestPurchaseDate ? 
+        `rc_${Date.parse(premiumEntitlement.latestPurchaseDate)}` : 
+        `rc_${Date.now()}`;
       
       // Calcular precio basado en el plan
       const price = subscriptionType === 'monthly' ? 2.99 : 19.99;
