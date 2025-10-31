@@ -7,10 +7,14 @@ class AppleReceiptService {
     this.sandboxUrl = 'https://sandbox.itunes.apple.com/verifyReceipt';
     
     // Password compartido de App Store Connect (debe configurarse en variables de entorno)
+    // IMPORTANTE: Sin este secret, la validación de recibos fallará
+    // Obtenerlo desde: App Store Connect > Tu App > App Information > Shared Secret
     this.sharedSecret = process.env.APPLE_SHARED_SECRET;
     
     if (!this.sharedSecret) {
-      console.warn('⚠️ APPLE_SHARED_SECRET no configurado en variables de entorno');
+      console.error('❌ [APPLE] APPLE_SHARED_SECRET no configurado en variables de entorno');
+      console.error('❌ [APPLE] Las validaciones de recibos fallarán sin este secret');
+      console.error('📝 [APPLE] Obtén el secret desde: App Store Connect > Tu App > App Information > Shared Secret');
     }
   }
 
@@ -26,6 +30,13 @@ class AppleReceiptService {
    */
   async validateReceipt(receiptData, isSandbox = false) {
     try {
+      // Validar que el shared secret esté configurado
+      if (!this.sharedSecret) {
+        const errorMsg = 'APPLE_SHARED_SECRET no está configurado. Obtén el secret desde: App Store Connect > Tu App > App Information > Shared Secret';
+        console.error(`❌ [VALIDATE] ${errorMsg}`);
+        throw new Error(errorMsg);
+      }
+
       // Según recomendación de Apple: siempre validar primero contra producción
       const url = isSandbox ? this.sandboxUrl : this.productionUrl;
       const environment = isSandbox ? 'sandbox' : 'production';

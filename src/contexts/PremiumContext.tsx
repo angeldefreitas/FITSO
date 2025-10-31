@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { Alert } from 'react-native';
 import subscriptionService, { PremiumStatus } from '../services/subscriptionService';
+import { useAuth } from './AuthContext';
 
 interface PremiumContextType {
   // Estado
@@ -27,6 +28,7 @@ interface PremiumProviderProps {
 }
 
 export const PremiumProvider: React.FC<PremiumProviderProps> = ({ children }) => {
+  const { user } = useAuth(); // Obtener usuario autenticado
   const [premiumStatus, setPremiumStatus] = useState<PremiumStatus>({
     isPremium: false,
     subscriptionType: null,
@@ -169,6 +171,22 @@ export const PremiumProvider: React.FC<PremiumProviderProps> = ({ children }) =>
     console.log('🚀 PremiumContext - Inicializando...');
     initializePremium();
   }, [initializePremium]);
+
+  // Configurar App User ID cuando el usuario se autentique
+  useEffect(() => {
+    const configureAppUserId = async () => {
+      if (user?.id && subscriptionService) {
+        try {
+          console.log('👤 Usuario autenticado detectado, configurando App User ID...');
+          await subscriptionService.setAppUserId(user.id);
+        } catch (error) {
+          console.error('❌ Error configurando App User ID después de autenticación:', error);
+        }
+      }
+    };
+
+    configureAppUserId();
+  }, [user?.id]);
 
   // Forzar actualización del estado cada vez que se monte el componente
   useEffect(() => {

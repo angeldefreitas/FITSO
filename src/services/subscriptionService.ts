@@ -34,8 +34,50 @@ interface PurchaseError {
 }
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 import { isExpoGo } from '../config/expoGoConfig';
 import { isAdminEmail } from '../config/adminConfig';
+
+/**
+ * Detecta si la app está corriendo en TestFlight
+ * 
+ * IMPORTANTE sobre TestFlight y compras:
+ * - TestFlight es un entorno de testing de Apple
+ * - Las compras pueden ir a sandbox O producción dependiendo del tipo de cuenta:
+ *   * Si el usuario usa una cuenta Sandbox Tester → compra en sandbox
+ *   * Si el usuario usa una cuenta real → compra en producción (puede generar cargo real)
+ * 
+ * Para RevenueCat:
+ * - Si usamos sandbox API key → las compras aparecen en RevenueCat sandbox dashboard
+ * - Si usamos production API key → las compras aparecen en RevenueCat production dashboard
+ * 
+ * Recomendación: Usar sandbox API key en TestFlight para testing sin cargos reales
+ */
+const isTestFlight = (): boolean => {
+  try {
+    const executionEnvironment = Constants.executionEnvironment;
+    
+    // TestFlight tiene executionEnvironment === 'storeClient'
+    // También podemos verificar otras señales
+    if (executionEnvironment === 'storeClient') {
+      return true;
+    }
+    
+    // Detección alternativa: standalone build sin __DEV__ en iOS
+    // (esto podría incluir TestFlight o App Store, pero es mejor asumir TestFlight)
+    if (Platform.OS === 'ios' && !__DEV__ && Constants.appOwnership === 'standalone') {
+      // Podríamos verificar también por bundle identifier o build number
+      // pero por seguridad, asumimos que es TestFlight si no es __DEV__
+      // NOTA: Esto podría detectar App Store también, considera usar una variable de entorno
+      return true;
+    }
+    
+    return false;
+  } catch (error) {
+    console.log('⚠️ Error detectando TestFlight:', error);
+    return false;
+  }
+};
 
 // IDs de productos de suscripción para RevenueCat
 // Estos son los IDs que configuraste en RevenueCat dashboard
@@ -52,16 +94,22 @@ const PREMIUM_STATUS_KEY = '@fitso_premium_status';
 const DAILY_SCANS_KEY = '@fitso_daily_scans';
 
 // API Keys de RevenueCat (obtenidas del dashboard de RevenueCat)
+// IMPORTANTE: Para testing en sandbox, usa la Public API Key (no la Secret API Key)
+// La Public API Key para Test Store se encuentra en: RevenueCat Dashboard > API keys > SDK API keys > Test Store
 const REVENUECAT_API_KEY = {
-  ios: 'sk_ORwbKeMvzBapPnHcbzlxbGeulgeAi', // API key de RevenueCat para iOS (producción)
-  ios_sandbox: 'test_oHHhNQjFIioQxDmtSBjCJzqpRRT', // Sandbox API key para testing
-  android: 'sk_ORwbKeMvzBapPnHcbzlxbGeulgeAi', // API key de RevenueCat para Android (producción)
+  ios: 'sk_ORwbKeMvzBapPnHcbzlxbGeulgeAi', // Secret API key de RevenueCat para iOS (producción) - NO USAR EN SDK
+  ios_public: 'appl_TRTJqwjPGgmElgtUPfEOMesnIlk', // Public API key para iOS (producción)
+  ios_sandbox: 'test_oHHhNQjFIioQxDmtSBjCJzqpRRT', // Sandbox API key para testing (Test Store)
+  android: 'sk_ORwbKeMvzBapPnHcbzlxbGeulgeAi', // Secret API key de RevenueCat para Android (producción) - NO USAR EN SDK
+  android_public: 'appl_TRTJqwjPGgmElgtUPfEOMesnIlk', // Public API key para Android (producción)
   // Para Expo Go, usar la API key de sandbox
   expo_go: 'test_oHHhNQjFIioQxDmtSBjCJzqpRRT', // API key para Expo Go
 };
 
-// NOTA: Verifica que estas API keys sean correctas en tu dashboard de RevenueCat
-// Deberías tener API keys diferentes para iOS y Android si los configuraste por separado
+// NOTA: 
+// - Para testing en sandbox, usar la Public API Key del Test Store
+// - Las Secret API Keys (sk_*) solo se usan en el backend, NO en el SDK
+// - El SDK usa Public API Keys (appl_* para producción, test_* para sandbox)
 
 export interface PremiumStatus {
   isPremium: boolean;
@@ -89,24 +137,78 @@ class SubscriptionService {
         return;
       }
       
-      // Configurar RevenueCat - usar API key apropiada
-      const apiKey = Platform.OS === 'ios' ? REVENUECAT_API_KEY.ios : REVENUECAT_API_KEY.android;
+      // Determinar si usar sandbox o producción
+      // Usar sandbox en:
+      // 1. Modo desarrollo (__DEV__) - para desarrollo local
+      // 2. TestFlight (entorno de testing de Apple) - para testing antes de producción
+      const isTF = isTestFlight();
+      const useSandbox = __DEV__ || isTF;
+      const environment = useSandbox ? 'SANDBOX' : 'PRODUCCIÓN';
+      
+      if (isTF) {
+        console.log('🧪 TestFlight detectado - usando modo SANDBOX para testing');
+        console.log('📝 NOTA: Las compras aparecerán en RevenueCat sandbox dashboard');
+        console.log('📝 NOTA: Para probar, usa una cuenta Sandbox Tester en Settings > App Store');
+      } else if (__DEV__) {
+        console.log('🧪 Modo desarrollo - usando SANDBOX para testing');
+      } else {
+        console.log('🏭 Modo PRODUCCIÓN - usando API keys de producción');
+        console.log('⚠️ Las compras serán REALES y se cobrarán a los usuarios');
+      }
+      
+      // Seleccionar API key apropiada
+      // IMPORTANTE: Usar Public API Keys para el SDK, NO Secret API Keys
+      let apiKey: string;
+      
+      if (useSandbox) {
+        // En sandbox, usar la Test Store public API key
+        apiKey = REVENUECAT_API_KEY.ios_sandbox;
+        console.log(`🧪 Modo SANDBOX activado - las compras aparecerán en sandbox de RevenueCat`);
+      } else {
+        // En producción, usar la public API key correspondiente
+        if (Platform.OS === 'ios') {
+          apiKey = REVENUECAT_API_KEY.ios_public;
+        } else {
+          apiKey = REVENUECAT_API_KEY.android_public;
+        }
+      }
       
       if (!apiKey || apiKey === 'your_android_api_key_here') {
         throw new Error('API key de RevenueCat no configurada correctamente');
       }
 
-      console.log(`📱 Build nativo ${Platform.OS} - usando API key de producción`);
+      console.log(`📱 Build nativo ${Platform.OS} - usando API key de ${environment}`);
+      console.log(`🔑 API Key: ${apiKey.substring(0, 20)}...`);
 
       // Configurar RevenueCat
       await Purchases.configure({ apiKey });
       console.log('✅ RevenueCat configurado correctamente');
+
+      // Configurar App User ID para identificar al usuario en RevenueCat
+      // Esto permite rastrear las compras en el dashboard de RevenueCat
+      try {
+        const userId = await this.getCurrentUserId();
+        if (userId) {
+          console.log(`👤 Configurando App User ID: ${userId}`);
+          await Purchases.logIn(userId);
+          console.log('✅ App User ID configurado en RevenueCat');
+        } else {
+          console.log('⚠️ No se pudo obtener User ID, RevenueCat usará un ID anónimo');
+        }
+      } catch (userIdError) {
+        console.log('⚠️ Usuario no autenticado aún, RevenueCat usará un ID anónimo');
+        console.log('ℹ️ El App User ID se configurará automáticamente cuando el usuario inicie sesión');
+      }
 
       // Obtener productos disponibles
       await this.loadProducts();
 
       this.isInitialized = true;
       console.log('✅ Servicio de suscripciones inicializado correctamente');
+      
+      if (useSandbox) {
+        console.log('🧪 NOTA: Estás en modo SANDBOX. Las compras de prueba aparecerán en RevenueCat sandbox.');
+      }
     } catch (error) {
       console.error('❌ Error inicializando servicio de suscripciones:', error);
       // En lugar de lanzar error, continuar sin RevenueCat
@@ -116,6 +218,31 @@ class SubscriptionService {
   }
 
   // RevenueCat maneja automáticamente los listeners, no necesitamos configurarlos manualmente
+
+  /**
+   * Configurar el App User ID en RevenueCat después de que el usuario se autentique
+   * Esto permite rastrear las compras del usuario en el dashboard de RevenueCat
+   */
+  async setAppUserId(userId: string): Promise<void> {
+    try {
+      if (!this.isInitialized) {
+        console.log('⚠️ RevenueCat no inicializado aún, inicializando primero...');
+        await this.initialize();
+      }
+
+      if (!this.isInitialized) {
+        console.log('⚠️ RevenueCat no pudo inicializarse, no se configurará App User ID');
+        return;
+      }
+
+      console.log(`👤 Configurando App User ID en RevenueCat: ${userId}`);
+      await Purchases.logIn(userId);
+      console.log('✅ App User ID configurado exitosamente en RevenueCat');
+    } catch (error) {
+      console.error('❌ Error configurando App User ID:', error);
+      // No lanzar error para no romper el flujo de la app
+    }
+  }
 
   private async loadProducts(): Promise<void> {
     try {
