@@ -85,9 +85,12 @@ class RevenueCatWebhookController {
       switch (eventType) {
         case 'TEST':
           console.log('✅ [REVENUECAT] Evento de prueba recibido correctamente');
+          console.log('ℹ️ [REVENUECAT] Los eventos TEST son de RevenueCat para verificar que el webhook funciona');
+          console.log('ℹ️ [REVENUECAT] Este NO es un evento de compra real - no se procesará');
           break;
 
         case 'INITIAL_PURCHASE':
+          console.log('🎉 [REVENUECAT] Compra inicial detectada - procesando...');
           await this.handleInitialPurchase(appUserId, transactionId, price, productId);
           break;
         
@@ -135,16 +138,34 @@ class RevenueCatWebhookController {
   /**
    * Manejar compra inicial (primera vez que el usuario se hace premium)
    */
-  async handleInitialPurchase(userId, transactionId, price, productId) {
+  async handleInitialPurchase(appUserId, transactionId, price, productId) {
     try {
       console.log('🎉 [REVENUECAT] Primera compra detectada');
+      console.log('👤 [REVENUECAT] App User ID:', appUserId);
+      console.log('📦 [REVENUECAT] Product ID:', productId);
+      console.log('💰 [REVENUECAT] Price:', price);
+      
+      // IMPORTANTE: El appUserId que viene de RevenueCat es el ID del usuario en nuestra BD
+      // Buscar el usuario por su ID (que debería coincidir con el app_user_id configurado)
+      const userQuery = 'SELECT id, email, name FROM users WHERE id = $1';
+      const userResult = await query(userQuery, [appUserId]);
+      
+      if (userResult.rows.length === 0) {
+        console.error('❌ [REVENUECAT] Usuario no encontrado en BD con App User ID:', appUserId);
+        console.log('ℹ️ [REVENUECAT] Esto puede ocurrir si el App User ID no coincide con el ID del usuario en la BD');
+        console.log('ℹ️ [REVENUECAT] El webhook se procesará pero no se actualizará el usuario');
+        return;
+      }
+      
+      const user = userResult.rows[0];
+      console.log('✅ [REVENUECAT] Usuario encontrado:', user.email, user.name);
       
       // Determinar tipo de suscripción
       const subscriptionType = productId.toLowerCase().includes('monthly') ? 'monthly' : 'yearly';
       
       // Procesar comisión de conversión
       const commission = await AffiliateService.processPremiumConversion(
-        userId,
+        appUserId,
         transactionId,
         price,
         subscriptionType
@@ -155,6 +176,14 @@ class RevenueCatWebhookController {
       } else {
         console.log('ℹ️ [REVENUECAT] Usuario sin código de referencia o código inválido');
       }
+      
+      // El estado premium se maneja automáticamente por:
+      // 1. RevenueCat SDK en la app (actualiza el estado local)
+      // 2. La tabla subscriptions (si existe una suscripción activa, el usuario es premium)
+      // 3. is_affiliate o is_admin en users (otorgan premium automático)
+      
+      console.log('✅ [REVENUECAT] Compra inicial procesada correctamente');
+      console.log('ℹ️ [REVENUECAT] El estado premium se actualizará automáticamente en la app cuando verifique con RevenueCat');
 
     } catch (error) {
       console.error('❌ [REVENUECAT] Error en handleInitialPurchase:', error);

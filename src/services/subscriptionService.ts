@@ -297,6 +297,37 @@ class SubscriptionService {
         }
       }
 
+      // CRÍTICO: Configurar App User ID ANTES de la compra
+      // Si no está configurado, RevenueCat usará un ID anónimo y los webhooks no llegarán correctamente
+      try {
+        const userId = await this.getCurrentUserId();
+        if (userId) {
+          console.log('👤 [PURCHASE] Configurando App User ID antes de la compra:', userId);
+          await Purchases.logIn(userId);
+          console.log('✅ [PURCHASE] App User ID configurado correctamente');
+        } else {
+          console.error('❌ [PURCHASE] No se pudo obtener User ID - la compra usará un ID anónimo');
+          throw new Error('Debes estar autenticado para realizar compras. Por favor, inicia sesión e intenta de nuevo.');
+        }
+      } catch (userIdError) {
+        console.error('❌ [PURCHASE] Error configurando App User ID:', userIdError);
+        throw new Error('No se pudo identificar tu cuenta. Por favor, cierra y reabre la app e intenta de nuevo.');
+      }
+
+      // Verificar el App User ID actual en RevenueCat
+      try {
+        const customerInfo = await Purchases.getCustomerInfo();
+        console.log('👤 [PURCHASE] App User ID actual en RevenueCat:', customerInfo.originalAppUserId);
+        if (customerInfo.originalAppUserId !== await this.getCurrentUserId()) {
+          console.warn('⚠️ [PURCHASE] App User ID no coincide - reconfigurando...');
+          const userId = await this.getCurrentUserId();
+          await Purchases.logIn(userId);
+          console.log('✅ [PURCHASE] App User ID reconfigurado correctamente');
+        }
+      } catch (infoError) {
+        console.error('❌ [PURCHASE] Error verificando App User ID:', infoError);
+      }
+
       console.log('🛒 [PURCHASE] Iniciando compra de suscripción:', productId);
       console.log('📦 [PURCHASE] Productos disponibles:', this.products.map(p => p.identifier));
       
