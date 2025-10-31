@@ -209,12 +209,58 @@ app.post('/', async (req, res) => {
             eventData = eventData.event;
           }
           
+          // CRÍTICO: Extraer App User ID del signedTransactionInfo si está disponible
+          let appUserId = eventData.appUserId || eventData.app_user_id || eventData.originalAppUserId || eventData.original_app_user_id;
+          
+          // Si no tenemos app_user_id, intentar extraerlo del signedTransactionInfo JWT
+          if (!appUserId && eventData.signedTransactionInfo) {
+            try {
+              console.log('🔍 [ROOT] Intentando extraer app_user_id de signedTransactionInfo...');
+              const transactionInfo = jwt.decode(eventData.signedTransactionInfo, { complete: true });
+              if (transactionInfo && transactionInfo.payload) {
+                // El App User ID puede estar en appAccountToken
+                appUserId = transactionInfo.payload.appAccountToken || transactionInfo.payload.app_account_token;
+                console.log('✅ [ROOT] App User ID extraído de signedTransactionInfo:', appUserId);
+              }
+            } catch (transactionError) {
+              console.warn('⚠️ [ROOT] No se pudo decodificar signedTransactionInfo:', transactionError);
+            }
+          }
+          
+          // También intentar extraerlo de signedRenewalInfo
+          if (!appUserId && eventData.signedRenewalInfo) {
+            try {
+              console.log('🔍 [ROOT] Intentando extraer app_user_id de signedRenewalInfo...');
+              const renewalInfo = jwt.decode(eventData.signedRenewalInfo, { complete: true });
+              if (renewalInfo && renewalInfo.payload) {
+                appUserId = renewalInfo.payload.appAccountToken || renewalInfo.payload.app_account_token;
+                console.log('✅ [ROOT] App User ID extraído de signedRenewalInfo:', appUserId);
+              }
+            } catch (renewalError) {
+              console.warn('⚠️ [ROOT] No se pudo decodificar signedRenewalInfo:', renewalError);
+            }
+          }
+          
+          // Extraer product_id del signedTransactionInfo si no está disponible
+          let productId = eventData.productId || eventData.product_id;
+          if (!productId && eventData.signedTransactionInfo) {
+            try {
+              const transactionInfo = jwt.decode(eventData.signedTransactionInfo, { complete: true });
+              if (transactionInfo && transactionInfo.payload) {
+                productId = transactionInfo.payload.productId || transactionInfo.payload.product_id;
+                console.log('✅ [ROOT] Product ID extraído de signedTransactionInfo:', productId);
+              }
+            } catch (error) {
+              console.warn('⚠️ [ROOT] No se pudo extraer product_id:', error);
+            }
+          }
+          
           // Construir el formato esperado por el controller
           const webhookPayload = {
             event: {
-              type: notificationType, // Ej: INITIAL_PURCHASE, RENEWAL, etc.
-              app_user_id: eventData.appUserId || eventData.app_user_id || eventData.originalAppUserId || eventData.original_app_user_id,
-              product_id: eventData.productId || eventData.product_id,
+              type: notificationType, // Ej: INITIAL_PURCHASE, RENEWAL, DID_CHANGE_RENEWAL_PREF, etc.
+              app_user_id: appUserId,
+              product_id: productId,
               id: decoded.payload.notificationUUID || decoded.payload.id || eventData.id,
               price: eventData.price || eventData.priceInPurchasedCurrency || eventData.price_in_purchased_currency || 0,
               price_in_purchased_currency: eventData.priceInPurchasedCurrency || eventData.price_in_purchased_currency || eventData.price || 0,
@@ -228,6 +274,9 @@ app.post('/', async (req, res) => {
               period_type: eventData.periodType || eventData.period_type || 'NORMAL',
               is_family_share: eventData.isFamilyShare || eventData.is_family_share || false,
               store: eventData.store || 'APP_STORE',
+              // Incluir los campos originales para debugging
+              signedTransactionInfo: eventData.signedTransactionInfo,
+              signedRenewalInfo: eventData.signedRenewalInfo,
               // Mapear otros campos necesarios
               ...eventData
             },

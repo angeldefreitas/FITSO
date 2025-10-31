@@ -231,11 +231,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = async () => {
     try {
-      // CRÍTICO: Cerrar sesión de RevenueCat antes de limpiar todo
+      // CRÍTICO: Cerrar sesión de RevenueCat ANTES de limpiar todo
       // Esto previene que el siguiente usuario vea las compras del usuario anterior
       try {
         const Purchases = (await import('react-native-purchases')).default;
+        
+        // Verificar que realmente se cierre
+        const beforeLogout = await Purchases.getCustomerInfo();
+        console.log('🔄 [LOGOUT] App User ID antes de logout:', beforeLogout.originalAppUserId);
+        
         await Purchases.logOut();
+        
+        // Esperar un momento para que RevenueCat procese el logout
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Verificar que se cerró correctamente
+        try {
+          const afterLogout = await Purchases.getCustomerInfo();
+          console.log('🔄 [LOGOUT] App User ID después de logout:', afterLogout.originalAppUserId);
+          
+          // Si todavía tiene un app_user_id, forzar limpieza
+          if (afterLogout.originalAppUserId && !afterLogout.originalAppUserId.startsWith('$RC')) {
+            console.warn('⚠️ [LOGOUT] App User ID todavía presente, forzando limpieza...');
+            // Intentar logout nuevamente
+            await Purchases.logOut();
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        } catch (verifyError) {
+          console.log('ℹ️ [LOGOUT] No se pudo verificar estado después de logout (puede ser normal)');
+        }
+        
         console.log('✅ [LOGOUT] RevenueCat session cerrada correctamente');
       } catch (rcError) {
         console.warn('⚠️ [LOGOUT] Error cerrando sesión de RevenueCat (puede no estar inicializado):', rcError);

@@ -63,7 +63,7 @@ interface PremiumScreenProps {
 export default function PremiumScreen({ onClose }: PremiumScreenProps) {
   const { t } = useTranslation();
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('monthly');
-  const { purchaseSubscription, restorePurchases, loading } = usePremium();
+  const { purchaseSubscription, restorePurchases, refreshPremiumStatus, loading } = usePremium();
   const [errorModal, setErrorModal] = useState<{ visible: boolean; title: string; message: string; isSuccess?: boolean }>({
     visible: false,
     title: '',
@@ -79,7 +79,24 @@ export default function PremiumScreen({ onClose }: PremiumScreenProps) {
       console.log('🛒 [PREMIUM SCREEN] Iniciando compra de:', productId);
       await purchaseSubscription(productId);
       console.log('✅ [PREMIUM SCREEN] Compra completada exitosamente');
+      
+      // CRÍTICO: Esperar un momento adicional antes de cerrar para asegurar que el estado se actualice
+      // El PremiumContext está haciendo múltiples intentos, pero necesitamos dar tiempo
+      console.log('🔄 [PREMIUM SCREEN] Esperando actualización del estado premium...');
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Forzar un último refresh del estado premium antes de cerrar
+      console.log('🔄 [PREMIUM SCREEN] Forzando último refresh del estado premium...');
+      try {
+        await refreshPremiumStatus();
+        console.log('✅ [PREMIUM SCREEN] Estado premium refrescado antes de cerrar');
+      } catch (refreshError) {
+        console.warn('⚠️ [PREMIUM SCREEN] Error refrescando estado premium:', refreshError);
+        // Continuar con el cierre aunque haya error
+      }
+      
       // Cerrar la pantalla después de la compra exitosa
+      console.log('✅ [PREMIUM SCREEN] Cerrando pantalla - el estado premium debería estar actualizado');
       onClose();
     } catch (error) {
       console.error('❌ [PREMIUM SCREEN] Error en suscripción:', error);

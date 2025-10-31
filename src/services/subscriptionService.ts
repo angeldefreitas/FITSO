@@ -383,6 +383,36 @@ class SubscriptionService {
       console.log('🛒 [PURCHASE] Iniciando compra de suscripción:', productId);
       console.log('📦 [PURCHASE] Productos disponibles en lista cargada:', this.products.map(p => p.identifier));
       
+      // CRÍTICO: Verificar una última vez que el App User ID esté correcto antes de comprar
+      // Esto previene que se use un ID anónimo compartido
+      const finalCheckInfo = await Purchases.getCustomerInfo();
+      const finalAppUserId = finalCheckInfo.originalAppUserId;
+      
+      if (!finalAppUserId || finalAppUserId !== userId) {
+        console.error('❌ [PURCHASE] CRÍTICO: App User ID incorrecto antes de comprar!');
+        console.error('  - Esperado:', userId);
+        console.error('  - Obtenido:', finalAppUserId);
+        console.error('  - ⚠️ Si es null o $RCAnonymousID, la compra se asociará a un usuario anónimo!');
+        
+        // Forzar logout y login nuevamente
+        console.warn('🔄 [PURCHASE] Forzando logout y login para corregir App User ID...');
+        await Purchases.logOut();
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        await Purchases.logIn(userId);
+        
+        // Verificar nuevamente
+        const recheckInfo = await Purchases.getCustomerInfo();
+        if (recheckInfo.originalAppUserId !== userId) {
+          console.error('❌ [PURCHASE] CRÍTICO: App User ID AÚN incorrecto después de forzar!');
+          console.error('  - NO CONTINUAR CON LA COMPRA - se asociará al usuario incorrecto');
+          throw new Error('Error de autenticación. Por favor, cierra y reabre la app e intenta de nuevo.');
+        }
+        
+        console.log('✅ [PURCHASE] App User ID corregido después de forzar');
+      } else {
+        console.log('✅ [PURCHASE] App User ID verificado correctamente antes de comprar');
+      }
+      
       // Obtener ofertas de RevenueCat primero
       // Los productIds pueden ser package IDs de RevenueCat ($rc_monthly, $rc_annual)
       // o product IDs de Apple (Fitso_Premium_Monthly, etc.)

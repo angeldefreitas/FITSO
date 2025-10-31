@@ -75,6 +75,17 @@ class RevenueCatWebhookController {
       const transactionId = eventData.id;
       const price = eventData.price || eventData.price_in_purchased_currency || 0;
       const currency = eventData.currency || 'USD';
+      
+      // Extraer fechas si están disponibles
+      const purchaseDate = eventData.purchased_at_ms 
+        ? new Date(eventData.purchased_at_ms) 
+        : new Date();
+      const expiresDate = eventData.expiration_at_ms 
+        ? new Date(eventData.expiration_at_ms) 
+        : null;
+      
+      // Extraer environment (sandbox o production)
+      const environment = eventData.environment || 'production';
 
       console.log(`📨 [REVENUECAT] Tipo de evento: ${eventType}`);
       console.log(`👤 [REVENUECAT] Usuario: ${appUserId}`);
@@ -91,11 +102,11 @@ class RevenueCatWebhookController {
 
         case 'INITIAL_PURCHASE':
           console.log('🎉 [REVENUECAT] Compra inicial detectada - procesando...');
-          await this.handleInitialPurchase(appUserId, transactionId, price, productId);
+          await this.handleInitialPurchase(appUserId, transactionId, price, productId, purchaseDate, expiresDate, environment);
           break;
         
         case 'RENEWAL':
-          await this.handleRenewal(appUserId, transactionId, price, productId);
+          await this.handleRenewal(appUserId, transactionId, price, productId, purchaseDate, expiresDate, environment);
           break;
         
         case 'CANCELLATION':
@@ -114,8 +125,26 @@ class RevenueCatWebhookController {
           console.log('ℹ️ [REVENUECAT] Compra no renovable, no se genera comisión recurrente');
           break;
         
+        case 'DID_CHANGE_RENEWAL_PREF':
+          // Este evento ocurre cuando el usuario cambia su preferencia de renovación (ej: mensual a anual)
+          // Aunque no es una compra inicial, puede indicar un upgrade/downgrade
+          console.log('🔄 [REVENUECAT] Cambio de preferencia de renovación detectado');
+          console.log('ℹ️ [REVENUECAT] Este evento indica cambio de plan, pero no es una compra inicial');
+          console.log('ℹ️ [REVENUECAT] Si hay app_user_id y product_id, verificaremos si es necesario procesar');
+          
+          // Si tenemos app_user_id y product_id, podríamos procesarlo como un cambio de suscripción
+          // Por ahora solo logueamos, pero podríamos expandir esto si es necesario
+          if (appUserId && productId) {
+            console.log(`ℹ️ [REVENUECAT] Usuario ${appUserId} cambió a producto ${productId}`);
+            // Nota: Este evento normalmente NO requiere procesar comisiones porque no es una conversión inicial
+            // Pero si el usuario hizo un upgrade/downgrade, podría requerir lógica adicional
+          }
+          break;
+        
         default:
           console.log(`⚠️ [REVENUECAT] Evento no manejado: ${eventType}`);
+          console.log(`⚠️ [REVENUECAT] App User ID: ${appUserId || 'NO DISPONIBLE'}`);
+          console.log(`⚠️ [REVENUECAT] Product ID: ${productId || 'NO DISPONIBLE'}`);
       }
 
       // Responder siempre con 200 para que RevenueCat no reintente
@@ -138,7 +167,7 @@ class RevenueCatWebhookController {
   /**
    * Manejar compra inicial (primera vez que el usuario se hace premium)
    */
-  async handleInitialPurchase(appUserId, transactionId, price, productId) {
+  async handleInitialPurchase(appUserId, transactionId, price, productId, purchaseDate = null, expiresDate = null, environment = 'production') {
     try {
       console.log('🎉 [REVENUECAT] Primera compra detectada');
       console.log('👤 [REVENUECAT] App User ID:', appUserId);
@@ -163,6 +192,71 @@ class RevenueCatWebhookController {
       // Determinar tipo de suscripción
       const subscriptionType = productId.toLowerCase().includes('monthly') ? 'monthly' : 'yearly';
       
+      // CRÍTICO: Guardar suscripción en la tabla subscriptions
+      // Esto asegura que cada usuario tenga su propia suscripción registrada
+      try {
+        // Desactivar cualquier suscripción previa del usuario
+        await query(
+          'UPDATE subscriptions SET is_active = false WHERE user_id = $1',
+          [appUserId]
+        );
+        
+        // Usar fechas del evento si están disponibles, sino calcular
+        const finalPurchaseDate = purchaseDate || new Date();
+        let finalExpiresDate = expiresDate;
+        
+        if (!finalExpiresDate) {
+          // Calcular fecha de expiración si no viene en el evento
+          finalExpiresDate = new Date(finalPurchaseDate);
+          if (subscriptionType === 'monthly') {
+            finalExpiresDate.setMonth(finalExpiresDate.getMonth() + 1);
+          } else {
+            finalExpiresDate.setFullYear(finalExpiresDate.getFullYear() + 1);
+          }
+        }
+        
+        // Guardar nueva suscripción
+        const insertQuery = `
+          INSERT INTO subscriptions (
+            user_id, 
+            product_id, 
+            transaction_id, 
+            original_transaction_id, 
+            purchase_date, 
+            expires_date, 
+            is_active, 
+            environment,
+            receipt_data
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          ON CONFLICT (transaction_id) DO UPDATE SET
+            user_id = EXCLUDED.user_id,
+            is_active = EXCLUDED.is_active,
+            expires_date = EXCLUDED.expires_date,
+            updated_at = CURRENT_TIMESTAMP
+        `;
+        
+        const productIdFormatted = subscriptionType === 'monthly' 
+          ? 'fitso_premium_monthly' 
+          : 'fitso_premium_yearly';
+        
+        await query(insertQuery, [
+          appUserId,
+          productIdFormatted,
+          transactionId,
+          transactionId, // original_transaction_id (puede ser el mismo para primera compra)
+          finalPurchaseDate,
+          finalExpiresDate,
+          true,
+          environment, // 'production' o 'sandbox' según el evento
+          JSON.stringify({ source: 'revenuecat', productId, price })
+        ]);
+        
+        console.log('✅ [REVENUECAT] Suscripción guardada en BD para usuario:', appUserId);
+      } catch (subscriptionError) {
+        console.error('❌ [REVENUECAT] Error guardando suscripción en BD:', subscriptionError);
+        // Continuar aunque falle para procesar comisión
+      }
+      
       // Procesar comisión de conversión
       const commission = await AffiliateService.processPremiumConversion(
         appUserId,
@@ -177,13 +271,7 @@ class RevenueCatWebhookController {
         console.log('ℹ️ [REVENUECAT] Usuario sin código de referencia o código inválido');
       }
       
-      // El estado premium se maneja automáticamente por:
-      // 1. RevenueCat SDK en la app (actualiza el estado local)
-      // 2. La tabla subscriptions (si existe una suscripción activa, el usuario es premium)
-      // 3. is_affiliate o is_admin en users (otorgan premium automático)
-      
       console.log('✅ [REVENUECAT] Compra inicial procesada correctamente');
-      console.log('ℹ️ [REVENUECAT] El estado premium se actualizará automáticamente en la app cuando verifique con RevenueCat');
 
     } catch (error) {
       console.error('❌ [REVENUECAT] Error en handleInitialPurchase:', error);
@@ -194,12 +282,98 @@ class RevenueCatWebhookController {
   /**
    * Manejar renovación de suscripción
    */
-  async handleRenewal(userId, transactionId, price, productId) {
+  async handleRenewal(userId, transactionId, price, productId, purchaseDate = null, expiresDate = null, environment = 'production') {
     try {
       console.log('🔄 [REVENUECAT] Renovación detectada');
+      console.log('👤 [REVENUECAT] Usuario:', userId);
+      console.log('📦 [REVENUECAT] Product ID:', productId);
       
       // Determinar tipo de suscripción
       const subscriptionType = productId.toLowerCase().includes('monthly') ? 'monthly' : 'yearly';
+      
+      // CRÍTICO: Actualizar suscripción en BD
+      try {
+        // Buscar suscripción activa del usuario
+        const existingQuery = `
+          SELECT id, transaction_id FROM subscriptions 
+          WHERE user_id = $1 AND is_active = true 
+          ORDER BY expires_date DESC LIMIT 1
+        `;
+        const existingResult = await query(existingQuery, [userId]);
+        
+        if (existingResult.rows.length > 0) {
+          // Actualizar suscripción existente
+          const finalPurchaseDate = purchaseDate || new Date();
+          let finalExpiresDate = expiresDate;
+          
+          if (!finalExpiresDate) {
+            finalExpiresDate = new Date(finalPurchaseDate);
+            if (subscriptionType === 'monthly') {
+              finalExpiresDate.setMonth(finalExpiresDate.getMonth() + 1);
+            } else {
+              finalExpiresDate.setFullYear(finalExpiresDate.getFullYear() + 1);
+            }
+          }
+          
+          const updateQuery = `
+            UPDATE subscriptions 
+            SET transaction_id = $1,
+                purchase_date = $2,
+                expires_date = $3,
+                is_active = true,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE user_id = $4 AND is_active = true
+          `;
+          
+          await query(updateQuery, [transactionId, finalPurchaseDate, finalExpiresDate, userId]);
+          console.log('✅ [REVENUECAT] Suscripción actualizada en BD');
+        } else {
+          // Crear nueva suscripción (similar a INITIAL_PURCHASE)
+          const finalPurchaseDate = purchaseDate || new Date();
+          let finalExpiresDate = expiresDate;
+          
+          if (!finalExpiresDate) {
+            finalExpiresDate = new Date(finalPurchaseDate);
+            if (subscriptionType === 'monthly') {
+              finalExpiresDate.setMonth(finalExpiresDate.getMonth() + 1);
+            } else {
+              finalExpiresDate.setFullYear(finalExpiresDate.getFullYear() + 1);
+            }
+          }
+          
+          const productIdFormatted = subscriptionType === 'monthly' 
+            ? 'fitso_premium_monthly' 
+            : 'fitso_premium_yearly';
+          
+          const insertQuery = `
+            INSERT INTO subscriptions (
+              user_id, product_id, transaction_id, original_transaction_id,
+              purchase_date, expires_date, is_active, environment, receipt_data
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            ON CONFLICT (transaction_id) DO UPDATE SET
+              user_id = EXCLUDED.user_id,
+              is_active = EXCLUDED.is_active,
+              expires_date = EXCLUDED.expires_date,
+              updated_at = CURRENT_TIMESTAMP
+          `;
+          
+          await query(insertQuery, [
+            userId,
+            productIdFormatted,
+            transactionId,
+            transactionId,
+            finalPurchaseDate,
+            finalExpiresDate,
+            true,
+            environment,
+            JSON.stringify({ source: 'revenuecat', productId, price, type: 'renewal' })
+          ]);
+          
+          console.log('✅ [REVENUECAT] Nueva suscripción creada en BD para renovación');
+        }
+      } catch (subscriptionError) {
+        console.error('❌ [REVENUECAT] Error actualizando suscripción en BD:', subscriptionError);
+      }
       
       // Procesar comisión recurrente
       const commission = await AffiliateService.processSubscriptionRenewal(
@@ -227,9 +401,23 @@ class RevenueCatWebhookController {
   async handleCancellation(userId, transactionId) {
     try {
       console.log('❌ [REVENUECAT] Cancelación detectada');
+      console.log('👤 [REVENUECAT] Usuario:', userId);
       
-      // Aquí podrías marcar que no se deben generar más comisiones
-      // O enviar notificación al afiliado
+      // CRÍTICO: Marcar suscripción como cancelada en BD
+      try {
+        const updateQuery = `
+          UPDATE subscriptions 
+          SET is_active = false, 
+              auto_renew_status = false,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE user_id = $1 AND is_active = true
+        `;
+        
+        const result = await query(updateQuery, [userId]);
+        console.log(`✅ [REVENUECAT] Suscripción marcada como cancelada en BD (${result.rowCount} registros)`);
+      } catch (subscriptionError) {
+        console.error('❌ [REVENUECAT] Error actualizando suscripción cancelada:', subscriptionError);
+      }
       
       console.log(`ℹ️ [REVENUECAT] Usuario ${userId} canceló suscripción`);
       console.log(`ℹ️ [REVENUECAT] No se generarán más comisiones automáticamente`);
@@ -246,6 +434,22 @@ class RevenueCatWebhookController {
   async handleExpiration(userId, transactionId) {
     try {
       console.log('⏰ [REVENUECAT] Expiración detectada');
+      console.log('👤 [REVENUECAT] Usuario:', userId);
+      
+      // CRÍTICO: Marcar suscripción como expirada en BD
+      try {
+        const updateQuery = `
+          UPDATE subscriptions 
+          SET is_active = false,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE user_id = $1 AND is_active = true
+        `;
+        
+        const result = await query(updateQuery, [userId]);
+        console.log(`✅ [REVENUECAT] Suscripción marcada como expirada en BD (${result.rowCount} registros)`);
+      } catch (subscriptionError) {
+        console.error('❌ [REVENUECAT] Error actualizando suscripción expirada:', subscriptionError);
+      }
       
       console.log(`ℹ️ [REVENUECAT] Suscripción de usuario ${userId} expiró`);
       console.log(`ℹ️ [REVENUECAT] No se generarán más comisiones hasta que renueve`);
