@@ -65,11 +65,15 @@ const isTestFlight = (): boolean => {
     
     // Detección alternativa: standalone build sin __DEV__ en iOS
     // (esto podría incluir TestFlight o App Store, pero es mejor asumir TestFlight)
-    if (Platform.OS === 'ios' && !__DEV__ && Constants.appOwnership === 'standalone') {
-      // Podríamos verificar también por bundle identifier o build number
-      // pero por seguridad, asumimos que es TestFlight si no es __DEV__
-      // NOTA: Esto podría detectar App Store también, considera usar una variable de entorno
-      return true;
+    if (Platform.OS === 'ios' && !__DEV__) {
+      const appOwnership = Constants.appOwnership;
+      // Verificar si es standalone (puede ser 'standalone' como string o un enum)
+      if (appOwnership && String(appOwnership) === 'standalone') {
+        // Podríamos verificar también por bundle identifier o build number
+        // pero por seguridad, asumimos que es TestFlight si no es __DEV__
+        // NOTA: Esto podría detectar App Store también, considera usar una variable de entorno
+        return true;
+      }
     }
     
     return false;
@@ -138,22 +142,17 @@ class SubscriptionService {
       }
       
       // Determinar si usar sandbox o producción
-      // Usar sandbox en:
-      // 1. Modo desarrollo (__DEV__) - para desarrollo local
-      // 2. TestFlight (entorno de testing de Apple) - para testing antes de producción
+      // IMPORTANTE: Sandbox es correcto para TestFlight, pero las compras se procesan como reales
       const isTF = isTestFlight();
       const useSandbox = __DEV__ || isTF;
       const environment = useSandbox ? 'SANDBOX' : 'PRODUCCIÓN';
       
       if (isTF) {
-        console.log('🧪 TestFlight detectado - usando modo SANDBOX para testing');
-        console.log('📝 NOTA: Las compras aparecerán en RevenueCat sandbox dashboard');
-        console.log('📝 NOTA: Para probar, usa una cuenta Sandbox Tester en Settings > App Store');
+        console.log('🧪 TestFlight detectado - usando SANDBOX (las compras se procesan correctamente)');
       } else if (__DEV__) {
-        console.log('🧪 Modo desarrollo - usando SANDBOX para testing');
+        console.log('🧪 Modo desarrollo - usando SANDBOX');
       } else {
         console.log('🏭 Modo PRODUCCIÓN - usando API keys de producción');
-        console.log('⚠️ Las compras serán REALES y se cobrarán a los usuarios');
       }
       
       // Seleccionar API key apropiada
@@ -299,33 +298,24 @@ class SubscriptionService {
 
       // CRÍTICO: Configurar App User ID ANTES de la compra
       // Si no está configurado, RevenueCat usará un ID anónimo y los webhooks no llegarán correctamente
-      try {
-        const userId = await this.getCurrentUserId();
-        if (userId) {
-          console.log('👤 [PURCHASE] Configurando App User ID antes de la compra:', userId);
-          await Purchases.logIn(userId);
-          console.log('✅ [PURCHASE] App User ID configurado correctamente');
-        } else {
-          console.error('❌ [PURCHASE] No se pudo obtener User ID - la compra usará un ID anónimo');
-          throw new Error('Debes estar autenticado para realizar compras. Por favor, inicia sesión e intenta de nuevo.');
-        }
-      } catch (userIdError) {
-        console.error('❌ [PURCHASE] Error configurando App User ID:', userIdError);
-        throw new Error('No se pudo identificar tu cuenta. Por favor, cierra y reabre la app e intenta de nuevo.');
+      const userId = await this.getCurrentUserId();
+      if (!userId) {
+        throw new Error('Debes estar autenticado para realizar compras. Por favor, inicia sesión e intenta de nuevo.');
       }
 
-      // Verificar el App User ID actual en RevenueCat
-      try {
-        const customerInfo = await Purchases.getCustomerInfo();
-        console.log('👤 [PURCHASE] App User ID actual en RevenueCat:', customerInfo.originalAppUserId);
-        if (customerInfo.originalAppUserId !== await this.getCurrentUserId()) {
-          console.warn('⚠️ [PURCHASE] App User ID no coincide - reconfigurando...');
-          const userId = await this.getCurrentUserId();
-          await Purchases.logIn(userId);
-          console.log('✅ [PURCHASE] App User ID reconfigurado correctamente');
-        }
-      } catch (infoError) {
-        console.error('❌ [PURCHASE] Error verificando App User ID:', infoError);
+      console.log('👤 [PURCHASE] Configurando App User ID antes de la compra:', userId);
+      await Purchases.logIn(userId);
+      console.log('✅ [PURCHASE] App User ID configurado correctamente');
+
+      // Verificar que el App User ID se configuró correctamente
+      const verifyCustomerInfo = await Purchases.getCustomerInfo();
+      console.log('👤 [PURCHASE] App User ID verificado en RevenueCat:', verifyCustomerInfo.originalAppUserId);
+      
+      if (verifyCustomerInfo.originalAppUserId !== userId) {
+        console.warn('⚠️ [PURCHASE] App User ID no coincide, forzando actualización...');
+        await Purchases.logIn(userId);
+        const reVerifyInfo = await Purchases.getCustomerInfo();
+        console.log('✅ [PURCHASE] App User ID actualizado:', reVerifyInfo.originalAppUserId);
       }
 
       console.log('🛒 [PURCHASE] Iniciando compra de suscripción:', productId);
