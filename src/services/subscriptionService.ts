@@ -378,12 +378,30 @@ class SubscriptionService {
       // Verificar si el usuario tiene acceso premium
       if (customerInfo.entitlements.active[PREMIUM_ENTITLEMENT]) {
         console.log('✅ Compra exitosa, usuario tiene acceso premium');
+        console.log('📦 [PURCHASE] Entitlements activos:', Object.keys(customerInfo.entitlements.active));
+        console.log('📦 [PURCHASE] Premium entitlement:', customerInfo.entitlements.active[PREMIUM_ENTITLEMENT]);
+        
+        // Actualizar estado premium desde RevenueCat inmediatamente
         await this.refreshPremiumStatusFromRevenueCat();
+        
+        // Forzar otra actualización después de un pequeño delay para asegurar que se sincroniza
+        setTimeout(async () => {
+          console.log('🔄 [PURCHASE] Re-verificando estado premium después de compra...');
+          await this.refreshPremiumStatusFromRevenueCat();
+        }, 1000);
         
         // Notificar al backend sobre la compra (para comisiones de afiliados)
         await this.notifyBackendAboutPurchase(productId, customerInfo);
       } else {
-        throw new Error('Compra exitosa pero sin acceso premium');
+        console.error('❌ [PURCHASE] Compra exitosa pero NO hay entitlement activo');
+        console.error('❌ [PURCHASE] Entitlements disponibles:', Object.keys(customerInfo.entitlements.all || {}));
+        console.error('❌ [PURCHASE] Entitlements activos:', Object.keys(customerInfo.entitlements.active || {}));
+        console.error('❌ [PURCHASE] Buscando entitlement:', PREMIUM_ENTITLEMENT);
+        
+        // Aún así intentar actualizar el estado por si acaso
+        await this.refreshPremiumStatusFromRevenueCat();
+        
+        throw new Error('Compra exitosa pero sin acceso premium. Por favor, cierra y reabre la app.');
       }
       
     } catch (error) {
@@ -665,12 +683,37 @@ class SubscriptionService {
         return;
       }
 
+      console.log('🔄 [REFRESH] Obteniendo información del cliente de RevenueCat...');
       const customerInfo = await Purchases.getCustomerInfo();
+      
+      console.log('📦 [REFRESH] Customer Info recibido:');
+      console.log('  - App User ID:', customerInfo.originalAppUserId);
+      console.log('  - Active Subscriptions:', customerInfo.activeSubscriptions);
+      console.log('  - All Entitlements:', Object.keys(customerInfo.entitlements.all || {}));
+      console.log('  - Active Entitlements:', Object.keys(customerInfo.entitlements.active || {}));
+      
+      const premiumEntitlement = customerInfo.entitlements.active[PREMIUM_ENTITLEMENT];
+      if (premiumEntitlement) {
+        console.log('✅ [REFRESH] Premium entitlement encontrado:', {
+          identifier: PREMIUM_ENTITLEMENT,
+          expirationDate: premiumEntitlement.expirationDate,
+          isActive: premiumEntitlement.isActive
+        });
+      } else {
+        console.log('⚠️ [REFRESH] Premium entitlement NO encontrado');
+        console.log('  - Buscando entitlement:', PREMIUM_ENTITLEMENT);
+        console.log('  - Entitlements disponibles:', Object.keys(customerInfo.entitlements.all || {}));
+      }
+      
       const status = this.parseCustomerInfoToPremiumStatus(customerInfo);
+      console.log('💾 [REFRESH] Estado premium parseado:', status);
+      
       await this.savePremiumStatus(status);
-      console.log('✅ Estado premium actualizado desde RevenueCat');
+      console.log('✅ [REFRESH] Estado premium guardado en local storage');
+      console.log('✅ [REFRESH] Usuario es premium:', status.isPremium);
     } catch (error) {
-      console.error('❌ Error refrescando estado desde RevenueCat:', error);
+      console.error('❌ [REFRESH] Error refrescando estado desde RevenueCat:', error);
+      console.error('❌ [REFRESH] Stack:', error.stack);
     }
   }
 
