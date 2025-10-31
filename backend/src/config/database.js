@@ -42,10 +42,16 @@ const query = async (text, params) => {
   try {
     const res = await pool.query(text, params);
     const duration = Date.now() - start;
-    console.log('Query ejecutada:', { text, duration, rows: res.rowCount });
+    // Solo loggear información segura (evitar estructuras circulares)
+    console.log('Query ejecutada:', { 
+      text: text.substring(0, 100) + (text.length > 100 ? '...' : ''), 
+      duration, 
+      rows: res.rowCount 
+    });
     return res;
   } catch (err) {
-    console.error('Error en query:', err);
+    // Loggear solo el mensaje de error, no el objeto completo (puede tener referencias circulares)
+    console.error('Error en query:', err.message || err);
     throw err;
   }
 };

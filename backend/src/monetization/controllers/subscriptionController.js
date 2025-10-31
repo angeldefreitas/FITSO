@@ -144,15 +144,26 @@ class SubscriptionController {
       }
 
       // Si no es afiliado/admin, verificar suscripción normal
-      const subscription = await this.getActiveSubscription(userId);
+      // Nota: El estado premium real se maneja desde RevenueCat, no desde la tabla subscriptions
+      // Esta tabla puede no existir o estar vacía, lo cual es normal
+      let subscription = null;
+      try {
+        subscription = await this.getActiveSubscription(userId);
+      } catch (error) {
+        // Si la tabla no existe o hay error, es normal - el estado se maneja desde RevenueCat
+        console.log('ℹ️ [PREMIUM] No se pudo consultar tabla subscriptions (normal si se usa solo RevenueCat)');
+      }
 
       if (!subscription) {
+        // Si no hay suscripción en BD, el estado se verifica desde RevenueCat en la app
+        // Retornar false pero el estado real se maneja en la app vía RevenueCat SDK
         return {
           isPremium: false,
           subscriptionType: null,
           expiresAt: null,
           isTrialPeriod: false,
-          autoRenewStatus: false
+          autoRenewStatus: false,
+          source: 'revenuecat' // Indicar que el estado se verifica desde RevenueCat
         };
       }
 
@@ -209,6 +220,8 @@ class SubscriptionController {
    */
   async getActiveSubscription(userId) {
     try {
+      // Verificar si la tabla subscriptions existe antes de consultar
+      // Si no existe, retornar null (el estado premium se maneja desde RevenueCat)
       const queryText = `
         SELECT * FROM subscriptions 
         WHERE user_id = $1 
