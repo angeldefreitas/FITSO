@@ -230,6 +230,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
 
   const logout = async () => {
+    try {
+      // CRÍTICO: Cerrar sesión de RevenueCat antes de limpiar todo
+      // Esto previene que el siguiente usuario vea las compras del usuario anterior
+      try {
+        const Purchases = (await import('react-native-purchases')).default;
+        await Purchases.logOut();
+        console.log('✅ [LOGOUT] RevenueCat session cerrada correctamente');
+      } catch (rcError) {
+        console.warn('⚠️ [LOGOUT] Error cerrando sesión de RevenueCat (puede no estar inicializado):', rcError);
+      }
+    } catch (error) {
+      console.warn('⚠️ [LOGOUT] Error importando RevenueCat:', error);
+    }
+    
     await authService.logout();
     setUser(null);
     setIsNewUser(false);

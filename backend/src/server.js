@@ -139,10 +139,10 @@ app.get('/', (req, res) => {
     });
   } else {
     // Para otros requests, mostrar info normal
-    res.json({
-      success: true,
-      message: 'API de Fitso MVP',
-      version: '1.0.0',
+  res.json({
+    success: true,
+    message: 'API de Fitso MVP',
+    version: '1.0.0',
       endpoints: {
         health: '/api/health',
         auth: '/api/auth',
@@ -160,26 +160,57 @@ app.get('/', (req, res) => {
         water: '/api/progress/water',
         caloriesBurned: '/api/progress/calories-burned'
       }
-    });
+  });
   }
 });
 
-// También manejar POST a / (puede ser verificación de RevenueCat)
-app.post('/', (req, res) => {
+// También manejar POST a / (puede ser verificación de RevenueCat o webhook mal configurado)
+app.post('/', async (req, res) => {
   const userAgent = req.headers['user-agent'] || '';
+  const contentType = req.headers['content-type'] || '';
+  const contentLength = req.headers['content-length'] || '0';
+  
   console.log('📨 [ROOT] POST recibido en raíz');
   console.log('📝 [ROOT] User-Agent:', userAgent);
-  console.log('📝 [ROOT] Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('📝 [ROOT] Content-Type:', contentType);
+  console.log('📝 [ROOT] Content-Length:', contentLength);
   
-  if (userAgent.includes('Apache-HttpClient')) {
-    // Posiblemente RevenueCat haciendo verificación
-    console.log('⚠️ [ROOT] Posible verificación de RevenueCat - redirigir a webhook endpoint');
-    res.status(200).json({
-      success: true,
-      message: 'Server OK - Use endpoint /api/webhooks/revenuecat for webhooks',
-      webhookEndpoint: '/api/webhooks/revenuecat',
-      note: 'RevenueCat webhooks should be sent to /api/webhooks/revenuecat'
-    });
+  // Si viene de RevenueCat (Apache-HttpClient) y tiene JSON payload
+  if (userAgent.includes('Apache-HttpClient') && contentType.includes('application/json')) {
+    // Verificar si el payload tiene estructura de webhook de RevenueCat
+    const hasEventStructure = req.body && req.body.event && req.body.event.type;
+    
+    if (hasEventStructure) {
+      // Esto es un webhook de RevenueCat enviado al endpoint incorrecto
+      console.log('🔄 [ROOT] Webhook de RevenueCat detectado en raíz - reenrutando a /api/webhooks/revenuecat');
+      console.log('📋 [ROOT] Tipo de evento:', req.body.event.type);
+      console.log('👤 [ROOT] App User ID:', req.body.event.app_user_id);
+      
+      // Importar y llamar al controller del webhook directamente
+      const revenuecatWebhookController = require('./monetization/controllers/revenuecatWebhookController');
+      
+      try {
+        // Crear objetos req/res mock con el payload correcto
+        await revenuecatWebhookController.handleWebhook(req, res);
+        return; // El controller ya envió la respuesta
+      } catch (error) {
+        console.error('❌ [ROOT] Error procesando webhook reenrutado:', error);
+        return res.status(500).json({
+          success: false,
+          message: 'Error procesando webhook',
+          error: error.message
+        });
+      }
+    } else {
+      // Posiblemente RevenueCat haciendo verificación simple
+      console.log('⚠️ [ROOT] Posible verificación de RevenueCat (sin payload de webhook)');
+      return res.status(200).json({
+        success: true,
+        message: 'Server OK - Use endpoint /api/webhooks/revenuecat for webhooks',
+        webhookEndpoint: '/api/webhooks/revenuecat',
+        note: 'RevenueCat webhooks should be sent to /api/webhooks/revenuecat'
+      });
+    }
   } else {
     // Otro tipo de request
     res.status(404).json({

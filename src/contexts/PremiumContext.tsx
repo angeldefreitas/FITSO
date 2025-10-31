@@ -72,10 +72,23 @@ export const PremiumProvider: React.FC<PremiumProviderProps> = ({ children }) =>
       
       await subscriptionService.purchaseSubscription(productId);
       
-      // Actualizar estado después de la compra
+      // CRÍTICO: Forzar actualización completa del estado premium después de la compra
+      console.log('🔄 [PREMIUM CONTEXT] Forzando actualización del estado premium después de compra...');
+      
+      // Esperar un momento para que RevenueCat sincronice
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Obtener estado fresco directamente desde RevenueCat
+      const freshStatus = await subscriptionService.getPremiumStatus();
+      console.log('📦 [PREMIUM CONTEXT] Estado premium fresco obtenido:', freshStatus);
+      
+      // Actualizar estado del contexto inmediatamente
+      setPremiumStatus(freshStatus);
+      
+      // También llamar a refreshPremiumStatus para asegurar sincronización completa
       await refreshPremiumStatus();
       
-      console.log('✅ Compra de suscripción completada');
+      console.log('✅ [PREMIUM CONTEXT] Compra de suscripción completada y estado actualizado');
     } catch (error) {
       console.error('❌ Error en compra de suscripción:', error);
       // NO mostrar Alert.alert aquí - el error será manejado por PremiumScreen con el modal bonito
@@ -174,12 +187,38 @@ export const PremiumProvider: React.FC<PremiumProviderProps> = ({ children }) =>
 
   // Configurar App User ID cuando el usuario se autentique
   // CRÍTICO: Esto debe suceder INMEDIATAMENTE después del registro/login
+  // IMPORTANTE: También refrescar el estado premium cuando cambia el usuario
   useEffect(() => {
     const configureAppUserId = async () => {
       if (user?.id && subscriptionService) {
         try {
           console.log('👤 [PREMIUM CONTEXT] Usuario autenticado detectado, configurando App User ID...');
           console.log('👤 [PREMIUM CONTEXT] User ID:', user.id);
+          
+          // CRÍTICO: Primero verificar si hay un usuario diferente en RevenueCat
+          // Si es así, hacer logOut primero para limpiar el estado anterior
+          try {
+            const PurchasesModule = await import('react-native-purchases');
+            const Purchases = PurchasesModule.default;
+            const currentCustomerInfo = await Purchases.getCustomerInfo();
+            const currentAppUserId = currentCustomerInfo.originalAppUserId;
+            
+            if (currentAppUserId && currentAppUserId !== user.id) {
+              console.log('⚠️ [PREMIUM CONTEXT] Detectado usuario diferente en RevenueCat');
+              console.log('  - Usuario anterior:', currentAppUserId);
+              console.log('  - Usuario nuevo:', user.id);
+              console.log('🔄 [PREMIUM CONTEXT] Cerrando sesión de usuario anterior...');
+              
+              // Cerrar sesión del usuario anterior
+              await Purchases.logOut();
+              console.log('✅ [PREMIUM CONTEXT] Sesión anterior cerrada');
+              
+              // Esperar un momento para que RevenueCat procese el logout
+              await new Promise(resolve => setTimeout(resolve, 500));
+            }
+          } catch (checkError) {
+            console.warn('⚠️ [PREMIUM CONTEXT] No se pudo verificar usuario actual en RevenueCat:', checkError);
+          }
           
           // setAppUserId verifica internamente si está inicializado y lo inicializa si es necesario
           await subscriptionService.setAppUserId(user.id);
@@ -202,9 +241,26 @@ export const PremiumProvider: React.FC<PremiumProviderProps> = ({ children }) =>
           } catch (verifyError) {
             console.warn('⚠️ [PREMIUM CONTEXT] No se pudo verificar App User ID:', verifyError);
           }
+          
+          // CRÍTICO: Refrescar el estado premium después de configurar el App User ID
+          // Esto asegura que el estado premium corresponde al usuario correcto
+          console.log('🔄 [PREMIUM CONTEXT] Refrescando estado premium para nuevo usuario...');
+          const freshStatus = await subscriptionService.getPremiumStatus();
+          setPremiumStatus(freshStatus);
+          console.log('✅ [PREMIUM CONTEXT] Estado premium actualizado para usuario:', user.id, freshStatus);
         } catch (error) {
           console.error('❌ [PREMIUM CONTEXT] Error configurando App User ID después de autenticación:', error);
         }
+      } else if (!user?.id) {
+        // Si no hay usuario, limpiar el estado premium
+        console.log('🔄 [PREMIUM CONTEXT] No hay usuario autenticado, limpiando estado premium');
+        setPremiumStatus({
+          isPremium: false,
+          subscriptionType: null,
+          expiresAt: null,
+          dailyScansUsed: 0,
+          lastScanDate: null,
+        });
       }
     };
 
