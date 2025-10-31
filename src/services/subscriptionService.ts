@@ -184,15 +184,36 @@ class SubscriptionService {
       console.log('✅ RevenueCat configurado correctamente');
 
       // Configurar App User ID para identificar al usuario en RevenueCat
+      // IMPORTANTE: Debe hacerse ANTES de cualquier compra para evitar transferencias de purchases
       // Esto permite rastrear las compras en el dashboard de RevenueCat
       try {
         const userId = await this.getCurrentUserId();
         if (userId) {
-          console.log(`👤 Configurando App User ID: ${userId}`);
+          console.log(`👤 Configurando App User ID durante inicialización: ${userId}`);
+          
+          // Verificar el App User ID actual antes de cambiarlo
+          const currentCustomerInfo = await Purchases.getCustomerInfo();
+          const currentAppUserId = currentCustomerInfo.originalAppUserId;
+          
+          if (currentAppUserId && currentAppUserId !== userId) {
+            console.warn(`⚠️ [INIT] App User ID actual (${currentAppUserId}) diferente al esperado (${userId})`);
+            console.warn(`⚠️ [INIT] Esto puede causar transferencias de purchases si hay compras previas`);
+          }
+          
           await Purchases.logIn(userId);
-          console.log('✅ App User ID configurado en RevenueCat');
+          
+          // Verificar que se configuró correctamente
+          const verifyCustomerInfo = await Purchases.getCustomerInfo();
+          if (verifyCustomerInfo.originalAppUserId !== userId) {
+            console.error(`❌ [INIT] Error: App User ID no se configuró correctamente`);
+            console.error(`  - Esperado: ${userId}`);
+            console.error(`  - Obtenido: ${verifyCustomerInfo.originalAppUserId}`);
+          } else {
+            console.log('✅ [INIT] App User ID configurado correctamente en RevenueCat');
+          }
         } else {
           console.log('⚠️ No se pudo obtener User ID, RevenueCat usará un ID anónimo');
+          console.log('⚠️ NOTA: Si el usuario hace compra sin App User ID, las compras pueden no asociarse correctamente');
         }
       } catch (userIdError) {
         console.log('⚠️ Usuario no autenticado aún, RevenueCat usará un ID anónimo');
@@ -441,13 +462,44 @@ class SubscriptionService {
       console.log('✅ [PURCHASE] Paquete encontrado:', packageToPurchase.identifier);
 
       // Realizar la compra
-      const { customerInfo } = await Purchases.purchasePackage(packageToPurchase);
+      console.log('💳 [PURCHASE] Iniciando compra con RevenueCat...');
+      const { customerInfo: purchaseCustomerInfo } = await Purchases.purchasePackage(packageToPurchase);
+      
+      console.log('📦 [PURCHASE] Customer Info después de compra:');
+      console.log('  - App User ID:', purchaseCustomerInfo.originalAppUserId);
+      console.log('  - Active Subscriptions:', purchaseCustomerInfo.activeSubscriptions);
+      console.log('  - All Entitlements:', Object.keys(purchaseCustomerInfo.entitlements.all || {}));
+      console.log('  - Active Entitlements:', Object.keys(purchaseCustomerInfo.entitlements.active || {}));
+      console.log('  - Buscando entitlement:', PREMIUM_ENTITLEMENT);
+      
+      // Verificar que el App User ID sigue siendo el correcto después de la compra
+      if (purchaseCustomerInfo.originalAppUserId !== userId) {
+        console.error('⚠️ [PURCHASE] ADVERTENCIA: App User ID cambió después de la compra!');
+        console.error('  - Esperado:', userId);
+        console.error('  - Obtenido:', purchaseCustomerInfo.originalAppUserId);
+        console.error('  - Esto puede causar que las compras se transfieran a otro usuario');
+      }
+      
+      // Obtener customerInfo fresco después de la compra para asegurar que esté sincronizado
+      console.log('🔄 [PURCHASE] Obteniendo Customer Info fresco desde RevenueCat...');
+      let finalCustomerInfo = purchaseCustomerInfo;
+      try {
+        // Esperar un momento para que RevenueCat procese la compra
+        await new Promise(resolve => setTimeout(resolve, 500));
+        finalCustomerInfo = await Purchases.getCustomerInfo();
+        console.log('✅ [PURCHASE] Customer Info actualizado obtenido');
+      } catch (error) {
+        console.warn('⚠️ [PURCHASE] No se pudo obtener Customer Info fresco, usando el de la compra:', error);
+      }
       
       // Verificar si el usuario tiene acceso premium
-      if (customerInfo.entitlements.active[PREMIUM_ENTITLEMENT]) {
-        console.log('✅ Compra exitosa, usuario tiene acceso premium');
-        console.log('📦 [PURCHASE] Entitlements activos:', Object.keys(customerInfo.entitlements.active));
-        console.log('📦 [PURCHASE] Premium entitlement:', customerInfo.entitlements.active[PREMIUM_ENTITLEMENT]);
+      const premiumEntitlement = finalCustomerInfo.entitlements.active[PREMIUM_ENTITLEMENT];
+      if (premiumEntitlement) {
+        console.log('✅ [PURCHASE] Compra exitosa, usuario tiene acceso premium');
+        console.log('📦 [PURCHASE] Premium entitlement activo:');
+        console.log('  - Identifier:', premiumEntitlement.identifier);
+        console.log('  - Expiration Date:', premiumEntitlement.expirationDate);
+        console.log('  - Is Active:', premiumEntitlement.isActive);
         
         // Actualizar estado premium desde RevenueCat inmediatamente
         await this.refreshPremiumStatusFromRevenueCat();
@@ -456,20 +508,37 @@ class SubscriptionService {
         setTimeout(async () => {
           console.log('🔄 [PURCHASE] Re-verificando estado premium después de compra...');
           await this.refreshPremiumStatusFromRevenueCat();
-        }, 1000);
+        }, 2000);
         
         // Notificar al backend sobre la compra (para comisiones de afiliados)
-        await this.notifyBackendAboutPurchase(productId, customerInfo);
+        await this.notifyBackendAboutPurchase(productId, finalCustomerInfo);
       } else {
         console.error('❌ [PURCHASE] Compra exitosa pero NO hay entitlement activo');
-        console.error('❌ [PURCHASE] Entitlements disponibles:', Object.keys(customerInfo.entitlements.all || {}));
-        console.error('❌ [PURCHASE] Entitlements activos:', Object.keys(customerInfo.entitlements.active || {}));
+        console.error('❌ [PURCHASE] Entitlements disponibles:', Object.keys(finalCustomerInfo.entitlements.all || {}));
+        console.error('❌ [PURCHASE] Entitlements activos:', Object.keys(finalCustomerInfo.entitlements.active || {}));
         console.error('❌ [PURCHASE] Buscando entitlement:', PREMIUM_ENTITLEMENT);
+        console.error('❌ [PURCHASE] Customer Info completo:', JSON.stringify(finalCustomerInfo, null, 2));
+        
+        // Intentar restaurar compras por si hay un problema de sincronización
+        console.log('🔄 [PURCHASE] Intentando restaurar compras...');
+        try {
+          const restoredCustomerInfo = await Purchases.restorePurchases();
+          console.log('📦 [PURCHASE] Customer Info después de restaurar:');
+          console.log('  - Active Entitlements:', Object.keys(restoredCustomerInfo.entitlements.active || {}));
+          
+          if (restoredCustomerInfo.entitlements.active[PREMIUM_ENTITLEMENT]) {
+            console.log('✅ [PURCHASE] Entitlement encontrado después de restaurar!');
+            await this.refreshPremiumStatusFromRevenueCat();
+            return; // Salir sin error
+          }
+        } catch (restoreError) {
+          console.error('❌ [PURCHASE] Error restaurando compras:', restoreError);
+        }
         
         // Aún así intentar actualizar el estado por si acaso
         await this.refreshPremiumStatusFromRevenueCat();
         
-        throw new Error('Compra exitosa pero sin acceso premium. Por favor, cierra y reabre la app.');
+        throw new Error('Compra exitosa pero sin acceso premium. Por favor, cierra y reabre la app o contacta al soporte.');
       }
       
     } catch (error) {
@@ -788,17 +857,32 @@ class SubscriptionService {
       console.log('  - All Entitlements:', Object.keys(customerInfo.entitlements.all || {}));
       console.log('  - Active Entitlements:', Object.keys(customerInfo.entitlements.active || {}));
       
+      // Verificar el entitlement buscado
+      console.log('🔍 [REFRESH] Buscando entitlement:', PREMIUM_ENTITLEMENT);
+      
       const premiumEntitlement = customerInfo.entitlements.active[PREMIUM_ENTITLEMENT];
       if (premiumEntitlement) {
         console.log('✅ [REFRESH] Premium entitlement encontrado:', {
-          identifier: PREMIUM_ENTITLEMENT,
+          identifier: premiumEntitlement.identifier,
           expirationDate: premiumEntitlement.expirationDate,
-          isActive: premiumEntitlement.isActive
+          isActive: premiumEntitlement.isActive,
+          willRenew: premiumEntitlement.willRenew,
+          productIdentifier: premiumEntitlement.productIdentifier
         });
       } else {
-        console.log('⚠️ [REFRESH] Premium entitlement NO encontrado');
-        console.log('  - Buscando entitlement:', PREMIUM_ENTITLEMENT);
-        console.log('  - Entitlements disponibles:', Object.keys(customerInfo.entitlements.all || {}));
+        console.log('⚠️ [REFRESH] Premium entitlement NO encontrado en activos');
+        console.log('  - Buscando entitlement ID:', PREMIUM_ENTITLEMENT);
+        console.log('  - Entitlements disponibles (all):', Object.keys(customerInfo.entitlements.all || {}));
+        console.log('  - Entitlements activos:', Object.keys(customerInfo.entitlements.active || {}));
+        
+        // Si hay entitlements en "all" pero no en "active", puede ser que estén expirados
+        if (customerInfo.entitlements.all && Object.keys(customerInfo.entitlements.all).length > 0) {
+          console.log('⚠️ [REFRESH] Hay entitlements en "all" pero no están activos (pueden estar expirados)');
+          Object.keys(customerInfo.entitlements.all).forEach(entId => {
+            const ent = customerInfo.entitlements.all[entId];
+            console.log(`  - ${entId}: activo=${ent.isActive}, expira=${ent.expirationDate}`);
+          });
+        }
       }
       
       const status = this.parseCustomerInfoToPremiumStatus(customerInfo);
