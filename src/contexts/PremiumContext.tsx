@@ -173,14 +173,37 @@ export const PremiumProvider: React.FC<PremiumProviderProps> = ({ children }) =>
   }, [initializePremium]);
 
   // Configurar App User ID cuando el usuario se autentique
+  // CRÍTICO: Esto debe suceder INMEDIATAMENTE después del registro/login
   useEffect(() => {
     const configureAppUserId = async () => {
       if (user?.id && subscriptionService) {
         try {
-          console.log('👤 Usuario autenticado detectado, configurando App User ID...');
+          console.log('👤 [PREMIUM CONTEXT] Usuario autenticado detectado, configurando App User ID...');
+          console.log('👤 [PREMIUM CONTEXT] User ID:', user.id);
+          
+          // setAppUserId verifica internamente si está inicializado y lo inicializa si es necesario
           await subscriptionService.setAppUserId(user.id);
+          console.log('✅ [PREMIUM CONTEXT] App User ID configurado correctamente');
+          
+          // Verificar que se configuró correctamente
+          try {
+            const PurchasesModule = await import('react-native-purchases');
+            const Purchases = PurchasesModule.default;
+            const customerInfo = await Purchases.getCustomerInfo();
+            if (customerInfo.originalAppUserId === user.id) {
+              console.log('✅ [PREMIUM CONTEXT] App User ID verificado correctamente en RevenueCat');
+            } else {
+              console.error('❌ [PREMIUM CONTEXT] App User ID no coincide después de configurar');
+              console.error('  - Esperado:', user.id);
+              console.error('  - Obtenido:', customerInfo.originalAppUserId);
+              // Intentar de nuevo
+              await subscriptionService.setAppUserId(user.id);
+            }
+          } catch (verifyError) {
+            console.warn('⚠️ [PREMIUM CONTEXT] No se pudo verificar App User ID:', verifyError);
+          }
         } catch (error) {
-          console.error('❌ Error configurando App User ID después de autenticación:', error);
+          console.error('❌ [PREMIUM CONTEXT] Error configurando App User ID después de autenticación:', error);
         }
       }
     };

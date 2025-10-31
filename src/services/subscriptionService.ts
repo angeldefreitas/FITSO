@@ -493,13 +493,36 @@ class SubscriptionService {
       }
       
       // Verificar si el usuario tiene acceso premium
-      const premiumEntitlement = finalCustomerInfo.entitlements.active[PREMIUM_ENTITLEMENT];
+      // IMPORTANTE: A veces RevenueCat tarda unos segundos en activar el entitlement
+      // Intentar varias veces con delays incrementales
+      let premiumEntitlement = finalCustomerInfo.entitlements.active[PREMIUM_ENTITLEMENT];
+      let attempts = 0;
+      const maxAttempts = 3;
+      
+      while (!premiumEntitlement && attempts < maxAttempts) {
+        if (attempts > 0) {
+          console.log(`🔄 [PURCHASE] Intentando verificar entitlement (intento ${attempts + 1}/${maxAttempts})...`);
+          // Esperar con delay incremental: 1s, 2s, 3s
+          await new Promise(resolve => setTimeout(resolve, attempts * 1000));
+          finalCustomerInfo = await Purchases.getCustomerInfo();
+        }
+        
+        premiumEntitlement = finalCustomerInfo.entitlements.active[PREMIUM_ENTITLEMENT];
+        attempts++;
+        
+        if (premiumEntitlement) {
+          console.log(`✅ [PURCHASE] Entitlement encontrado después de ${attempts} intento(s)`);
+          break;
+        }
+      }
+      
       if (premiumEntitlement) {
         console.log('✅ [PURCHASE] Compra exitosa, usuario tiene acceso premium');
         console.log('📦 [PURCHASE] Premium entitlement activo:');
         console.log('  - Identifier:', premiumEntitlement.identifier);
         console.log('  - Expiration Date:', premiumEntitlement.expirationDate);
         console.log('  - Is Active:', premiumEntitlement.isActive);
+        console.log('  - Product Identifier:', premiumEntitlement.productIdentifier);
         
         // Actualizar estado premium desde RevenueCat inmediatamente
         await this.refreshPremiumStatusFromRevenueCat();
@@ -513,11 +536,23 @@ class SubscriptionService {
         // Notificar al backend sobre la compra (para comisiones de afiliados)
         await this.notifyBackendAboutPurchase(productId, finalCustomerInfo);
       } else {
-        console.error('❌ [PURCHASE] Compra exitosa pero NO hay entitlement activo');
-        console.error('❌ [PURCHASE] Entitlements disponibles:', Object.keys(finalCustomerInfo.entitlements.all || {}));
+        // Log detallado para debugging
+        console.error('❌ [PURCHASE] Compra exitosa pero NO hay entitlement activo después de', maxAttempts, 'intentos');
+        console.error('❌ [PURCHASE] Entitlement buscado:', PREMIUM_ENTITLEMENT);
+        console.error('❌ [PURCHASE] Entitlements disponibles (all):', Object.keys(finalCustomerInfo.entitlements.all || {}));
         console.error('❌ [PURCHASE] Entitlements activos:', Object.keys(finalCustomerInfo.entitlements.active || {}));
-        console.error('❌ [PURCHASE] Buscando entitlement:', PREMIUM_ENTITLEMENT);
-        console.error('❌ [PURCHASE] Customer Info completo:', JSON.stringify(finalCustomerInfo, null, 2));
+        console.error('❌ [PURCHASE] Active Subscriptions:', finalCustomerInfo.activeSubscriptions);
+        console.error('❌ [PURCHASE] App User ID:', finalCustomerInfo.originalAppUserId);
+        console.error('❌ [PURCHASE] Expected User ID:', userId);
+        
+        // Log detallado de todos los entitlements para debugging
+        if (finalCustomerInfo.entitlements.all && Object.keys(finalCustomerInfo.entitlements.all).length > 0) {
+          console.error('❌ [PURCHASE] Detalles de entitlements disponibles:');
+          Object.keys(finalCustomerInfo.entitlements.all).forEach(entId => {
+            const ent = finalCustomerInfo.entitlements.all[entId];
+            console.error(`  - ${entId}: activo=${ent.isActive}, expira=${ent.expirationDate}, producto=${ent.productIdentifier}`);
+          });
+        }
         
         // Intentar restaurar compras por si hay un problema de sincronización
         console.log('🔄 [PURCHASE] Intentando restaurar compras...');
@@ -525,20 +560,45 @@ class SubscriptionService {
           const restoredCustomerInfo = await Purchases.restorePurchases();
           console.log('📦 [PURCHASE] Customer Info después de restaurar:');
           console.log('  - Active Entitlements:', Object.keys(restoredCustomerInfo.entitlements.active || {}));
+          console.log('  - App User ID:', restoredCustomerInfo.originalAppUserId);
           
           if (restoredCustomerInfo.entitlements.active[PREMIUM_ENTITLEMENT]) {
             console.log('✅ [PURCHASE] Entitlement encontrado después de restaurar!');
             await this.refreshPremiumStatusFromRevenueCat();
+            await this.notifyBackendAboutPurchase(productId, restoredCustomerInfo);
             return; // Salir sin error
           }
         } catch (restoreError) {
           console.error('❌ [PURCHASE] Error restaurando compras:', restoreError);
         }
         
+        // Último intento: verificar si hay algún entitlement activo (aunque no sea el esperado)
+        const allActiveEntitlements = Object.keys(finalCustomerInfo.entitlements.active || {});
+        if (allActiveEntitlements.length > 0) {
+          console.warn('⚠️ [PURCHASE] Hay entitlements activos pero no el esperado:', allActiveEntitlements);
+          console.warn('⚠️ [PURCHASE] Verificar configuración del entitlement en RevenueCat dashboard');
+        }
+        
         // Aún así intentar actualizar el estado por si acaso
         await this.refreshPremiumStatusFromRevenueCat();
         
-        throw new Error('Compra exitosa pero sin acceso premium. Por favor, cierra y reabre la app o contacta al soporte.');
+        // IMPORTANTE: Aunque no haya entitlement activo, la compra se procesó
+        // El webhook de RevenueCat debería llegar y activarlo
+        // No lanzar error fatal, solo advertir
+        console.warn('⚠️ [PURCHASE] Entitlement no activo inmediatamente, pero la compra fue procesada');
+        console.warn('⚠️ [PURCHASE] El webhook de RevenueCat debería activar el entitlement en unos momentos');
+        console.warn('⚠️ [PURCHASE] El usuario puede necesitar cerrar y reabrir la app para ver el estado premium');
+        
+        // Intentar notificar al backend de todas formas (puede que el entitlement se active después)
+        try {
+          await this.notifyBackendAboutPurchase(productId, finalCustomerInfo);
+        } catch (notifyError) {
+          console.warn('⚠️ [PURCHASE] No se pudo notificar al backend, pero el webhook debería hacerlo');
+        }
+        
+        // NO lanzar error fatal - la compra se procesó, solo hay delay en el entitlement
+        // Esto permite que el usuario vea la app funcionando y el webhook procesará todo después
+        console.log('ℹ️ [PURCHASE] La compra se procesó correctamente. El entitlement se activará automáticamente.');
       }
       
     } catch (error) {

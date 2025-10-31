@@ -125,10 +125,24 @@ app.use((req, res, next) => {
 
 // Ruta raíz
 app.get('/', (req, res) => {
-  res.json({
-    success: true,
-    message: 'API de Fitso MVP',
-    version: '1.0.0',
+  // Si viene de RevenueCat (health check), responder OK con info del webhook
+  const userAgent = req.headers['user-agent'] || '';
+  if (userAgent.includes('Apache-HttpClient')) {
+    // RevenueCat o servicios de verificación están haciendo health check
+    console.log('🔍 [ROOT] Health check recibido (posiblemente RevenueCat)');
+    console.log('📝 [ROOT] User-Agent:', userAgent);
+    res.status(200).json({
+      success: true,
+      message: 'Server OK - Webhook endpoint disponible',
+      webhookEndpoint: '/api/webhooks/revenuecat',
+      version: '1.0.0'
+    });
+  } else {
+    // Para otros requests, mostrar info normal
+    res.json({
+      success: true,
+      message: 'API de Fitso MVP',
+      version: '1.0.0',
       endpoints: {
         health: '/api/health',
         auth: '/api/auth',
@@ -138,14 +152,41 @@ app.get('/', (req, res) => {
         fitsoFoods: '/api/fitso-foods',
         meals: '/api/meals',
         subscriptions: '/api/subscriptions',
-        affiliates: '/api/affiliates'
+        affiliates: '/api/affiliates',
+        webhooks: '/api/webhooks/revenuecat'
       },
       progressEndpoints: {
         weight: '/api/progress/weight',
         water: '/api/progress/water',
         caloriesBurned: '/api/progress/calories-burned'
       }
-  });
+    });
+  }
+});
+
+// También manejar POST a / (puede ser verificación de RevenueCat)
+app.post('/', (req, res) => {
+  const userAgent = req.headers['user-agent'] || '';
+  console.log('📨 [ROOT] POST recibido en raíz');
+  console.log('📝 [ROOT] User-Agent:', userAgent);
+  console.log('📝 [ROOT] Headers:', JSON.stringify(req.headers, null, 2));
+  
+  if (userAgent.includes('Apache-HttpClient')) {
+    // Posiblemente RevenueCat haciendo verificación
+    console.log('⚠️ [ROOT] Posible verificación de RevenueCat - redirigir a webhook endpoint');
+    res.status(200).json({
+      success: true,
+      message: 'Server OK - Use endpoint /api/webhooks/revenuecat for webhooks',
+      webhookEndpoint: '/api/webhooks/revenuecat',
+      note: 'RevenueCat webhooks should be sent to /api/webhooks/revenuecat'
+    });
+  } else {
+    // Otro tipo de request
+    res.status(404).json({
+      success: false,
+      message: 'Ruta no encontrada. Use /api/* endpoints'
+    });
+  }
 });
 
 // Endpoint simple para crear afiliados (sin autenticación para testing)
