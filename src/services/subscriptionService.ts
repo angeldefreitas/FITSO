@@ -319,29 +319,42 @@ class SubscriptionService {
       }
 
       console.log('🛒 [PURCHASE] Iniciando compra de suscripción:', productId);
-      console.log('📦 [PURCHASE] Productos disponibles:', this.products.map(p => p.identifier));
+      console.log('📦 [PURCHASE] Productos disponibles en lista cargada:', this.products.map(p => p.identifier));
       
-      // Verificar que el producto existe
-      const product = this.products.find(p => p.identifier === productId);
-      if (!product) {
-        console.error('❌ [PURCHASE] Producto no encontrado en productos disponibles');
-        console.error('❌ [PURCHASE] Productos disponibles:', this.products.map(p => ({ id: p.identifier, title: p.title })));
-        throw new Error('No pudimos procesar tu compra. Por favor, inténtalo de nuevo.');
-      }
-      console.log('✅ [PURCHASE] Producto encontrado:', product.title);
-
-      // Obtener ofertas de RevenueCat
+      // Obtener ofertas de RevenueCat primero
+      // Los productIds pueden ser package IDs de RevenueCat ($rc_monthly, $rc_annual)
+      // o product IDs de Apple (Fitso_Premium_Monthly, etc.)
       console.log('🔄 [PURCHASE] Obteniendo ofertas de RevenueCat...');
       const offerings = await Purchases.getOfferings();
       if (!offerings.current) {
         console.error('❌ [PURCHASE] No hay ofertas disponibles');
-        throw new Error('No pudimos procesar tu compra. Por favor, inténtalo de nuevo.');
+        console.error('❌ [PURCHASE] Esto puede deberse a:');
+        console.error('   1. RevenueCat no está configurado correctamente');
+        console.error('   2. Los productos no están configurados en RevenueCat');
+        console.error('   3. No hay conexión a internet');
+        throw new Error('No pudimos procesar tu compra. Por favor, verifica tu conexión e inténtalo de nuevo.');
       }
-      console.log('✅ [PURCHASE] Ofertas encontradas:', offerings.current.availablePackages.map(p => p.identifier));
+      console.log('✅ [PURCHASE] Ofertas encontradas:', offerings.current.availablePackages.map(p => ({
+        packageId: p.identifier,
+        productId: p.product.identifier
+      })));
+
+      // Verificar que el producto existe en la lista cargada (opcional, solo para logging)
+      // Nota: Si productId es un package ID ($rc_monthly), no estará en this.products
+      const product = this.products.find(p => 
+        p.identifier === productId || 
+        p.identifier.toLowerCase() === productId.toLowerCase()
+      );
+      
+      if (product) {
+        console.log('✅ [PURCHASE] Producto encontrado en lista cargada:', product.title);
+      } else {
+        console.log('ℹ️ [PURCHASE] Producto no en lista cargada, pero esto está bien si usamos package IDs directamente');
+      }
 
       // Encontrar el paquete correspondiente
       // Los packages en RevenueCat tienen IDs como $rc_monthly y $rc_annual
-      // pero también podemos buscar por el product ID
+      // El productId puede ser un package ID ($rc_monthly) o un product ID (Fitso_Premium_Monthly)
       console.log('📦 [PURCHASE] Buscando paquete para:', productId);
       console.log('📦 [PURCHASE] Paquetes disponibles:', offerings.current.availablePackages.map(p => ({
         packageId: p.identifier,
@@ -351,32 +364,36 @@ class SubscriptionService {
       
       const packageToPurchase = offerings.current.availablePackages.find(
         pkg => {
-          console.log(`📦 [PURCHASE] Comparando package: ${pkg.identifier} con productId: ${productId}`);
+          // Normalizar IDs para comparación
+          const packageIdLower = pkg.identifier.toLowerCase();
+          const packageIdNoPrefix = packageIdLower.replace(/^\$rc_/, 'rc_');
+          const productIdLower = productId.toLowerCase();
+          const productIdNoPrefix = productIdLower.replace(/^\$rc_/, 'rc_');
           
-          // Buscar por product identifier
-          const matchesProduct = pkg.product.identifier === productId;
+          // 1. Comparación exacta de package ID
+          const exactPackageMatch = pkg.identifier === productId;
           
-          // Buscar por package identifier
-          const matchesPackage = pkg.identifier === productId;
+          // 2. Comparación sin case sensitivity
+          const caseInsensitiveMatch = packageIdLower === productIdLower;
           
-          // Buscar por package identifier sin case sensitivity
-          const matchesPackageIgnoreCase = pkg.identifier.toLowerCase() === productId.toLowerCase();
+          // 3. Comparación sin prefijo $
+          const noPrefixMatch = packageIdNoPrefix === productIdNoPrefix;
           
-          // Si el productId es $rc_monthly o $rc_annual, buscar con esos formatos
-          let matchesPackageFormat = false;
-          if (productId.includes('monthly')) {
-            matchesPackageFormat = pkg.identifier === '$rc_monthly' || 
-                                  pkg.identifier === 'rc_monthly' ||
-                                  pkg.identifier.toLowerCase() === 'rc_monthly';
-          } else if (productId.includes('annual') || productId.includes('yearly')) {
-            matchesPackageFormat = pkg.identifier === '$rc_annual' || 
-                                  pkg.identifier === 'rc_annual' ||
-                                  pkg.identifier.toLowerCase() === 'rc_annual';
-          }
+          // 4. Comparación con product identifier
+          const productMatch = pkg.product.identifier === productId || 
+                              pkg.product.identifier.toLowerCase() === productIdLower;
           
-          const matches = matchesProduct || matchesPackage || matchesPackageIgnoreCase || matchesPackageFormat;
+          // 5. Match por contenido (monthly/annual)
+          const contentMatch = 
+            (productIdLower.includes('monthly') && (packageIdLower.includes('monthly') || pkg.product.identifier.toLowerCase().includes('monthly'))) ||
+            ((productIdLower.includes('annual') || productIdLower.includes('yearly')) && 
+             (packageIdLower.includes('annual') || packageIdLower.includes('yearly') || 
+              pkg.product.identifier.toLowerCase().includes('annual') || pkg.product.identifier.toLowerCase().includes('yearly')));
+          
+          const matches = exactPackageMatch || caseInsensitiveMatch || noPrefixMatch || productMatch || contentMatch;
+          
           if (matches) {
-            console.log(`✅ [PURCHASE] Match encontrado: ${pkg.identifier}`);
+            console.log(`✅ [PURCHASE] Match encontrado: ${pkg.identifier} (package) -> ${pkg.product.identifier} (product)`);
           }
           
           return matches;
@@ -385,11 +402,17 @@ class SubscriptionService {
 
       if (!packageToPurchase) {
         console.error('❌ [PURCHASE] Paquete no encontrado en RevenueCat');
+        console.error('❌ [PURCHASE] ProductId buscado:', productId);
         console.error('❌ [PURCHASE] Paquetes disponibles:', offerings.current.availablePackages.map(p => ({ 
           packageId: p.identifier, 
-          productId: p.product.identifier 
+          productId: p.product.identifier,
+          productTitle: p.product.title
         })));
-        throw new Error('No pudimos procesar tu compra. Por favor, inténtalo de nuevo.');
+        console.error('❌ [PURCHASE] Esto puede deberse a:');
+        console.error('   1. El package ID no coincide con los configurados en RevenueCat');
+        console.error('   2. Los productos no están correctamente vinculados en RevenueCat');
+        console.error('   3. El productId usado es incorrecto');
+        throw new Error('No pudimos encontrar el producto. Por favor, verifica tu conexión e inténtalo de nuevo.');
       }
       console.log('✅ [PURCHASE] Paquete encontrado:', packageToPurchase.identifier);
 
@@ -431,22 +454,50 @@ class SubscriptionService {
       // Proporcionar mensajes de error más específicos
       if (error instanceof Error) {
         const errorMessage = error.message;
+        const errorString = error.toString();
+        
+        console.error('❌ [PURCHASE] Tipo de error:', errorString);
+        console.error('❌ [PURCHASE] Mensaje de error:', errorMessage);
         
         // Manejar errores específicos de RevenueCat
-        if (errorMessage.includes('UserCancelledError') || errorMessage.includes('Cancelled')) {
+        if (errorMessage.includes('UserCancelledError') || errorMessage.includes('Cancelled') || errorString.includes('UserCancelledError')) {
           throw new Error('Compra cancelada');
-        } else if (errorMessage.includes('NetworkError') || errorMessage.includes('network')) {
+        } else if (errorMessage.includes('NetworkError') || errorMessage.includes('network') || errorString.includes('NetworkError')) {
           throw new Error('Error de conexión. Verifica tu conexión a internet.');
-        } else if (errorMessage.includes('AlreadyPurchasedError')) {
-          throw new Error('Ya tienes esta suscripción activa.');
-        } else if (errorMessage.includes('PurchaseNotAllowedError')) {
+        } else if (errorMessage.includes('ProductNotAvailableError') || errorMessage.includes('Product not available') || errorString.includes('ProductNotAvailableError')) {
+          throw new Error('Producto no disponible en este momento.');
+        } else if (errorMessage.includes('StoreProductNotAvailableError') || errorString.includes('StoreProductNotAvailableError')) {
+          throw new Error('El producto no está disponible en la tienda.');
+        } else if (errorMessage.includes('PurchaseNotAllowedError') || errorMessage.includes('Purchase not allowed') || errorString.includes('PurchaseNotAllowedError')) {
           throw new Error('Las compras no están permitidas en este dispositivo.');
-        } else if (errorMessage.includes('InvalidCredentialsError')) {
+        } else if (errorMessage.includes('ReceiptAlreadyInUseError') || errorString.includes('ReceiptAlreadyInUseError')) {
+          throw new Error('Este recibo ya está siendo usado por otra cuenta.');
+        } else if (errorMessage.includes('InvalidReceiptError') || errorString.includes('InvalidReceiptError')) {
+          throw new Error('Recibo inválido. Por favor, contacta al soporte.');
+        } else if (errorMessage.includes('MissingReceiptFileError') || errorString.includes('MissingReceiptFileError')) {
+          throw new Error('No se pudo encontrar el recibo de compra.');
+        } else if (errorMessage.includes('InvalidAppUserIdError') || errorString.includes('InvalidAppUserIdError')) {
+          throw new Error('Error de autenticación. Por favor, cierra y reabre la app.');
+        } else if (errorMessage.includes('AlreadyPurchasedError') || errorString.includes('AlreadyPurchasedError')) {
+          throw new Error('Ya tienes esta suscripción activa.');
+        } else if (errorMessage.includes('InvalidCredentialsError') || errorString.includes('InvalidCredentialsError')) {
           throw new Error('Credenciales inválidas. Por favor, contacta al soporte.');
+        } else if (errorMessage.includes('Package not found') || errorMessage.includes('No pudimos encontrar')) {
+          // Este es nuestro error personalizado
+          throw error;
+        } else {
+          // Para otros errores, proporcionar mensaje más útil
+          console.error('❌ [PURCHASE] Error no reconocido, detalles completos:', {
+            message: errorMessage,
+            stack: error.stack,
+            name: error.name
+          });
+          throw new Error(errorMessage || 'No pudimos procesar tu compra. Por favor, inténtalo de nuevo.');
         }
+      } else {
+        console.error('❌ [PURCHASE] Error no es instancia de Error:', error);
+        throw new Error('Error desconocido al procesar la compra.');
       }
-      
-      throw error;
     }
   }
 
@@ -908,17 +959,29 @@ class SubscriptionService {
       console.log('📊 [SUBSCRIPTION] Datos de compra:', purchaseData);
       
       // Enviar al backend
-      const response = await apiService.post('/subscriptions/purchase', purchaseData);
-      
-      if (response.success) {
-        console.log('✅ [SUBSCRIPTION] Backend notificado exitosamente');
-        console.log('💰 [SUBSCRIPTION] Comisión de afiliado procesada:', response.data);
-      } else {
-        console.warn('⚠️ [SUBSCRIPTION] Backend respondió con error:', response.message);
+      try {
+        const response = await apiService.post('/subscriptions/purchase', purchaseData);
+        
+        if (response.success) {
+          console.log('✅ [SUBSCRIPTION] Backend notificado exitosamente');
+          console.log('💰 [SUBSCRIPTION] Comisión de afiliado procesada:', response.data);
+        } else {
+          console.warn('⚠️ [SUBSCRIPTION] Backend respondió con error:', response.message);
+          console.warn('ℹ️ [SUBSCRIPTION] La comisión será procesada por el webhook de RevenueCat');
+        }
+      } catch (apiError: any) {
+        // El 404 u otros errores del backend no deben afectar el flujo de compra
+        // El webhook de RevenueCat se encargará de procesar la comisión
+        if (apiError?.message?.includes('404') || apiError?.message?.includes('not found')) {
+          console.warn('⚠️ [SUBSCRIPTION] Endpoint no encontrado (404) - esto puede ser normal si el backend está en mantenimiento');
+        } else {
+          console.error('❌ [SUBSCRIPTION] Error notificando al backend:', apiError?.message || apiError);
+        }
+        console.log('ℹ️ [SUBSCRIPTION] La compra se completó exitosamente. La comisión será procesada por el webhook de RevenueCat.');
       }
       
     } catch (error) {
-      console.error('❌ [SUBSCRIPTION] Error notificando al backend:', error);
+      console.error('❌ [SUBSCRIPTION] Error inesperado notificando al backend:', error);
       // No lanzar error para no afectar el flujo de compra
       // El webhook de RevenueCat se encargará de procesar la comisión
       console.log('ℹ️ [SUBSCRIPTION] La comisión será procesada por el webhook de RevenueCat');
