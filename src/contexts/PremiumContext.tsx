@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { Alert } from 'react-native';
+import { Alert, AppState, AppStateStatus } from 'react-native';
 import subscriptionService, { PremiumStatus } from '../services/subscriptionService';
 import { useAuth } from './AuthContext';
 
@@ -267,19 +267,42 @@ export const PremiumProvider: React.FC<PremiumProviderProps> = ({ children }) =>
     configureAppUserId();
   }, [user?.id]);
 
-  // Forzar actualización del estado cada vez que se monte el componente
+  // Refrescar estado premium cuando la app vuelve a foreground
+  // CRÍTICO: Esto asegura que el estado premium se actualice cuando el usuario vuelve a la app
   useEffect(() => {
+    const handleAppStateChange = async (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active') {
+        console.log('📱 [PREMIUM CONTEXT] App activa - refrescando estado premium...');
+        try {
+          // Forzar refresh desde RevenueCat cuando la app vuelve a primer plano
+          await subscriptionService.refreshPremiumStatusFromRevenueCat();
+          const status = await subscriptionService.getPremiumStatus();
+          setPremiumStatus(status);
+          console.log('✅ [PREMIUM CONTEXT] Estado premium refrescado después de volver a foreground:', status);
+        } catch (error) {
+          console.error('❌ [PREMIUM CONTEXT] Error refrescando estado premium en foreground:', error);
+        }
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    
+    // También refrescar al montar el componente
     const refreshStatus = async () => {
       try {
         const status = await subscriptionService.getPremiumStatus();
         setPremiumStatus(status);
-        console.log('🔄 PremiumContext - Estado refrescado:', status);
+        console.log('🔄 [PREMIUM CONTEXT] Estado refrescado al montar:', status);
       } catch (error) {
-        console.error('❌ Error refrescando estado premium:', error);
+        console.error('❌ [PREMIUM CONTEXT] Error refrescando estado premium:', error);
       }
     };
     
     refreshStatus();
+    
+    return () => {
+      subscription.remove();
+    };
   }, []);
 
   // Limpiar al desmontar

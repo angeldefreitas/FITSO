@@ -324,19 +324,60 @@ class SubscriptionService {
         throw new Error('Debes estar autenticado para realizar compras. Por favor, inicia sesión e intenta de nuevo.');
       }
 
+      // CRÍTICO: Obtener el App User ID actual ANTES de configurarlo
+      // Si hay un usuario diferente, hacer logout primero
+      let currentCustomerInfo = await Purchases.getCustomerInfo();
+      const currentAppUserId = currentCustomerInfo.originalAppUserId;
+      
+      console.log('🔍 [PURCHASE] Estado ANTES de configurar App User ID:');
+      console.log('  - Usuario esperado (de app):', userId);
+      console.log('  - App User ID actual (RevenueCat):', currentAppUserId);
+      
+      // Si hay un usuario diferente configurado, cerrar sesión primero
+      if (currentAppUserId && currentAppUserId !== userId) {
+        console.warn('⚠️ [PURCHASE] CRÍTICO: Detectado usuario diferente en RevenueCat!');
+        console.warn('  - Usuario anterior:', currentAppUserId);
+        console.warn('  - Usuario nuevo:', userId);
+        console.warn('🔄 [PURCHASE] Cerrando sesión del usuario anterior para evitar mezclar compras...');
+        
+        await Purchases.logOut();
+        console.log('✅ [PURCHASE] Sesión anterior cerrada');
+        
+        // Esperar un momento para que RevenueCat procese el logout
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
       console.log('👤 [PURCHASE] Configurando App User ID antes de la compra:', userId);
       await Purchases.logIn(userId);
-      console.log('✅ [PURCHASE] App User ID configurado correctamente');
+      console.log('✅ [PURCHASE] App User ID configurado');
 
       // Verificar que el App User ID se configuró correctamente
-      const verifyCustomerInfo = await Purchases.getCustomerInfo();
-      console.log('👤 [PURCHASE] App User ID verificado en RevenueCat:', verifyCustomerInfo.originalAppUserId);
+      currentCustomerInfo = await Purchases.getCustomerInfo();
+      const verifiedAppUserId = currentCustomerInfo.originalAppUserId;
+      console.log('👤 [PURCHASE] App User ID verificado en RevenueCat:', verifiedAppUserId);
       
-      if (verifyCustomerInfo.originalAppUserId !== userId) {
-        console.warn('⚠️ [PURCHASE] App User ID no coincide, forzando actualización...');
+      if (verifiedAppUserId !== userId) {
+        console.error('❌ [PURCHASE] CRÍTICO: App User ID NO coincide después de configurar!');
+        console.error('  - Esperado:', userId);
+        console.error('  - Obtenido:', verifiedAppUserId);
+        console.warn('⚠️ [PURCHASE] Intentando forzar actualización...');
+        
+        // Intentar de nuevo con logout/login
+        await Purchases.logOut();
+        await new Promise(resolve => setTimeout(resolve, 500));
         await Purchases.logIn(userId);
+        
         const reVerifyInfo = await Purchases.getCustomerInfo();
-        console.log('✅ [PURCHASE] App User ID actualizado:', reVerifyInfo.originalAppUserId);
+        const reVerifiedAppUserId = reVerifyInfo.originalAppUserId;
+        console.log('✅ [PURCHASE] App User ID después de forzar:', reVerifiedAppUserId);
+        
+        if (reVerifiedAppUserId !== userId) {
+          console.error('❌ [PURCHASE] CRÍTICO: App User ID AÚN no coincide después de forzar!');
+          console.error('❌ [PURCHASE] La compra puede asociarse al usuario incorrecto!');
+          // No lanzar error para permitir que la compra continúe, pero registrar el problema
+        }
+      } else {
+        console.log('✅ [PURCHASE] App User ID verificado correctamente - la compra se asociará al usuario correcto');
       }
 
       console.log('🛒 [PURCHASE] Iniciando compra de suscripción:', productId);
@@ -472,12 +513,27 @@ class SubscriptionService {
       console.log('  - Active Entitlements:', Object.keys(purchaseCustomerInfo.entitlements.active || {}));
       console.log('  - Buscando entitlement:', PREMIUM_ENTITLEMENT);
       
-      // Verificar que el App User ID sigue siendo el correcto después de la compra
+      // CRÍTICO: Verificar que el App User ID sigue siendo el correcto después de la compra
       if (purchaseCustomerInfo.originalAppUserId !== userId) {
-        console.error('⚠️ [PURCHASE] ADVERTENCIA: App User ID cambió después de la compra!');
-        console.error('  - Esperado:', userId);
-        console.error('  - Obtenido:', purchaseCustomerInfo.originalAppUserId);
-        console.error('  - Esto puede causar que las compras se transfieran a otro usuario');
+        console.error('❌ [PURCHASE] CRÍTICO: App User ID cambió después de la compra!');
+        console.error('  - Usuario esperado (de app):', userId);
+        console.error('  - App User ID después de compra:', purchaseCustomerInfo.originalAppUserId);
+        console.error('  - ⚠️ ESTO ES GRAVE: La compra puede asociarse al usuario incorrecto en RevenueCat!');
+        console.error('  - ⚠️ Esto explica por qué solo ves un evento en RevenueCat dashboard');
+        console.error('  - ⚠️ Todas las compras pueden estar asociándose al mismo usuario');
+        
+        // Intentar corregir el App User ID después de la compra
+        console.warn('🔄 [PURCHASE] Intentando corregir App User ID después de la compra...');
+        try {
+          await Purchases.logIn(userId);
+          const correctedInfo = await Purchases.getCustomerInfo();
+          console.log('✅ [PURCHASE] App User ID corregido:', correctedInfo.originalAppUserId);
+        } catch (correctError) {
+          console.error('❌ [PURCHASE] No se pudo corregir App User ID:', correctError);
+        }
+      } else {
+        console.log('✅ [PURCHASE] App User ID verificado correctamente después de la compra');
+        console.log('✅ [PURCHASE] La compra se asociará al usuario correcto en RevenueCat');
       }
       
       // Obtener customerInfo fresco después de la compra para asegurar que esté sincronizado
@@ -901,7 +957,7 @@ class SubscriptionService {
     };
   }
 
-  private async refreshPremiumStatusFromRevenueCat(): Promise<void> {
+  async refreshPremiumStatusFromRevenueCat(): Promise<void> {
     try {
       if (!this.isInitialized) {
         console.log('⚠️ RevenueCat no inicializado, saltando actualización desde RevenueCat');

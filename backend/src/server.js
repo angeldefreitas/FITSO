@@ -174,11 +174,28 @@ app.post('/', async (req, res) => {
   console.log('📝 [ROOT] User-Agent:', userAgent);
   console.log('📝 [ROOT] Content-Type:', contentType);
   console.log('📝 [ROOT] Content-Length:', contentLength);
+  console.log('📝 [ROOT] Body type:', typeof req.body);
+  console.log('📝 [ROOT] Body keys:', req.body ? Object.keys(req.body) : 'no body');
   
   // Si viene de RevenueCat (Apache-HttpClient) y tiene JSON payload
   if (userAgent.includes('Apache-HttpClient') && contentType.includes('application/json')) {
+    // Log del body completo para debugging
+    try {
+      console.log('📋 [ROOT] Body completo:', JSON.stringify(req.body, null, 2).substring(0, 500));
+    } catch (e) {
+      console.log('📋 [ROOT] No se pudo loggear body completo');
+    }
+    
     // Verificar si el payload tiene estructura de webhook de RevenueCat
     const hasEventStructure = req.body && req.body.event && req.body.event.type;
+    
+    console.log('🔍 [ROOT] Has event structure?', hasEventStructure);
+    if (req.body) {
+      console.log('🔍 [ROOT] Body.event exists?', !!req.body.event);
+      if (req.body.event) {
+        console.log('🔍 [ROOT] Body.event.type:', req.body.event.type);
+      }
+    }
     
     if (hasEventStructure) {
       // Esto es un webhook de RevenueCat enviado al endpoint incorrecto
@@ -195,6 +212,7 @@ app.post('/', async (req, res) => {
         return; // El controller ya envió la respuesta
       } catch (error) {
         console.error('❌ [ROOT] Error procesando webhook reenrutado:', error);
+        console.error('❌ [ROOT] Error stack:', error.stack);
         return res.status(500).json({
           success: false,
           message: 'Error procesando webhook',
@@ -202,8 +220,28 @@ app.post('/', async (req, res) => {
         });
       }
     } else {
-      // Posiblemente RevenueCat haciendo verificación simple
-      console.log('⚠️ [ROOT] Posible verificación de RevenueCat (sin payload de webhook)');
+      // Posiblemente RevenueCat haciendo verificación simple O el body no está parseado
+      console.log('⚠️ [ROOT] No se detectó estructura de webhook');
+      console.log('⚠️ [ROOT] Body:', req.body);
+      console.log('⚠️ [ROOT] Intentando parsear manualmente si es necesario...');
+      
+      // Si el body es un string, intentar parsearlo
+      if (typeof req.body === 'string') {
+        try {
+          const parsed = JSON.parse(req.body);
+          if (parsed && parsed.event && parsed.event.type) {
+            console.log('✅ [ROOT] Body parseado, tiene estructura de webhook!');
+            req.body = parsed;
+            
+            const revenuecatWebhookController = require('./monetization/controllers/revenuecatWebhookController');
+            await revenuecatWebhookController.handleWebhook(req, res);
+            return;
+          }
+        } catch (parseError) {
+          console.error('❌ [ROOT] Error parseando body:', parseError);
+        }
+      }
+      
       return res.status(200).json({
         success: true,
         message: 'Server OK - Use endpoint /api/webhooks/revenuecat for webhooks',
