@@ -179,27 +179,105 @@ app.post('/', async (req, res) => {
   
   // Si viene de RevenueCat (Apache-HttpClient) y tiene JSON payload
   if (userAgent.includes('Apache-HttpClient') && contentType.includes('application/json')) {
-    // Log del body completo para debugging
-    try {
-      console.log('📋 [ROOT] Body completo:', JSON.stringify(req.body, null, 2).substring(0, 500));
-    } catch (e) {
-      console.log('📋 [ROOT] No se pudo loggear body completo');
-    }
-    
-    // Verificar si el payload tiene estructura de webhook de RevenueCat
-    const hasEventStructure = req.body && req.body.event && req.body.event.type;
-    
-    console.log('🔍 [ROOT] Has event structure?', hasEventStructure);
-    if (req.body) {
-      console.log('🔍 [ROOT] Body.event exists?', !!req.body.event);
-      if (req.body.event) {
-        console.log('🔍 [ROOT] Body.event.type:', req.body.event.type);
+    // CRÍTICO: RevenueCat ahora envía webhooks con formato signedPayload (JWT)
+    // Necesitamos decodificar el JWT primero para obtener el evento real
+    if (req.body && req.body.signedPayload) {
+      console.log('🔐 [ROOT] Webhook con signedPayload detectado (formato JWT de RevenueCat)');
+      console.log('📋 [ROOT] Intentando decodificar JWT...');
+      
+      try {
+        // RevenueCat usa JWT sin verificación para estos webhooks
+        const jwt = require('jsonwebtoken');
+        
+        // Decodificar sin verificar (RevenueCat usa su propia verificación)
+        const decoded = jwt.decode(req.body.signedPayload, { complete: true });
+        
+        if (decoded && decoded.payload) {
+          console.log('✅ [ROOT] JWT decodificado exitosamente');
+          console.log('📋 [ROOT] Payload keys:', Object.keys(decoded.payload));
+          console.log('📋 [ROOT] Notification type:', decoded.payload.notificationType || decoded.payload.type);
+          console.log('📋 [ROOT] Notification UUID:', decoded.payload.notificationUUID || decoded.payload.id);
+          
+          // RevenueCat puede usar diferentes estructuras - intentar ambos formatos
+          let eventData = decoded.payload.data || decoded.payload.event || decoded.payload;
+          const notificationType = decoded.payload.notificationType || decoded.payload.type || 'UNKNOWN';
+          
+          console.log('📋 [ROOT] Event data keys:', eventData ? Object.keys(eventData) : 'no eventData');
+          
+          // Si eventData es el payload completo, extraer el evento real
+          if (eventData && eventData.event) {
+            eventData = eventData.event;
+          }
+          
+          // Construir el formato esperado por el controller
+          const webhookPayload = {
+            event: {
+              type: notificationType, // Ej: INITIAL_PURCHASE, RENEWAL, etc.
+              app_user_id: eventData.appUserId || eventData.app_user_id || eventData.originalAppUserId || eventData.original_app_user_id,
+              product_id: eventData.productId || eventData.product_id,
+              id: decoded.payload.notificationUUID || decoded.payload.id || eventData.id,
+              price: eventData.price || eventData.priceInPurchasedCurrency || eventData.price_in_purchased_currency || 0,
+              price_in_purchased_currency: eventData.priceInPurchasedCurrency || eventData.price_in_purchased_currency || eventData.price || 0,
+              currency: eventData.currency || 'USD',
+              purchased_at_ms: eventData.purchasedAtMs || eventData.purchased_at_ms || Date.now(),
+              expiration_at_ms: eventData.expirationAtMs || eventData.expiration_at_ms,
+              transaction_id: eventData.transactionId || eventData.transaction_id || eventData.originalTransactionId || eventData.original_transaction_id,
+              original_transaction_id: eventData.originalTransactionId || eventData.original_transaction_id,
+              entitlement_ids: eventData.entitlementIds || eventData.entitlement_ids || [],
+              environment: eventData.environment || 'SANDBOX',
+              period_type: eventData.periodType || eventData.period_type || 'NORMAL',
+              is_family_share: eventData.isFamilyShare || eventData.is_family_share || false,
+              store: eventData.store || 'APP_STORE',
+              // Mapear otros campos necesarios
+              ...eventData
+            },
+            api_version: '2.0' // RevenueCat v2 usa signedPayload
+          };
+          
+          console.log('📋 [ROOT] Webhook payload construido:', {
+            type: webhookPayload.event.type,
+            app_user_id: webhookPayload.event.app_user_id,
+            product_id: webhookPayload.event.product_id
+          });
+          
+          console.log('🔄 [ROOT] Webhook de RevenueCat detectado en raíz - reenrutando a /api/webhooks/revenuecat');
+          console.log('📋 [ROOT] Tipo de evento:', webhookPayload.event.type);
+          console.log('👤 [ROOT] App User ID:', webhookPayload.event.app_user_id);
+          
+          // Reemplazar el body con el formato esperado
+          req.body = webhookPayload;
+          
+          // Importar y llamar al controller del webhook directamente
+          const revenuecatWebhookController = require('./monetization/controllers/revenuecatWebhookController');
+          
+          try {
+            await revenuecatWebhookController.handleWebhook(req, res);
+            return; // El controller ya envió la respuesta
+          } catch (error) {
+            console.error('❌ [ROOT] Error procesando webhook reenrutado:', error);
+            console.error('❌ [ROOT] Error stack:', error.stack);
+            return res.status(500).json({
+              success: false,
+              message: 'Error procesando webhook',
+              error: error.message
+            });
+          }
+        } else {
+          console.error('❌ [ROOT] JWT decodificado pero sin estructura esperada');
+          console.error('❌ [ROOT] Decoded:', JSON.stringify(decoded, null, 2).substring(0, 500));
+        }
+      } catch (jwtError) {
+        console.error('❌ [ROOT] Error decodificando JWT:', jwtError);
+        console.error('❌ [ROOT] Intentando manejar como formato antiguo...');
       }
     }
     
+    // Verificar si el payload tiene estructura de webhook de RevenueCat (formato antiguo)
+    const hasEventStructure = req.body && req.body.event && req.body.event.type;
+    
     if (hasEventStructure) {
       // Esto es un webhook de RevenueCat enviado al endpoint incorrecto
-      console.log('🔄 [ROOT] Webhook de RevenueCat detectado en raíz - reenrutando a /api/webhooks/revenuecat');
+      console.log('🔄 [ROOT] Webhook de RevenueCat detectado en raíz (formato antiguo) - reenrutando a /api/webhooks/revenuecat');
       console.log('📋 [ROOT] Tipo de evento:', req.body.event.type);
       console.log('👤 [ROOT] App User ID:', req.body.event.app_user_id);
       
@@ -207,7 +285,6 @@ app.post('/', async (req, res) => {
       const revenuecatWebhookController = require('./monetization/controllers/revenuecatWebhookController');
       
       try {
-        // Crear objetos req/res mock con el payload correcto
         await revenuecatWebhookController.handleWebhook(req, res);
         return; // El controller ya envió la respuesta
       } catch (error) {
@@ -220,27 +297,9 @@ app.post('/', async (req, res) => {
         });
       }
     } else {
-      // Posiblemente RevenueCat haciendo verificación simple O el body no está parseado
-      console.log('⚠️ [ROOT] No se detectó estructura de webhook');
-      console.log('⚠️ [ROOT] Body:', req.body);
-      console.log('⚠️ [ROOT] Intentando parsear manualmente si es necesario...');
-      
-      // Si el body es un string, intentar parsearlo
-      if (typeof req.body === 'string') {
-        try {
-          const parsed = JSON.parse(req.body);
-          if (parsed && parsed.event && parsed.event.type) {
-            console.log('✅ [ROOT] Body parseado, tiene estructura de webhook!');
-            req.body = parsed;
-            
-            const revenuecatWebhookController = require('./monetization/controllers/revenuecatWebhookController');
-            await revenuecatWebhookController.handleWebhook(req, res);
-            return;
-          }
-        } catch (parseError) {
-          console.error('❌ [ROOT] Error parseando body:', parseError);
-        }
-      }
+      // Posiblemente RevenueCat haciendo verificación simple
+      console.log('⚠️ [ROOT] No se detectó estructura de webhook válida');
+      console.log('⚠️ [ROOT] Body keys:', req.body ? Object.keys(req.body) : 'no body');
       
       return res.status(200).json({
         success: true,

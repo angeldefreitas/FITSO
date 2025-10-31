@@ -68,35 +68,70 @@ export const PremiumProvider: React.FC<PremiumProviderProps> = ({ children }) =>
   const purchaseSubscription = useCallback(async (productId: string) => {
     try {
       setLoading(true);
-      console.log('🛒 Iniciando compra de suscripción:', productId);
+      console.log('🛒 [PREMIUM CONTEXT] Iniciando compra de suscripción:', productId);
       
       await subscriptionService.purchaseSubscription(productId);
       
       // CRÍTICO: Forzar actualización completa del estado premium después de la compra
-      console.log('🔄 [PREMIUM CONTEXT] Forzando actualización del estado premium después de compra...');
+      console.log('🔄 [PREMIUM CONTEXT] Forzando actualización completa del estado premium después de compra...');
       
-      // Esperar un momento para que RevenueCat sincronice
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Múltiples intentos para asegurar que el estado se actualice
+      let attempts = 0;
+      const maxAttempts = 5;
+      let freshStatus: PremiumStatus | null = null;
       
-      // Obtener estado fresco directamente desde RevenueCat
-      const freshStatus = await subscriptionService.getPremiumStatus();
-      console.log('📦 [PREMIUM CONTEXT] Estado premium fresco obtenido:', freshStatus);
+      while (attempts < maxAttempts) {
+        attempts++;
+        
+        // Esperar con delay incremental: 0.5s, 1s, 1.5s, 2s, 2.5s
+        if (attempts > 1) {
+          const delay = (attempts - 1) * 500;
+          console.log(`🔄 [PREMIUM CONTEXT] Intento ${attempts}/${maxAttempts} - esperando ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+        
+        // Forzar refresh desde RevenueCat
+        try {
+          await subscriptionService.refreshPremiumStatusFromRevenueCat();
+          console.log('✅ [PREMIUM CONTEXT] Estado refrescado desde RevenueCat');
+        } catch (refreshError) {
+          console.warn('⚠️ [PREMIUM CONTEXT] Error refrescando desde RevenueCat:', refreshError);
+        }
+        
+        // Obtener estado fresco directamente desde RevenueCat
+        freshStatus = await subscriptionService.getPremiumStatus();
+        console.log(`📦 [PREMIUM CONTEXT] Intento ${attempts}/${maxAttempts} - Estado premium:`, freshStatus);
+        
+        // Si el estado premium está activo, salir del loop
+        if (freshStatus.isPremium) {
+          console.log('✅ [PREMIUM CONTEXT] ¡Estado premium detectado como activo!');
+          break;
+        } else {
+          console.log(`⚠️ [PREMIUM CONTEXT] Estado premium aún no activo en intento ${attempts}/${maxAttempts}`);
+        }
+      }
       
-      // Actualizar estado del contexto inmediatamente
-      setPremiumStatus(freshStatus);
-      
-      // También llamar a refreshPremiumStatus para asegurar sincronización completa
-      await refreshPremiumStatus();
+      // Actualizar estado del contexto con el último estado obtenido
+      if (freshStatus) {
+        setPremiumStatus(freshStatus);
+        console.log('✅ [PREMIUM CONTEXT] Estado premium actualizado en contexto:', freshStatus);
+        
+        if (!freshStatus.isPremium) {
+          console.warn('⚠️ [PREMIUM CONTEXT] Estado premium NO activo después de', maxAttempts, 'intentos');
+          console.warn('⚠️ [PREMIUM CONTEXT] El webhook puede tardar unos momentos más en procesar');
+          console.warn('⚠️ [PREMIUM CONTEXT] El estado se actualizará automáticamente cuando el usuario vuelva a la app');
+        }
+      }
       
       console.log('✅ [PREMIUM CONTEXT] Compra de suscripción completada y estado actualizado');
     } catch (error) {
-      console.error('❌ Error en compra de suscripción:', error);
+      console.error('❌ [PREMIUM CONTEXT] Error en compra de suscripción:', error);
       // NO mostrar Alert.alert aquí - el error será manejado por PremiumScreen con el modal bonito
       throw error;
     } finally {
       setLoading(false);
     }
-  }, [refreshPremiumStatus]);
+  }, []);
 
   // Restaurar compras
   const restorePurchases = useCallback(async () => {
