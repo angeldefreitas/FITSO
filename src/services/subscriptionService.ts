@@ -353,8 +353,10 @@ class SubscriptionService {
       }
 
       // Encontrar el paquete correspondiente
-      // Los packages en RevenueCat tienen IDs como $rc_monthly y $rc_annual
-      // El productId puede ser un package ID ($rc_monthly) o un product ID (Fitso_Premium_Monthly)
+      // El productId puede ser:
+      // - Un product ID de Apple (Fitso_Premium_Monthly, Fitso_Premium_Yearly)
+      // - Un product ID de Test Store (Fitso_Premium_Monthly_Test, Yearly_Test)
+      // - Un package ID de RevenueCat ($rc_monthly, $rc_annual, etc.)
       console.log('📦 [PURCHASE] Buscando paquete para:', productId);
       console.log('📦 [PURCHASE] Paquetes disponibles:', offerings.current.availablePackages.map(p => ({
         packageId: p.identifier,
@@ -369,31 +371,53 @@ class SubscriptionService {
           const packageIdNoPrefix = packageIdLower.replace(/^\$rc_/, 'rc_');
           const productIdLower = productId.toLowerCase();
           const productIdNoPrefix = productIdLower.replace(/^\$rc_/, 'rc_');
+          const pkgProductIdLower = pkg.product.identifier.toLowerCase();
           
-          // 1. Comparación exacta de package ID
+          // 1. Comparación exacta de package ID (si productId es un package ID)
           const exactPackageMatch = pkg.identifier === productId;
           
-          // 2. Comparación sin case sensitivity
-          const caseInsensitiveMatch = packageIdLower === productIdLower;
+          // 2. Comparación exacta de product ID (PRIMERA PRIORIDAD - más confiable)
+          const exactProductMatch = pkg.product.identifier === productId;
           
-          // 3. Comparación sin prefijo $
+          // 3. Comparación sin case sensitivity de product ID
+          const caseInsensitiveProductMatch = pkgProductIdLower === productIdLower;
+          
+          // 4. Comparación sin prefijo $ en package ID
           const noPrefixMatch = packageIdNoPrefix === productIdNoPrefix;
           
-          // 4. Comparación con product identifier
-          const productMatch = pkg.product.identifier === productId || 
-                              pkg.product.identifier.toLowerCase() === productIdLower;
+          // 5. Comparación sin case sensitivity de package ID
+          const caseInsensitivePackageMatch = packageIdLower === productIdLower;
           
-          // 5. Match por contenido (monthly/annual)
-          const contentMatch = 
-            (productIdLower.includes('monthly') && (packageIdLower.includes('monthly') || pkg.product.identifier.toLowerCase().includes('monthly'))) ||
+          // 6. Match por contenido (monthly/annual/yearly) - ÚTIL para sandbox vs producción
+          // En sandbox, los productos pueden tener sufijo _Test, pero contienen "monthly" o "yearly"
+          // Esto permite que Fitso_Premium_Monthly coincida con Fitso_Premium_Monthly_Test
+          const productBaseMatch = 
+            (productIdLower.includes('monthly') && pkgProductIdLower.includes('monthly')) ||
             ((productIdLower.includes('annual') || productIdLower.includes('yearly')) && 
-             (packageIdLower.includes('annual') || packageIdLower.includes('yearly') || 
-              pkg.product.identifier.toLowerCase().includes('annual') || pkg.product.identifier.toLowerCase().includes('yearly')));
+             (pkgProductIdLower.includes('annual') || pkgProductIdLower.includes('yearly')));
           
-          const matches = exactPackageMatch || caseInsensitiveMatch || noPrefixMatch || productMatch || contentMatch;
+          // También buscar por package ID si contiene el tipo
+          const packageContentMatch = 
+            (productIdLower.includes('monthly') && packageIdLower.includes('monthly')) ||
+            ((productIdLower.includes('annual') || productIdLower.includes('yearly')) && 
+             (packageIdLower.includes('annual') || packageIdLower.includes('yearly')));
+          
+          const contentMatch = productBaseMatch || packageContentMatch;
+          
+          // Priorizar matches exactos sobre matches por contenido
+          const matches = exactProductMatch || exactPackageMatch || caseInsensitiveProductMatch || 
+                         caseInsensitivePackageMatch || noPrefixMatch || contentMatch;
           
           if (matches) {
-            console.log(`✅ [PURCHASE] Match encontrado: ${pkg.identifier} (package) -> ${pkg.product.identifier} (product)`);
+            console.log(`✅ [PURCHASE] Match encontrado:`);
+            console.log(`   Package ID: ${pkg.identifier}`);
+            console.log(`   Product ID: ${pkg.product.identifier}`);
+            console.log(`   Product Title: ${pkg.product.title}`);
+            console.log(`   Match type: ${exactProductMatch ? 'exact product' : 
+                         exactPackageMatch ? 'exact package' :
+                         caseInsensitiveProductMatch ? 'case-insensitive product' :
+                         caseInsensitivePackageMatch ? 'case-insensitive package' :
+                         noPrefixMatch ? 'no prefix' : 'content'}`);
           }
           
           return matches;

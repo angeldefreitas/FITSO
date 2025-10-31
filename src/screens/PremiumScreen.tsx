@@ -73,8 +73,9 @@ export default function PremiumScreen({ onClose }: PremiumScreenProps) {
 
   const handleSubscribe = async () => {
     try {
-      // Usar los packages que SÍ están en la offering
-      const productId = selectedPlan === 'monthly' ? '$rc_monthly' : '$rc_annual';
+      // Usar los product IDs reales de RevenueCat
+      // Estos deben coincidir con los productos configurados en RevenueCat dashboard
+      const productId = selectedPlan === 'monthly' ? 'Fitso_Premium_Monthly' : 'Fitso_Premium_Yearly';
       console.log('🛒 [PREMIUM SCREEN] Iniciando compra de:', productId);
       await purchaseSubscription(productId);
       console.log('✅ [PREMIUM SCREEN] Compra completada exitosamente');
