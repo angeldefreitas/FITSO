@@ -106,23 +106,61 @@ export default function PremiumScreen({ onClose }: PremiumScreenProps) {
       let errorMessage = t('premium.errorGenericMessage');
       
       if (error instanceof Error) {
-        const errorMsg = error.message;
+        const errorMsg = error.message.toLowerCase();
+        const errorString = error.toString().toLowerCase();
         
-        if (errorMsg.includes('Compra cancelada') || errorMsg.includes('cancelada') || errorMsg.includes('cancelled')) {
+                          // CRÍTICO: Detectar errores de validación de recibo (problema de Apple Review)
+         if (errorMsg.includes('validando') || errorMsg.includes('validating') || 
+             errorMsg.includes('recibo') || errorMsg.includes('receipt') ||
+             errorMsg.includes('21007') || errorMsg.includes('sandbox') ||
+             errorMsg.includes('testflight') || errorString.includes('21007')) {
+           errorTitle = t('premium.errorReceiptValidation') || t('premium.errorTitle');
+           // Mensaje específico para errores de validación de recibo
+           errorMessage = t('premium.errorReceiptValidationMessage') || 'Error validating the purchase with Apple. If you\'re in TestFlight, make sure to use a sandbox tester account. If the problem persists, contact support.';
+         }
+        // Detectar errores de cancelación
+        else if (errorMsg.includes('compra cancelada') || errorMsg.includes('cancelada') || 
+                 errorMsg.includes('cancelled') || errorMsg.includes('user cancelled')) {
           errorTitle = t('premium.errorCanceled');
           errorMessage = t('premium.errorCanceledMessage');
-        } else if (errorMsg.includes('Error de conexión') || errorMsg.includes('conexión') || errorMsg.includes('connection') || errorMsg.includes('network')) {
+        }
+        // Detectar errores de conexión/red
+        else if (errorMsg.includes('error de conexión') || errorMsg.includes('conexión') || 
+                 errorMsg.includes('connection') || errorMsg.includes('network') ||
+                 errorMsg.includes('timeout') || errorMsg.includes('sin conexión')) {
           errorTitle = t('premium.errorConnection');
           errorMessage = t('premium.errorConnectionMessage');
-        } else if (errorMsg.includes('Ya tienes') || errorMsg.includes('already')) {
+        }
+        // Detectar si ya tiene suscripción activa
+        else if (errorMsg.includes('ya tienes') || errorMsg.includes('already') ||
+                 errorMsg.includes('already purchased') || errorMsg.includes('ya eres premium')) {
           errorTitle = t('premium.errorAlreadyActive');
           errorMessage = t('premium.errorAlreadyActiveMessage');
-        } else if (errorMsg.includes('no están permitidas') || errorMsg.includes('not allowed')) {
+        }
+        // Detectar si las compras no están permitidas
+        else if (errorMsg.includes('no están permitidas') || errorMsg.includes('not allowed') ||
+                 errorMsg.includes('purchase not allowed') || errorMsg.includes('not available')) {
           errorTitle = t('premium.errorNotAllowed');
           errorMessage = t('premium.errorNotAllowedMessage');
-        } else if (errorMsg.includes('Credenciales inválidas') || errorMsg.includes('invalid')) {
+        }
+        // Detectar errores de credenciales/configuración
+        else if (errorMsg.includes('credenciales inválidas') || errorMsg.includes('invalid') ||
+                 errorMsg.includes('invalid credentials') || errorMsg.includes('configuración')) {
           errorTitle = t('premium.errorInvalid');
           errorMessage = t('premium.errorInvalidMessage');
+        }
+        // Detectar errores de producto no disponible
+        else if (errorMsg.includes('producto no disponible') || errorMsg.includes('product not available') ||
+                 errorMsg.includes('no pudimos encontrar el producto') || errorMsg.includes('package not found')) {
+          errorTitle = t('premium.errorTitle');
+          errorMessage = 'El producto no está disponible en este momento. Por favor, verifica tu conexión e inténtalo de nuevo.';
+        }
+        // Para otros errores, mostrar el mensaje original si es útil, sino el genérico
+        else {
+          // Si el error tiene un mensaje útil, usarlo parcialmente
+          if (error.message && error.message.length > 0 && error.message.length < 100) {
+            errorMessage = `${t('premium.errorGenericMessage')}\n\nError: ${error.message}`;
+          }
         }
       }
       

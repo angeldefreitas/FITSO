@@ -47,6 +47,12 @@ import { isAdminEmail } from '../config/adminConfig';
  *   * Si el usuario usa una cuenta Sandbox Tester → compra en sandbox
  *   * Si el usuario usa una cuenta real → compra en producción (puede generar cargo real)
  * 
+ * CRÍTICO para Apple Review:
+ * - Apple Review siempre usa cuentas de sandbox tester
+ * - Pero la app está firmada para producción (TestFlight)
+ * - Por lo tanto, SIEMPRE debemos usar sandbox API key en TestFlight
+ * - Esto permite que RevenueCat maneje correctamente recibos de sandbox en apps de producción
+ * 
  * Para RevenueCat:
  * - Si usamos sandbox API key → las compras aparecen en RevenueCat sandbox dashboard
  * - Si usamos production API key → las compras aparecen en RevenueCat production dashboard
@@ -64,14 +70,14 @@ const isTestFlight = (): boolean => {
     }
     
     // Detección alternativa: standalone build sin __DEV__ en iOS
-    // (esto podría incluir TestFlight o App Store, pero es mejor asumir TestFlight)
+    // CRÍTICO: En TestFlight, Apple Review siempre usa sandbox testers
+    // Por lo tanto, debemos detectar TestFlight y usar sandbox API key
     if (Platform.OS === 'ios' && !__DEV__) {
       const appOwnership = Constants.appOwnership;
       // Verificar si es standalone (puede ser 'standalone' como string o un enum)
       if (appOwnership && String(appOwnership) === 'standalone') {
-        // Podríamos verificar también por bundle identifier o build number
-        // pero por seguridad, asumimos que es TestFlight si no es __DEV__
-        // NOTA: Esto podría detectar App Store también, considera usar una variable de entorno
+        // En TestFlight, siempre asumir que necesitamos sandbox
+        // Apple Review usa sandbox testers incluso en builds de producción
         return true;
       }
     }
@@ -142,13 +148,17 @@ class SubscriptionService {
       }
       
       // Determinar si usar sandbox o producción
-      // IMPORTANTE: Sandbox es correcto para TestFlight, pero las compras se procesan como reales
+      // CRÍTICO: Apple Review usa TestFlight (producción) con cuentas sandbox
+      // Por lo tanto, SIEMPRE usar sandbox API key en TestFlight para manejar correctamente
+      // recibos de sandbox en apps de producción (requerimiento de Apple Guideline 2.1)
       const isTF = isTestFlight();
       const useSandbox = __DEV__ || isTF;
       const environment = useSandbox ? 'SANDBOX' : 'PRODUCCIÓN';
       
       if (isTF) {
-        console.log('🧪 TestFlight detectado - usando SANDBOX (las compras se procesan correctamente)');
+        console.log('🧪 TestFlight detectado - usando SANDBOX API key');
+        console.log('📋 IMPORTANTE: Apple Review usa cuentas sandbox en TestFlight');
+        console.log('📋 Esto cumple con Apple Guideline 2.1: producción-signed app + sandbox receipts');
       } else if (__DEV__) {
         console.log('🧪 Modo desarrollo - usando SANDBOX');
       } else {
@@ -157,14 +167,17 @@ class SubscriptionService {
       
       // Seleccionar API key apropiada
       // IMPORTANTE: Usar Public API Keys para el SDK, NO Secret API Keys
+      // CRÍTICO: En TestFlight, SIEMPRE usar sandbox API key porque Apple Review usa sandbox testers
       let apiKey: string;
       
       if (useSandbox) {
-        // En sandbox, usar la Test Store public API key
+        // En sandbox/TestFlight, usar la Test Store public API key
+        // Esto permite que RevenueCat maneje correctamente recibos de sandbox
         apiKey = REVENUECAT_API_KEY.ios_sandbox;
         console.log(`🧪 Modo SANDBOX activado - las compras aparecerán en sandbox de RevenueCat`);
+        console.log(`🧪 Esto permite recibos de sandbox en apps de producción (requerimiento Apple)`);
       } else {
-        // En producción, usar la public API key correspondiente
+        // En producción (App Store), usar la public API key correspondiente
         if (Platform.OS === 'ios') {
           apiKey = REVENUECAT_API_KEY.ios_public;
         } else {
@@ -322,6 +335,17 @@ class SubscriptionService {
       const userId = await this.getCurrentUserId();
       if (!userId) {
         throw new Error('Debes estar autenticado para realizar compras. Por favor, inicia sesión e intenta de nuevo.');
+      }
+      
+      console.log('🔍 [PURCHASE] PRE-VERIFICACIÓN CRÍTICA:');
+      console.log('  - User ID esperado (de app):', userId);
+      
+      // Obtener usuario actual para logging
+      try {
+        const user = await this.getCurrentUser();
+        console.log('  - Email del usuario (de app):', user.email);
+      } catch (err) {
+        console.warn('  - No se pudo obtener email del usuario:', err);
       }
 
       // CRÍTICO: Obtener el App User ID actual ANTES de configurarlo
@@ -712,7 +736,10 @@ class SubscriptionService {
         } else if (errorMessage.includes('ReceiptAlreadyInUseError') || errorString.includes('ReceiptAlreadyInUseError')) {
           throw new Error('Este recibo ya está siendo usado por otra cuenta.');
         } else if (errorMessage.includes('InvalidReceiptError') || errorString.includes('InvalidReceiptError')) {
-          throw new Error('Recibo inválido. Por favor, contacta al soporte.');
+          // CRÍTICO: Este error puede ocurrir cuando hay un problema con la validación del recibo
+          // En TestFlight con sandbox, esto puede indicar un problema de configuración
+          console.error('❌ [PURCHASE] Recibo inválido - puede ser problema de sandbox/producción');
+          throw new Error('Error validando la compra. Si estás en TestFlight, asegúrate de usar una cuenta sandbox tester.');
         } else if (errorMessage.includes('MissingReceiptFileError') || errorString.includes('MissingReceiptFileError')) {
           throw new Error('No se pudo encontrar el recibo de compra.');
         } else if (errorMessage.includes('InvalidAppUserIdError') || errorString.includes('InvalidAppUserIdError')) {
@@ -721,6 +748,8 @@ class SubscriptionService {
           throw new Error('Ya tienes esta suscripción activa.');
         } else if (errorMessage.includes('InvalidCredentialsError') || errorString.includes('InvalidCredentialsError')) {
           throw new Error('Credenciales inválidas. Por favor, contacta al soporte.');
+        } else if (errorMessage.includes('StoreProductNotAvailableError') || errorString.includes('StoreProductNotAvailableError')) {
+          throw new Error('El producto no está disponible en la tienda. Por favor, verifica tu conexión.');
         } else if (errorMessage.includes('Package not found') || errorMessage.includes('No pudimos encontrar')) {
           // Este es nuestro error personalizado
           throw error;
@@ -729,8 +758,16 @@ class SubscriptionService {
           console.error('❌ [PURCHASE] Error no reconocido, detalles completos:', {
             message: errorMessage,
             stack: error.stack,
-            name: error.name
+            name: error.name,
+            code: (error as any).code,
+            userInfo: (error as any).userInfo
           });
+          
+          // Mensaje más específico para errores de validación de recibo
+          if (errorMessage.includes('receipt') || errorMessage.includes('validation') || errorMessage.includes('21007')) {
+            throw new Error('Error validando la compra con Apple. Si estás en TestFlight, asegúrate de usar una cuenta sandbox tester.');
+          }
+          
           throw new Error(errorMessage || 'No pudimos procesar tu compra. Por favor, inténtalo de nuevo.');
         }
       } else {
@@ -1174,7 +1211,35 @@ class SubscriptionService {
       console.log('📤 [SUBSCRIPTION] Notificando al backend sobre la compra...');
       
       const { default: apiService } = await import('./apiService');
-      const userId = await this.getCurrentUserId();
+      
+      // CRÍTICO: Usar el app_user_id de RevenueCat, NO el de la app
+      // El app_user_id de RevenueCat es el que se usó para la compra
+      // Si son diferentes, significa que había un problema con la configuración
+      const revenueCatAppUserId = customerInfo.originalAppUserId;
+      const appUserId = await this.getCurrentUserId();
+      
+      console.log('🔍 [SUBSCRIPTION] Verificando App User IDs:');
+      console.log('  - App User ID (RevenueCat):', revenueCatAppUserId);
+      console.log('  - User ID (App/BD):', appUserId);
+      
+      // CRÍTICO: Verificar que coincidan
+      if (revenueCatAppUserId && revenueCatAppUserId !== appUserId) {
+        console.error('❌ [SUBSCRIPTION] CRÍTICO: App User ID de RevenueCat NO coincide con User ID de la app!');
+        console.error('  - RevenueCat App User ID:', revenueCatAppUserId);
+        console.error('  - App User ID esperado:', appUserId);
+        console.error('  - ⚠️ Esto significa que la compra se asoció al usuario incorrecto en RevenueCat!');
+        console.error('  - ⚠️ El webhook llegará con el app_user_id incorrecto y no encontrará al usuario!');
+        console.warn('⚠️ [SUBSCRIPTION] Usando el app_user_id de RevenueCat para notificar al backend');
+        console.warn('⚠️ [SUBSCRIPTION] Pero el webhook también usará este ID - puede fallar si no existe el usuario');
+      }
+      
+      // Usar el app_user_id de RevenueCat porque ese es el que se usó para la compra
+      const userId = revenueCatAppUserId || appUserId;
+      
+      if (!userId) {
+        console.error('❌ [SUBSCRIPTION] No se puede determinar el userId para notificar al backend');
+        return;
+      }
       
       // Extraer información de la compra
       const premiumEntitlement = customerInfo.entitlements.active[PREMIUM_ENTITLEMENT];

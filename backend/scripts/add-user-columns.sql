@@ -42,3 +42,4 @@ AND column_name IN ('is_admin', 'is_affiliate');
 
 
 
+

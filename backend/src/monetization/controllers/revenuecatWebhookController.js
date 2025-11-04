@@ -85,12 +85,21 @@ class RevenueCatWebhookController {
         : null;
       
       // Extraer environment (sandbox o production)
+      // CRÍTICO: Apple Review usa sandbox environment incluso en apps de producción
+      // Este campo indica el ambiente real del recibo, no el tipo de build de la app
       const environment = eventData.environment || 'production';
-
+      
       console.log(`📨 [REVENUECAT] Tipo de evento: ${eventType}`);
       console.log(`👤 [REVENUECAT] Usuario: ${appUserId}`);
       console.log(`📦 [REVENUECAT] Producto: ${productId}`);
       console.log(`💰 [REVENUECAT] Precio: ${price} ${currency}`);
+      console.log(`🌍 [REVENUECAT] Environment: ${environment} (sandbox/production según el recibo)`);
+      
+      // Logging adicional para debugging de Apple Review
+      if (environment === 'sandbox') {
+        console.log('🧪 [REVENUECAT] Recibo de SANDBOX detectado - normal para TestFlight/Apple Review');
+        console.log('📋 [REVENUECAT] Esto cumple con Apple Guideline 2.1');
+      }
 
       // Procesar según el tipo de evento
       switch (eventType) {
@@ -170,9 +179,10 @@ class RevenueCatWebhookController {
   async handleInitialPurchase(appUserId, transactionId, price, productId, purchaseDate = null, expiresDate = null, environment = 'production') {
     try {
       console.log('🎉 [REVENUECAT] Primera compra detectada');
-      console.log('👤 [REVENUECAT] App User ID:', appUserId);
+      console.log('👤 [REVENUECAT] App User ID recibido:', appUserId);
       console.log('📦 [REVENUECAT] Product ID:', productId);
       console.log('💰 [REVENUECAT] Price:', price);
+      console.log('🔍 [REVENUECAT] Transaction ID:', transactionId);
       
       // IMPORTANTE: El appUserId que viene de RevenueCat es el ID del usuario en nuestra BD
       // Buscar el usuario por su ID (que debería coincidir con el app_user_id configurado)
@@ -180,9 +190,24 @@ class RevenueCatWebhookController {
       const userResult = await query(userQuery, [appUserId]);
       
       if (userResult.rows.length === 0) {
-        console.error('❌ [REVENUECAT] Usuario no encontrado en BD con App User ID:', appUserId);
-        console.log('ℹ️ [REVENUECAT] Esto puede ocurrir si el App User ID no coincide con el ID del usuario en la BD');
-        console.log('ℹ️ [REVENUECAT] El webhook se procesará pero no se actualizará el usuario');
+        console.error('❌ [REVENUECAT] CRÍTICO: Usuario no encontrado en BD con App User ID:', appUserId);
+        console.error('❌ [REVENUECAT] Esto significa que el app_user_id en RevenueCat NO coincide con ningún usuario en la BD');
+        console.error('❌ [REVENUECAT] Posibles causas:');
+        console.error('   1. El app_user_id no se configuró correctamente antes de la compra');
+        console.error('   2. El usuario usó un ID anónimo compartido ($RCAnonymousID)');
+        console.error('   3. El app_user_id es de otro usuario que ya no existe');
+        
+        // Intentar buscar usuarios similares para debugging
+        const similarQuery = 'SELECT id, email FROM users WHERE email LIKE $1 LIMIT 5';
+        const similarResult = await query(similarQuery, ['%test%']);
+        if (similarResult.rows.length > 0) {
+          console.log('ℹ️ [REVENUECAT] Usuarios de prueba encontrados en BD:');
+          for (const user of similarResult.rows) {
+            console.log(`   - ${user.email} (ID: ${user.id})`);
+          }
+        }
+        
+        console.log('⚠️ [REVENUECAT] El webhook NO procesará esta compra - usuario no encontrado');
         return;
       }
       

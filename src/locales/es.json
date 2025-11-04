@@ -481,6 +481,8 @@
     "errorNotAllowedMessage": "Las compras no están disponibles en este dispositivo. Por favor, contacta al soporte si necesitas ayuda.",
     "errorInvalid": "Error de Configuración",
     "errorInvalidMessage": "Hay un problema con la configuración. Por favor, contacta al soporte.",
+    "errorReceiptValidation": "Error de Validación de Compra",
+    "errorReceiptValidationMessage": "Error validando la compra con Apple. Si estás en TestFlight, asegúrate de usar una cuenta sandbox tester. Si el problema persiste, contacta al soporte.",
     "errorGeneric": "Algo Salió Mal",
     "errorGenericMessage": "No pudimos procesar tu compra. Por favor, inténtalo de nuevo."
   },

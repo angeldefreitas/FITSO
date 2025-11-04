@@ -121,14 +121,35 @@ class SubscriptionController {
     try {
       // Verificar si el usuario es afiliado o administrador
       const { query } = require('../../config/database');
-      const userQuery = 'SELECT is_affiliate, is_admin FROM users WHERE id = $1';
+      
+      // Verificar qué columnas existen
+      const checkColumnsQuery = `
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'users' 
+        AND column_name IN ('is_affiliate', 'is_admin')
+      `;
+      const columnsResult = await query(checkColumnsQuery);
+      const existingColumns = columnsResult.rows.map(row => row.column_name);
+      const hasIsAffiliate = existingColumns.includes('is_affiliate');
+      const hasIsAdmin = existingColumns.includes('is_admin');
+      
+      // Construir query dinámicamente
+      let selectColumns = 'id';
+      if (hasIsAffiliate) selectColumns += ', is_affiliate';
+      if (hasIsAdmin) selectColumns += ', is_admin';
+      
+      const userQuery = `SELECT ${selectColumns} FROM users WHERE id = $1`;
       const userResult = await query(userQuery, [userId]);
       
       if (userResult.rows.length > 0) {
         const user = userResult.rows[0];
         
         // Si es afiliado o administrador, otorgar premium automáticamente
-        if (user.is_affiliate || user.is_admin) {
+        const isAffiliate = hasIsAffiliate && user.is_affiliate;
+        const isAdmin = hasIsAdmin && user.is_admin;
+        
+        if (isAffiliate || isAdmin) {
           console.log('👑 [PREMIUM] Usuario afiliado/admin detectado, otorgando premium automático');
           return {
             isPremium: true,
@@ -138,7 +159,7 @@ class SubscriptionController {
             autoRenewStatus: false,
             purchaseDate: new Date().toISOString(),
             environment: 'lifetime',
-            reason: user.is_admin ? 'admin' : 'affiliate'
+            reason: isAdmin ? 'admin' : 'affiliate'
           };
         }
       }

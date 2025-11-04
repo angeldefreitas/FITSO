@@ -63,10 +63,15 @@ class AppleReceiptService {
         statusCode: result.status 
       });
 
-      // Según recomendación de Apple: si validación en producción falla con 21007,
-      // entonces validar contra sandbox
+      // CRÍTICO: Según recomendación de Apple (Guideline 2.1)
+      // Si validación en producción falla con 21007, significa que el recibo es de sandbox
+      // Esto puede ocurrir cuando:
+      // - Una app firmada para producción (TestFlight) hace compras con cuenta sandbox tester
+      // - Apple Review siempre usa sandbox testers, incluso en builds de producción
+      // Por lo tanto, SIEMPRE debemos validar contra sandbox si recibimos 21007
       if (result.status === 21007 && !isSandbox) {
         console.log('🔄 [VALIDATE] Error 21007 detectado: Recibo de sandbox usado en producción');
+        console.log('🔄 [VALIDATE] Esto es normal en TestFlight/Apple Review con cuentas sandbox');
         console.log('🔄 [VALIDATE] Reintentando validación contra entorno sandbox...');
         return await this.validateReceipt(receiptData, true);
       }
@@ -77,13 +82,21 @@ class AppleReceiptService {
     } catch (error) {
       console.error('❌ [VALIDATE] Error validando recibo de Apple:', error.message);
       
-      // Si es un error de red o timeout, pero tenemos un error 21007 pendiente,
-      // no reintentar automáticamente - dejar que el cliente lo maneje
+      // CRÍTICO: Manejar error 21007 incluso si viene en respuesta de error HTTP
+      // Esto puede ocurrir en algunos casos edge de Apple
       if (error.response && error.response.data && error.response.data.status === 21007) {
-        console.log('🔄 [VALIDATE] Error 21007 en respuesta de error, intentando sandbox...');
+        console.log('🔄 [VALIDATE] Error 21007 en respuesta de error HTTP, intentando sandbox...');
+        console.log('🔄 [VALIDATE] Esto cumple con Apple Guideline 2.1 para producción-signed apps');
         if (!isSandbox) {
           return await this.validateReceipt(receiptData, true);
         }
+      }
+      
+      // Si ya estamos en sandbox y hay un error, podría ser un problema real
+      // Pero también podría ser un timeout o error de red - intentar dar información útil
+      if (isSandbox) {
+        console.error('❌ [VALIDATE] Error validando recibo en sandbox:', error.message);
+        throw new Error(`Error validando recibo en sandbox: ${error.message}. Verifica que el recibo sea válido.`);
       }
       
       throw new Error(`Error validando recibo: ${error.message}`);
